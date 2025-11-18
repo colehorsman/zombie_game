@@ -54,7 +54,7 @@ class GameEngine:
                 self.game_map.map_width // 2,
                 self.game_map.map_height // 2
             )
-            self.player = Player(player_start_pos, self.game_map.map_width, self.game_map.map_height)
+            self.player = Player(player_start_pos, self.game_map.map_width, self.game_map.map_height, self.game_map)
 
             # Spatial grid for entire map
             self.spatial_grid = SpatialGrid(self.game_map.map_width, self.game_map.map_height)

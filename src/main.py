@@ -249,10 +249,6 @@ def main():
         renderer.render_zombie_labels(zombies, game_map)
         renderer.render_projectiles(game_engine.get_projectiles(), game_map)
         renderer.render_player(game_engine.get_player(), game_map)
-        
-        # Debug: Print zombie count on first frame
-        if delta_time < 0.1 and len(zombies) > 0:
-            logger.info(f"Rendering {len(zombies)} zombies. First 3 positions: {[(z.position.x, z.position.y) for z in zombies[:3]]}")
 
         # Render UI
         renderer.render_ui(game_engine.get_game_state())

@@ -9,7 +9,7 @@ from models import Vector2
 class Player:
     """Represents the controllable Mega Man-style character."""
 
-    def __init__(self, position: Vector2, map_width: Optional[int] = None, map_height: Optional[int] = None):
+    def __init__(self, position: Vector2, map_width: Optional[int] = None, map_height: Optional[int] = None, game_map: Optional['GameMap'] = None):
         """
         Initialize the player.
 
@@ -17,11 +17,13 @@ class Player:
             position: Starting position
             map_width: Width of the map for boundary checking (None for screen-based)
             map_height: Height of the map for boundary checking (None for screen-based)
+            game_map: GameMap instance for collision detection (None to disable)
         """
         self.position = position
         self.velocity = Vector2(0, 0)
         self.map_width = map_width
         self.map_height = map_height
+        self.game_map = game_map
 
         # Player dimensions (match zombie size)
         self.width = 40
@@ -42,80 +44,136 @@ class Player:
 
     def _create_sprite(self) -> pygame.Surface:
         """
-        Create a retro 8-bit Megaman-inspired sprite with purple colors.
+        Create a retro 8-bit survivor character inspired by The Walking Dead.
 
         Returns:
             Pygame surface with the player sprite
         """
         sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
 
-        # Purple color palette inspired by Megaman
-        DARK_PURPLE = (80, 40, 120)      # Dark armor/shadows
-        PURPLE = (120, 60, 180)          # Main body color
-        LIGHT_PURPLE = (160, 100, 220)   # Highlights
-        BRIGHT_PURPLE = (200, 140, 255)  # Bright highlights
-        CYAN = (100, 200, 255)           # Visor/eyes (classic Megaman cyan)
+        # re:Invent survivor color palette
+        HAIR_BROWN = (80, 50, 30)        # Dark brown hair
+        SKIN = (220, 180, 140)           # Skin tone
+        DARK_SKIN = (180, 140, 100)      # Shadow on skin
+        PURPLE = (120, 60, 180)          # re:Invent purple shirt
+        DARK_PURPLE = (80, 40, 120)      # Purple shadows
+        LIGHT_PURPLE = (160, 100, 220)   # Purple highlights
+        CAP_PURPLE = (100, 50, 160)      # Purple baseball cap
+        CAP_DARK = (70, 35, 110)         # Cap shadows
+        PANTS_BLACK = (40, 40, 40)       # Black pants
+        DARK_PANTS = (25, 25, 25)        # Pants shadows
+        BOOTS_BLACK = (30, 30, 30)       # Black boots
+        BACKPACK_GREY = (90, 90, 80)     # Grey backpack
+        DARK_GREY = (60, 60, 55)         # Backpack shadows
+        GUN_METAL = (100, 100, 100)      # Metallic gun
+        DARK_METAL = (60, 60, 60)        # Gun shadows
         BLACK = (0, 0, 0)                # Outlines
-        GREY = (128, 128, 128)           # Gun details
-        YELLOW = (255, 220, 100)         # Energy/accents
+        RED = (150, 30, 30)              # Blood stains
 
-        # Helmet (top portion)
-        helmet_rect = pygame.Rect(10, 2, 20, 12)
-        pygame.draw.rect(sprite, PURPLE, helmet_rect)
-        pygame.draw.rect(sprite, BLACK, helmet_rect, 1)  # Outline
+        # Baseball cap
+        # Cap crown (rounded top)
+        cap_crown = pygame.Rect(11, 2, 18, 8)
+        pygame.draw.rect(sprite, CAP_PURPLE, cap_crown)
+        pygame.draw.rect(sprite, BLACK, cap_crown, 1)
 
-        # Helmet highlights
-        pygame.draw.rect(sprite, LIGHT_PURPLE, (12, 4, 8, 3))
+        # Cap bill/visor (extends forward)
+        cap_bill = pygame.Rect(20, 9, 12, 3)
+        pygame.draw.rect(sprite, CAP_PURPLE, cap_bill)
+        pygame.draw.rect(sprite, BLACK, cap_bill, 1)
+        # Bill shadow underneath
+        pygame.draw.line(sprite, CAP_DARK, (20, 11), (31, 11))
 
-        # Visor/face area
-        visor_rect = pygame.Rect(12, 12, 16, 8)
-        pygame.draw.rect(sprite, CYAN, visor_rect)
-        pygame.draw.rect(sprite, BLACK, visor_rect, 1)
+        # Cap details/shading
+        pygame.draw.rect(sprite, CAP_DARK, (12, 3, 16, 3))  # Top shadow
+        pygame.draw.circle(sprite, LIGHT_PURPLE, (20, 5), 2)  # Logo/emblem
 
-        # Eyes (classic Megaman style)
-        pygame.draw.rect(sprite, BLACK, (15, 14, 3, 3))  # Left eye
-        pygame.draw.rect(sprite, BLACK, (22, 14, 3, 3))  # Right eye
+        # Hair peeking out from under cap
+        pygame.draw.rect(sprite, HAIR_BROWN, (10, 8, 4, 3))  # Left side
+        pygame.draw.rect(sprite, HAIR_BROWN, (26, 8, 4, 3))  # Right side
 
-        # Body/chest armor
-        body_rect = pygame.Rect(8, 20, 18, 12)
-        pygame.draw.rect(sprite, DARK_PURPLE, body_rect)
-        pygame.draw.rect(sprite, BLACK, body_rect, 1)  # Outline
+        # Face (adjusted to be under cap)
+        face_rect = pygame.Rect(14, 10, 12, 8)
+        pygame.draw.rect(sprite, SKIN, face_rect)
+        pygame.draw.rect(sprite, BLACK, face_rect, 1)
 
-        # Chest plate detail
-        pygame.draw.rect(sprite, PURPLE, (12, 22, 10, 3))
+        # Eyes (determined look)
+        pygame.draw.rect(sprite, BLACK, (16, 13, 2, 2))  # Left eye
+        pygame.draw.rect(sprite, BLACK, (22, 13, 2, 2))  # Right eye
 
-        # Left arm (normal arm)
-        pygame.draw.rect(sprite, PURPLE, (4, 22, 4, 10))
-        pygame.draw.rect(sprite, BLACK, (4, 22, 4, 10), 1)
+        # Facial shadow (beard stubble)
+        pygame.draw.rect(sprite, DARK_SKIN, (15, 16, 10, 2))
 
-        # Right arm - MEGA BUSTER / RAYGUN (iconic!)
+        # Backpack (behind body)
+        backpack_rect = pygame.Rect(6, 18, 12, 14)
+        pygame.draw.rect(sprite, BACKPACK_GREY, backpack_rect)
+        pygame.draw.rect(sprite, BLACK, backpack_rect, 1)
+        # Backpack straps
+        pygame.draw.rect(sprite, DARK_GREY, (8, 20, 2, 10))
+        pygame.draw.rect(sprite, DARK_GREY, (14, 20, 2, 10))
+        # Backpack pocket
+        pygame.draw.rect(sprite, DARK_GREY, (9, 22, 6, 4))
+
+        # Body/torso - purple re:Invent shirt
+        body_rect = pygame.Rect(10, 16, 16, 14)
+        pygame.draw.rect(sprite, PURPLE, body_rect)
+        pygame.draw.rect(sprite, BLACK, body_rect, 1)
+
+        # Shirt details/highlights
+        pygame.draw.rect(sprite, LIGHT_PURPLE, (12, 18, 12, 4))  # Chest highlight
+        pygame.draw.rect(sprite, DARK_PURPLE, (14, 24, 8, 4))     # Shadow area
+
+        # Collar detail
+        pygame.draw.rect(sprite, DARK_PURPLE, (14, 16, 8, 2))
+
+        # Blood stain on shirt (survivor has been through combat)
+        pygame.draw.circle(sprite, RED, (22, 23), 2)
+
+        # Left arm - purple sleeve
+        pygame.draw.rect(sprite, PURPLE, (5, 20, 5, 12))
+        pygame.draw.rect(sprite, BLACK, (5, 20, 5, 12), 1)
+        # Sleeve shadow
+        pygame.draw.rect(sprite, DARK_PURPLE, (6, 21, 2, 10))
+        # Hand
+        pygame.draw.rect(sprite, SKIN, (4, 28, 4, 4))
+
+        # Right arm - purple sleeve holding pistol
         # Upper arm
-        pygame.draw.rect(sprite, PURPLE, (26, 22, 5, 8))
-        pygame.draw.rect(sprite, BLACK, (26, 22, 5, 8), 1)
+        pygame.draw.rect(sprite, PURPLE, (26, 20, 5, 10))
+        pygame.draw.rect(sprite, BLACK, (26, 20, 5, 10), 1)
+        # Sleeve shadow
+        pygame.draw.rect(sprite, DARK_PURPLE, (27, 21, 2, 8))
 
-        # Arm cannon/raygun barrel (extended forward)
-        cannon_rect = pygame.Rect(31, 23, 7, 5)
-        pygame.draw.rect(sprite, GREY, cannon_rect)
-        pygame.draw.rect(sprite, BLACK, cannon_rect, 1)
+        # Hand holding gun
+        pygame.draw.rect(sprite, SKIN, (29, 26, 4, 5))
+        pygame.draw.rect(sprite, BLACK, (29, 26, 4, 5), 1)
 
-        # Cannon muzzle (darker opening)
-        pygame.draw.rect(sprite, DARK_PURPLE, (36, 24, 2, 3))
+        # Pistol (extended forward)
+        gun_rect = pygame.Rect(32, 27, 6, 3)
+        pygame.draw.rect(sprite, GUN_METAL, gun_rect)
+        pygame.draw.rect(sprite, BLACK, gun_rect, 1)
+        # Gun barrel
+        pygame.draw.rect(sprite, DARK_METAL, (36, 27, 2, 3))
 
-        # Energy glow on cannon
-        pygame.draw.rect(sprite, YELLOW, (32, 24, 3, 3))
-
-        # Legs/boots
+        # Legs/pants - black pants
         # Left leg
-        pygame.draw.rect(sprite, DARK_PURPLE, (10, 32, 6, 8))
-        pygame.draw.rect(sprite, BLACK, (10, 32, 6, 8), 1)
+        pygame.draw.rect(sprite, PANTS_BLACK, (11, 30, 6, 10))
+        pygame.draw.rect(sprite, BLACK, (11, 30, 6, 10), 1)
+        # Pants shadow
+        pygame.draw.rect(sprite, DARK_PANTS, (12, 31, 2, 8))
 
         # Right leg
-        pygame.draw.rect(sprite, DARK_PURPLE, (18, 32, 6, 8))
-        pygame.draw.rect(sprite, BLACK, (18, 32, 6, 8), 1)
+        pygame.draw.rect(sprite, PANTS_BLACK, (19, 30, 6, 10))
+        pygame.draw.rect(sprite, BLACK, (19, 30, 6, 10), 1)
+        # Pants shadow
+        pygame.draw.rect(sprite, DARK_PANTS, (20, 31, 2, 8))
 
-        # Boot highlights
-        pygame.draw.rect(sprite, PURPLE, (11, 33, 4, 3))
-        pygame.draw.rect(sprite, PURPLE, (19, 33, 4, 3))
+        # Boots
+        # Left boot
+        pygame.draw.rect(sprite, BOOTS_BLACK, (11, 38, 6, 2))
+        pygame.draw.rect(sprite, BLACK, (11, 38, 6, 2), 1)
+        # Right boot
+        pygame.draw.rect(sprite, BOOTS_BLACK, (19, 38, 6, 2))
+        pygame.draw.rect(sprite, BLACK, (19, 38, 6, 2), 1)
 
         return sprite
 
@@ -192,14 +250,61 @@ class Player:
         Args:
             delta_time: Time elapsed since last frame in seconds
         """
-        # Update position
-        self.position.x += self.velocity.x * delta_time
-        self.position.y += self.velocity.y * delta_time
+        # Calculate next position
+        next_x = self.position.x + self.velocity.x * delta_time
+        next_y = self.position.y + self.velocity.y * delta_time
 
         # Constrain to map boundaries if map dimensions are set
         if self.map_width is not None and self.map_height is not None:
-            self.position.x = max(0, min(self.position.x, self.map_width - self.width))
-            self.position.y = max(0, min(self.position.y, self.map_height - self.height))
+            next_x = max(0, min(next_x, self.map_width - self.width))
+            next_y = max(0, min(next_y, self.map_height - self.height))
+
+        # Check collision with booth boundaries if game_map is available
+        if self.game_map is not None:
+            # Try moving horizontally
+            can_move_x = self._can_move_to(next_x, self.position.y)
+            if can_move_x:
+                self.position.x = next_x
+
+            # Try moving vertically
+            can_move_y = self._can_move_to(self.position.x, next_y)
+            if can_move_y:
+                self.position.y = next_y
+        else:
+            # No collision detection - just move
+            self.position.x = next_x
+            self.position.y = next_y
+
+    def _can_move_to(self, x: float, y: float) -> bool:
+        """
+        Check if the player can move to a position (walkability check).
+
+        Args:
+            x: Target x position
+            y: Target y position
+
+        Returns:
+            True if the position is walkable, False otherwise
+        """
+        if self.game_map is None:
+            return True
+
+        # Check multiple points around the player's bounding box
+        # This ensures we don't clip into walls
+        check_points = [
+            (x + 5, y + 5),                           # Top-left corner (with margin)
+            (x + self.width - 5, y + 5),              # Top-right corner
+            (x + 5, y + self.height - 5),             # Bottom-left corner
+            (x + self.width - 5, y + self.height - 5), # Bottom-right corner
+            (x + self.width // 2, y + self.height // 2) # Center
+        ]
+
+        # All points must be walkable
+        for check_x, check_y in check_points:
+            if not self.game_map.is_walkable(int(check_x), int(check_y)):
+                return False
+
+        return True
 
     def get_bounds(self) -> pygame.Rect:
         """
