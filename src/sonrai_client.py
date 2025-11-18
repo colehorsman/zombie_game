@@ -178,11 +178,17 @@ class SonraiAPIClient:
                         )
                         identities.append(identity)
 
-                logger.info(f"Fetched {len(identities)} unused identities from Sonrai")
+                logger.info(f"Fetched {len(identities)} unused identities from Sonrai (before limit)")
             else:
                 logger.warning("No unused identities found in response")
 
-            return identities[:limit]  # Limit the results
+            # Apply limit and log
+            if len(identities) > limit:
+                logger.info(f"Limiting from {len(identities)} to {limit} identities")
+                return identities[:limit]
+            else:
+                logger.info(f"Returning all {len(identities)} identities (under limit of {limit})")
+                return identities
 
         except Exception as e:
             logger.error(f"Failed to fetch unused identities: {e}")

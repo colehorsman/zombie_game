@@ -41,7 +41,8 @@ def load_configuration() -> dict:
         'api_token': os.getenv('SONRAI_API_TOKEN'),
         'game_width': int(os.getenv('GAME_WIDTH', '800')),
         'game_height': int(os.getenv('GAME_HEIGHT', '600')),
-        'target_fps': int(os.getenv('TARGET_FPS', '60'))
+        'target_fps': int(os.getenv('TARGET_FPS', '60')),
+        'max_zombies': int(os.getenv('MAX_ZOMBIES', '1000'))  # Default to 1000 to capture all API zombies
     }
 
     # Validate required configuration
@@ -79,7 +80,7 @@ def initialize_pygame(width: int, height: int) -> pygame.Surface:
         raise RuntimeError(f"Failed to initialize Pygame: {e}")
 
 
-def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761", filter_test_users: bool = True, max_zombies: int = 50) -> List[Zombie]:
+def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761", filter_test_users: bool = True, max_zombies: int = 1000) -> List[Zombie]:
     """
     Fetch unused identities from Sonrai API and create zombie entities.
 
@@ -87,7 +88,7 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
         api_client: Initialized Sonrai API client
         aws_account: AWS account number to filter
         filter_test_users: If True, only include test-user-X identities (default: True)
-        max_zombies: Maximum number of zombies to create (default: 50)
+        max_zombies: Maximum number of zombies to create (default: 1000, configurable via MAX_ZOMBIES env var)
 
     Returns:
         List of Zombie entities
@@ -99,14 +100,17 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
         logger.info(f"Fetching unused identities from Sonrai API for account {aws_account}...")
         identities = api_client.fetch_unused_identities(limit=1000, scope=None, days_since_login="0", filter_account=aws_account)
 
+        logger.info(f"Received {len(identities)} total identities from API")
+
         if not identities:
             logger.warning("No unused identities found")
             return []
 
         # Filter for test-user identities if requested
         if filter_test_users:
+            before_filter = len(identities)
             identities = [i for i in identities if 'test-user' in i.identity_name.lower()]
-            logger.info(f"Filtered to {len(identities)} test-user identities")
+            logger.info(f"Filtered from {before_filter} to {len(identities)} test-user identities")
 
         if not identities:
             logger.warning("No test-user identities found after filtering")
@@ -114,8 +118,11 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
 
         # Limit to max_zombies for better gameplay
         if len(identities) > max_zombies:
+            logger.info(f"Would limit from {len(identities)} to {max_zombies} zombies, but applying limit...")
             identities = identities[:max_zombies]
             logger.info(f"Limited to {max_zombies} zombies for optimal gameplay")
+        else:
+            logger.info(f"Using all {len(identities)} identities (under max_zombies limit of {max_zombies})")
 
         # Create zombie entities (one-to-one mapping)
         zombies = []
@@ -173,8 +180,8 @@ def main():
         if not api_client.authenticate():
             raise RuntimeError("Failed to authenticate with Sonrai API")
 
-        # Fetch zombies from myhealth sandbox account
-        zombies = fetch_zombies(api_client, aws_account="577945324761")
+        # Fetch zombies from myhealth sandbox account (all identities, not just test-users)
+        zombies = fetch_zombies(api_client, aws_account="577945324761", filter_test_users=False, max_zombies=config['max_zombies'])
 
         if not zombies:
             print("\n🎉 No unused identities found! Your cloud is already secure!")

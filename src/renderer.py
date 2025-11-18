@@ -229,7 +229,7 @@ class Renderer:
             game_state: Current game state
         """
         # Zombies remaining
-        zombies_text = f"Zombies: {game_state.zombies_remaining}"
+        zombies_text = f"Remaining: {game_state.zombies_remaining}"
         zombies_surface = self.ui_font.render(zombies_text, True, self.ui_text_color)
         self.screen.blit(zombies_surface, (10, 10))
 

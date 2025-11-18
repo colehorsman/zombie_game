@@ -23,27 +23,10 @@ class GameMap:
         self.screen_width = screen_width
         self.screen_height = screen_height
 
-        # Load the floorplan image
-        if os.path.exists(map_image_path):
-            try:
-                original_surface = pygame.image.load(map_image_path)
-                print(f"Loaded floorplan map: {original_surface.get_width()}x{original_surface.get_height()}")
-
-                # Apply 8-bit retro style effects
-                self.map_surface = self._apply_8bit_style(original_surface)
-                self.map_width = self.map_surface.get_width()
-                self.map_height = self.map_surface.get_height()
-                print(f"Applied 8-bit style to map")
-            except pygame.error as e:
-                # If image load fails, create a placeholder
-                print(f"Warning: Could not load map image: {e}")
-                print("Creating placeholder map...")
-                self._create_placeholder_map()
-        else:
-            # If image doesn't exist, create a placeholder
-            print(f"Warning: Map image not found at {map_image_path}")
-            print("Creating placeholder map...")
-            self._create_placeholder_map()
+        # Create custom AWS re:invent themed floorplan
+        print("Creating AWS re:invent themed floorplan...")
+        self._create_placeholder_map()
+        print(f"Created custom floorplan: {self.map_width}x{self.map_height}")
 
         # Camera position (top-left corner of viewport)
         self.camera_x = 0
@@ -53,17 +36,131 @@ class GameMap:
         self.reveal_radius = 60  # Reduced from 80 to make hunting more challenging
 
     def _create_placeholder_map(self) -> None:
-        """Create a placeholder map when the floorplan image is not available."""
-        self.map_width = 2000
-        self.map_height = 1500
+        """Create an AWS re:invent themed floorplan."""
+        self.map_width = 3600  # Increased from 2400 for more zombie space
+        self.map_height = 2700  # Increased from 1800 for more zombie space
         self.map_surface = pygame.Surface((self.map_width, self.map_height))
-        self.map_surface.fill((240, 240, 240))  # Light gray background
 
-        # Draw grid to simulate floorplan
-        for x in range(0, self.map_width, 100):
-            pygame.draw.line(self.map_surface, (200, 200, 200), (x, 0), (x, self.map_height))
-        for y in range(0, self.map_height, 100):
-            pygame.draw.line(self.map_surface, (200, 200, 200), (0, y), (self.map_width, y))
+        # AWS Color palette (retro 8-bit style)
+        AWS_ORANGE = (255, 153, 0)
+        DARK_BLUE = (35, 47, 62)
+        LIGHT_BLUE = (146, 186, 211)
+        AISLE_COLOR = (200, 220, 230)  # Light blue for walkable aisles
+        BOOTH_COLOR = (70, 90, 110)     # Dark blue-grey for booths
+        TEXT_COLOR = (255, 255, 255)    # White text
+        ACCENT_COLOR = (255, 200, 100)  # Warm accent
+
+        # Background - main floor
+        self.map_surface.fill(AISLE_COLOR)
+
+        # Define exhibit areas with labels - scaled 1.5x for bigger map
+        areas = [
+            # (x, y, width, height, "Label", color)
+            (150, 150, 750, 600, "Security\nNeighborhood", BOOTH_COLOR),
+            (1050, 150, 750, 600, "Serverless\nZone", BOOTH_COLOR),
+            (1950, 150, 750, 600, "AI/ML\nPavilion", BOOTH_COLOR),
+
+            (150, 900, 600, 750, "Developer\nLounge", (90, 110, 140)),
+            (900, 900, 900, 450, "Builders Fair", AWS_ORANGE),
+            (1950, 900, 750, 450, "Container\nVillage", BOOTH_COLOR),
+
+            (150, 1800, 750, 600, "Data &\nAnalytics", BOOTH_COLOR),
+            (1050, 1500, 750, 900, "AWS Village\n(Main Stage)", (50, 70, 100)),
+            (1950, 1500, 750, 900, "Expo\nShowfloor", BOOTH_COLOR),
+
+            (2850, 150, 600, 1050, "Networking\nHub", BOOTH_COLOR),
+            (2850, 1350, 600, 1050, "Gaming &\nMedia", BOOTH_COLOR),
+        ]
+
+        # Draw areas
+        for x, y, w, h, label, color in areas:
+            # Draw booth rectangle
+            pygame.draw.rect(self.map_surface, color, (x, y, w, h))
+            # Draw border
+            pygame.draw.rect(self.map_surface, DARK_BLUE, (x, y, w, h), 3)
+
+            # Add label
+            self._draw_text_centered(label, x + w//2, y + h//2, TEXT_COLOR, size=32)
+
+        # Draw AWS logo/branding areas
+        self._draw_aws_branding()
+
+        # Add directional markers
+        self._draw_directional_markers()
+
+    def _draw_text_centered(self, text: str, x: int, y: int, color: tuple, size: int = 24) -> None:
+        """Draw centered text with optional multi-line support."""
+        try:
+            font = pygame.font.Font(None, size)
+            lines = text.split('\n')
+            total_height = len(lines) * size
+            start_y = y - total_height // 2
+
+            for i, line in enumerate(lines):
+                text_surface = font.render(line, True, color)
+                text_rect = text_surface.get_rect(center=(x, start_y + i * size + size // 2))
+                self.map_surface.blit(text_surface, text_rect)
+        except:
+            pass  # Fallback if font rendering fails
+
+    def _draw_aws_branding(self) -> None:
+        """Draw AWS branding elements on the map."""
+        AWS_ORANGE = (255, 153, 0)
+        DARK_BLUE = (35, 47, 62)
+
+        # Draw "AWS re:Invent 2024" title at top
+        try:
+            title_font = pygame.font.Font(None, 64)
+            title_text = "AWS re:Invent 2024"
+            title_surface = title_font.render(title_text, True, AWS_ORANGE)
+            title_rect = title_surface.get_rect(center=(self.map_width // 2, 40))
+
+            # Draw shadow
+            shadow_surface = title_font.render(title_text, True, DARK_BLUE)
+            self.map_surface.blit(shadow_surface, (title_rect.x + 3, title_rect.y + 3))
+            # Draw text
+            self.map_surface.blit(title_surface, title_rect)
+        except:
+            pass
+
+        # Draw cloud decorations in corners
+        self._draw_cloud(120, 50, 60, (255, 255, 255))
+        self._draw_cloud(self.map_width - 120, 50, 60, (255, 255, 255))
+        self._draw_cloud(120, self.map_height - 50, 60, (255, 255, 255))
+        self._draw_cloud(self.map_width - 120, self.map_height - 50, 60, (255, 255, 255))
+
+    def _draw_cloud(self, x: int, y: int, size: int, color: tuple) -> None:
+        """Draw a simple pixelated cloud shape."""
+        # Simple cloud using circles
+        radius = size // 3
+        pygame.draw.circle(self.map_surface, color, (x - radius, y), radius)
+        pygame.draw.circle(self.map_surface, color, (x + radius, y), radius)
+        pygame.draw.circle(self.map_surface, color, (x, y - radius//2), int(radius * 1.2))
+        pygame.draw.rect(self.map_surface, color, (x - radius, y, radius * 2, radius))
+
+    def _draw_directional_markers(self) -> None:
+        """Draw entrance and directional markers."""
+        DARK_BLUE = (35, 47, 62)
+        AWS_ORANGE = (255, 153, 0)
+
+        # Draw "ENTRANCE" marker at bottom center
+        entrance_x = self.map_width // 2
+        entrance_y = self.map_height - 80
+
+        # Entrance arrow pointing down
+        pygame.draw.polygon(self.map_surface, AWS_ORANGE, [
+            (entrance_x, entrance_y + 30),
+            (entrance_x - 20, entrance_y),
+            (entrance_x + 20, entrance_y)
+        ])
+
+        try:
+            font = pygame.font.Font(None, 36)
+            entrance_text = font.render("ENTRANCE", True, DARK_BLUE)
+            entrance_rect = entrance_text.get_rect(center=(entrance_x, entrance_y - 20))
+            self.map_surface.blit(entrance_text, entrance_rect)
+        except:
+            pass
 
     def _apply_8bit_style(self, surface: pygame.Surface) -> pygame.Surface:
         """
@@ -209,7 +306,7 @@ class GameMap:
             random.uniform(margin, self.map_height - margin)
         )
 
-    def scatter_zombies(self, zombies: List[Zombie], min_distance: int = 1000) -> None:
+    def scatter_zombies(self, zombies: List[Zombie], min_distance: int = 400) -> None:
         """
         Scatter zombies randomly across the floorplan in walkable areas (aisles).
         Ensures zombies are spread out with minimum distance between them.
