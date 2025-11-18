@@ -79,7 +79,7 @@ def initialize_pygame(width: int, height: int) -> pygame.Surface:
         raise RuntimeError(f"Failed to initialize Pygame: {e}")
 
 
-def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761", filter_test_users: bool = True) -> List[Zombie]:
+def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761", filter_test_users: bool = True, max_zombies: int = 50) -> List[Zombie]:
     """
     Fetch unused identities from Sonrai API and create zombie entities.
 
@@ -87,6 +87,7 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
         api_client: Initialized Sonrai API client
         aws_account: AWS account number to filter
         filter_test_users: If True, only include test-user-X identities (default: True)
+        max_zombies: Maximum number of zombies to create (default: 50)
 
     Returns:
         List of Zombie entities
@@ -110,6 +111,11 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
         if not identities:
             logger.warning("No test-user identities found after filtering")
             return []
+
+        # Limit to max_zombies for better gameplay
+        if len(identities) > max_zombies:
+            identities = identities[:max_zombies]
+            logger.info(f"Limited to {max_zombies} zombies for optimal gameplay")
 
         # Create zombie entities (one-to-one mapping)
         zombies = []
@@ -219,17 +225,23 @@ def main():
 
         # Render
         renderer.clear_screen()
-        renderer.render_background()
 
-        # Update renderer scroll
-        renderer.update_scroll(game_engine.get_scroll_offset() - renderer.scroll_offset)
+        # Get game map (if using map mode)
+        game_map = game_engine.get_game_map()
+
+        # Render background (map or grid)
+        renderer.render_background(game_map)
+
+        # Update renderer scroll (classic mode only)
+        if not game_map:
+            renderer.update_scroll(game_engine.get_scroll_offset() - renderer.scroll_offset)
 
         # Render game entities
         zombies = game_engine.get_zombies()
-        renderer.render_zombies(zombies)
-        renderer.render_zombie_labels(zombies)
-        renderer.render_projectiles(game_engine.get_projectiles())
-        renderer.render_player(game_engine.get_player())
+        renderer.render_zombies(zombies, game_map)
+        renderer.render_zombie_labels(zombies, game_map)
+        renderer.render_projectiles(game_engine.get_projectiles(), game_map)
+        renderer.render_player(game_engine.get_player(), game_map)
         
         # Debug: Print zombie count on first frame
         if delta_time < 0.1 and len(zombies) > 0:

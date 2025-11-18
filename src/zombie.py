@@ -23,6 +23,7 @@ class Zombie:
         self.identity_name = identity_name
         self.position = position
         self.is_quarantining = False
+        self.is_hidden = True  # Hidden until player gets close
 
         # Zombie dimensions - make them bigger and more visible
         self.width = 40
@@ -36,26 +37,65 @@ class Zombie:
 
     def _create_sprite(self) -> pygame.Surface:
         """
-        Create a simple programmatic sprite for the zombie.
+        Create a retro 8-bit zombie sprite.
 
         Returns:
             Pygame surface with the zombie sprite
         """
         sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
 
-        # Bright green rectangle body - make it very visible
-        pygame.draw.rect(sprite, (0, 255, 0), (0, 0, self.width, self.height))
-        
-        # Black border for contrast
-        pygame.draw.rect(sprite, (0, 0, 0), (0, 0, self.width, self.height), 2)
+        # Classic zombie green color palette
+        ZOMBIE_GREEN = (76, 153, 0)      # Main body
+        DARK_GREEN = (51, 102, 0)        # Shadows
+        PALE_GREEN = (102, 204, 51)      # Highlights
+        BLOOD_RED = (153, 0, 0)          # Eyes/gore
+        BLACK = (0, 0, 0)                # Outlines
+        GREY = (128, 128, 128)           # Torn clothes
 
-        # Simple face details
-        # Eyes (red) - bigger
-        pygame.draw.circle(sprite, (255, 0, 0), (12, 12), 4)
-        pygame.draw.circle(sprite, (255, 0, 0), (28, 12), 4)
+        # Head (top portion)
+        head_rect = pygame.Rect(8, 2, 24, 16)
+        pygame.draw.rect(sprite, ZOMBIE_GREEN, head_rect)
+        pygame.draw.rect(sprite, BLACK, head_rect, 1)  # Outline
 
-        # Mouth (dark line)
-        pygame.draw.line(sprite, (0, 0, 0), (10, 28), (30, 28), 3)
+        # Body (middle portion)
+        body_rect = pygame.Rect(6, 18, 28, 16)
+        pygame.draw.rect(sprite, DARK_GREEN, body_rect)
+        pygame.draw.rect(sprite, BLACK, body_rect, 1)  # Outline
+
+        # Torn shirt details
+        pygame.draw.rect(sprite, GREY, (10, 20, 8, 2))  # Shirt piece
+        pygame.draw.rect(sprite, GREY, (22, 20, 8, 2))  # Shirt piece
+
+        # Arms (shambling pose - extended forward)
+        # Left arm
+        pygame.draw.rect(sprite, ZOMBIE_GREEN, (2, 22, 4, 8))
+        pygame.draw.rect(sprite, BLACK, (2, 22, 4, 8), 1)
+
+        # Right arm
+        pygame.draw.rect(sprite, ZOMBIE_GREEN, (34, 22, 4, 8))
+        pygame.draw.rect(sprite, BLACK, (34, 22, 4, 8), 1)
+
+        # Legs
+        pygame.draw.rect(sprite, DARK_GREEN, (12, 34, 6, 6))  # Left leg
+        pygame.draw.rect(sprite, DARK_GREEN, (22, 34, 6, 6))  # Right leg
+        pygame.draw.rect(sprite, BLACK, (12, 34, 6, 6), 1)    # Left leg outline
+        pygame.draw.rect(sprite, BLACK, (22, 34, 6, 6), 1)    # Right leg outline
+
+        # Zombie face details
+        # Glowing red eyes
+        pygame.draw.rect(sprite, BLOOD_RED, (12, 8, 4, 4))   # Left eye
+        pygame.draw.rect(sprite, BLOOD_RED, (24, 8, 4, 4))   # Right eye
+
+        # Eye highlights (make them glow)
+        pygame.draw.rect(sprite, (255, 100, 100), (13, 9, 2, 2))  # Left eye highlight
+        pygame.draw.rect(sprite, (255, 100, 100), (25, 9, 2, 2))  # Right eye highlight
+
+        # Mouth/jaw
+        pygame.draw.rect(sprite, BLACK, (14, 13, 12, 2))  # Mouth line
+
+        # Teeth/gore details
+        for i in range(3):
+            pygame.draw.rect(sprite, (200, 200, 200), (15 + i*4, 14, 2, 2))  # Teeth
 
         return sprite
 

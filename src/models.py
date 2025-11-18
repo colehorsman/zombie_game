@@ -51,6 +51,8 @@ class GameState:
     error_message: Optional[str] = None
     congratulations_message: Optional[str] = None
     play_time: float = 0.0
+    pending_elimination: Optional['Zombie'] = None  # Zombie waiting for elimination message
+    elimination_delay: float = 0.0  # Countdown timer before showing message
 
 
 @dataclass
