@@ -152,10 +152,17 @@ def check_collisions_with_spatial_grid(
     Returns:
         List of (projectile, zombie) tuples that collided
     """
-    # Rebuild grid with current zombie positions
+    # Rebuild grid with current zombie/entity positions
     grid.clear()
     for zombie in zombies:
-        if not zombie.is_quarantining:
+        # Check if it's being eliminated (quarantined for zombies, blocked for 3rd parties)
+        is_being_eliminated = False
+        if hasattr(zombie, 'is_quarantining'):
+            is_being_eliminated = zombie.is_quarantining
+        elif hasattr(zombie, 'is_blocking'):
+            is_being_eliminated = zombie.is_blocking
+
+        if not is_being_eliminated:
             grid.add_zombie(zombie)
 
     collisions = []
@@ -165,12 +172,21 @@ def check_collisions_with_spatial_grid(
         nearby_zombies = grid.get_nearby_zombies(projectile)
 
         for zombie in nearby_zombies:
-            if zombie.is_quarantining:
+            # Check if it's being eliminated (quarantined for zombies, blocked for 3rd parties)
+            is_being_eliminated = False
+            if hasattr(zombie, 'is_quarantining'):
+                is_being_eliminated = zombie.is_quarantining
+            elif hasattr(zombie, 'is_blocking'):
+                is_being_eliminated = zombie.is_blocking
+
+            if is_being_eliminated:
                 continue
 
             if check_collision(projectile, zombie):
                 collisions.append((projectile, zombie))
-                zombie.mark_for_quarantine()
+                # Mark for quarantine only if it's a zombie (not a 3rd party)
+                if hasattr(zombie, 'mark_for_quarantine'):
+                    zombie.mark_for_quarantine()
                 break  # Each projectile can only hit one zombie
 
     return collisions

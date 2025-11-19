@@ -27,7 +27,9 @@ class GameEngine:
         zombies: List[Zombie],
         screen_width: int,
         screen_height: int,
-        use_map: bool = True
+        use_map: bool = True,
+        account_data: dict = None,
+        third_party_data: dict = None
     ):
         """
         Initialize the game engine.
@@ -38,6 +40,8 @@ class GameEngine:
             screen_width: Width of the game screen
             screen_height: Height of the game screen
             use_map: Whether to use map-based navigation (True) or classic scrolling (False)
+            account_data: Dictionary of AWS accounts and zombie counts
+            third_party_data: Dictionary of 3rd party access by account
         """
         self.api_client = api_client
         self.zombies = zombies
@@ -47,7 +51,7 @@ class GameEngine:
 
         # Initialize game map if enabled
         if use_map:
-            self.game_map = GameMap("assets/reinvent_floorplan.png", screen_width, screen_height)
+            self.game_map = GameMap("assets/reinvent_floorplan.png", screen_width, screen_height, account_data, third_party_data)
 
             # Initialize player at center of map
             player_start_pos = Vector2(
@@ -70,12 +74,19 @@ class GameEngine:
         # Game entities
         self.projectiles: List[Projectile] = []
 
+        # Count 3rd parties
+        third_parties_count = 0
+        if use_map and self.game_map and hasattr(self.game_map, 'third_parties'):
+            third_parties_count = len(self.game_map.third_parties)
+
         # Game state
         self.game_state = GameState(
             status=GameStatus.PLAYING,
             zombies_remaining=len(zombies),
             zombies_quarantined=0,
-            total_zombies=len(zombies)
+            total_zombies=len(zombies),
+            third_parties_blocked=0,
+            total_third_parties=third_parties_count
         )
 
         # Timing
@@ -125,12 +136,23 @@ class GameEngine:
             self.game_state.elimination_delay -= delta_time
             if self.game_state.elimination_delay <= 0:
                 # Delay complete - show the message and pause
-                zombie = self.game_state.pending_elimination
+                entity = self.game_state.pending_elimination
                 self.game_state.status = GameStatus.PAUSED
-                self.game_state.congratulations_message = (
-                    f"You leveraged the Cloud Permissions Firewall to quarantine {zombie.identity_name}"
-                )
-                logger.info(f"Zombie eliminated: {zombie.identity_name}")
+
+                # Check if it's a zombie or 3rd party and show appropriate message
+                if hasattr(entity, 'identity_name'):
+                    # It's a zombie
+                    self.game_state.congratulations_message = (
+                        f"You leveraged the Cloud Permissions Firewall to quarantine {entity.identity_name}"
+                    )
+                    logger.info(f"Zombie eliminated: {entity.identity_name}")
+                else:
+                    # It's a 3rd party
+                    self.game_state.congratulations_message = (
+                        f"You leveraged the Cloud Permissions Firewall to protect against {entity.name}"
+                    )
+                    logger.info(f"3rd party blocked: {entity.name}")
+
                 # Clear pending elimination
                 self.game_state.pending_elimination = None
                 return  # Don't update game entities while paused
@@ -151,9 +173,20 @@ class GameEngine:
         for zombie in self.zombies:
             zombie.update(delta_time)
 
+        # Update 3rd parties
+        third_parties = self.get_third_parties()
+        for third_party in third_parties:
+            third_party.update(delta_time, self.game_map)
+
         # Update projectiles
         for projectile in self.projectiles[:]:
             projectile.update(delta_time)
+
+            # Check wall collision (map mode only)
+            if self.use_map and self.game_map:
+                if projectile.hits_wall(self.game_map):
+                    self.projectiles.remove(projectile)
+                    continue  # Skip other checks if hit wall
 
             # Remove off-screen/off-map projectiles
             if self.use_map and self.game_map:
@@ -181,7 +214,7 @@ class GameEngine:
             self.spatial_grid
         )
 
-        # Handle collisions
+        # Handle zombie collisions
         for projectile, zombie in collisions:
             # Remove projectile
             if projectile in self.projectiles:
@@ -189,6 +222,33 @@ class GameEngine:
 
             # Pause game and show congratulations message
             self._handle_zombie_elimination(zombie)
+
+        # Check collisions with 3rd parties
+        third_parties = self.get_third_parties()
+        if third_parties:
+            # Get visible 3rd parties
+            if self.use_map and self.game_map:
+                visible_third_parties = [
+                    tp for tp in third_parties
+                    if not tp.is_hidden and self.game_map.is_on_screen(tp.position.x, tp.position.y, tp.width, tp.height)
+                ]
+            else:
+                visible_third_parties = third_parties
+
+            third_party_collisions = check_collisions_with_spatial_grid(
+                self.projectiles,
+                visible_third_parties,
+                self.spatial_grid
+            )
+
+            # Handle 3rd party collisions
+            for projectile, third_party in third_party_collisions:
+                # Remove projectile
+                if projectile in self.projectiles:
+                    self.projectiles.remove(projectile)
+
+                # Pause game and show congratulations message
+                self._handle_third_party_blocking(third_party)
 
     def _handle_zombie_elimination(self, zombie: Zombie) -> None:
         """
@@ -204,20 +264,47 @@ class GameEngine:
         # Mark zombie as quarantining
         zombie.mark_for_quarantine()
 
+    def _handle_third_party_blocking(self, third_party) -> None:
+        """
+        Handle a 3rd party being blocked.
+
+        Args:
+            third_party: The 3rd party that was hit
+        """
+        # Set pending elimination with delay (0.3 seconds for visual feedback)
+        self.game_state.pending_elimination = third_party
+        self.game_state.elimination_delay = 0.3  # Short delay to see the hit
+
+        # Mark 3rd party as being blocked
+        third_party.is_blocking = True
+
     def dismiss_message(self) -> None:
         """Dismiss the congratulations message and resume gameplay."""
         if self.game_state.status == GameStatus.PAUSED and self.game_state.congratulations_message:
-            # Get the zombie that was just eliminated
+            # Check if it's a zombie or 3rd party
             eliminated_zombie = None
+            blocked_third_party = None
+
+            # Check zombies
             for zombie in self.zombies:
                 if zombie.is_quarantining and zombie.identity_name in self.game_state.congratulations_message:
                     eliminated_zombie = zombie
                     break
 
+            # Check 3rd parties
+            if not eliminated_zombie:
+                third_parties = self.get_third_parties()
+                for tp in third_parties:
+                    if tp.is_blocking and tp.name in self.game_state.congratulations_message:
+                        blocked_third_party = tp
+                        break
+
             if eliminated_zombie:
-                # Attempt to quarantine via API (async in real implementation)
-                # For now, we'll do it synchronously
+                # Attempt to quarantine via API
                 self._quarantine_zombie(eliminated_zombie)
+            elif blocked_third_party:
+                # Attempt to block via API
+                self._block_third_party(blocked_third_party)
 
             # Clear message and resume
             self.game_state.congratulations_message = None
@@ -260,6 +347,38 @@ class GameEngine:
             zombie.is_quarantining = False
             self.game_state.error_message = f"Error: {str(e)}"
             logger.error(f"Exception during quarantine: {e}")
+
+    def _block_third_party(self, third_party) -> None:
+        """
+        Block a 3rd party via the API.
+
+        Args:
+            third_party: The 3rd party to block
+        """
+        try:
+            result = self.api_client.block_third_party(
+                third_party_id=third_party.third_party_id,
+                third_party_name=third_party.name
+            )
+
+            if result.success:
+                # Successfully blocked - remove 3rd party permanently
+                third_parties = self.get_third_parties()
+                if third_party in third_parties:
+                    third_parties.remove(third_party)
+                    self.game_state.third_parties_blocked += 1
+                    logger.info(f"Successfully blocked 3rd party {third_party.name}")
+            else:
+                # Block failed - restore 3rd party
+                third_party.is_blocking = False
+                self.game_state.error_message = f"Failed to block {third_party.name}"
+                logger.error(f"Block failed: {result.error_message}")
+
+        except Exception as e:
+            # Error during block - restore 3rd party
+            third_party.is_blocking = False
+            self.game_state.error_message = f"Error: {str(e)}"
+            logger.error(f"Exception during block: {e}")
 
     def handle_input(self, events: List[pygame.event.Event]) -> None:
         """
@@ -375,3 +494,9 @@ class GameEngine:
     def get_game_map(self) -> Optional[GameMap]:
         """Get the game map instance (None if not in map mode)."""
         return self.game_map if self.use_map else None
+
+    def get_third_parties(self) -> List:
+        """Get the list of 3rd party entities from the game map."""
+        if self.use_map and self.game_map and hasattr(self.game_map, 'third_parties'):
+            return self.game_map.third_parties
+        return []

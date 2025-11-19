@@ -1,0 +1,8 @@
+Account ID,ARN,Email,Name,State,Joined method,Joined timestamp
+"160224865296","arn:aws:organizations::437154727976:account/o-uz3x0umdkk/160224865296","matthew.carle+myhealthproductiondata@sonraisecurity.com","MyHealth - Production Data","ACTIVE","CREATED",Tue Apr 08 2025 09:52:25 GMT-0500 (Central Daylight Time)
+"240768036625","arn:aws:organizations::437154727976:account/o-uz3x0umdkk/240768036625","cloud+aws.myhealth.webapp@sonraisecurity.com","MyHealth-WebApp","ACTIVE","CREATED",Thu May 11 2023 08:57:22 GMT-0500 (Central Daylight Time)
+"514455208804","arn:aws:organizations::437154727976:account/o-uz3x0umdkk/514455208804","cloud+aws.myhealth.stage@sonraisecurity.com","MyHealth - Stage","ACTIVE","CREATED",Wed Aug 18 2021 18:12:22 GMT-0500 (Central Daylight Time)
+"437154727976","arn:aws:organizations::437154727976:account/o-uz3x0umdkk/437154727976","cloud+aws.myhealth.org@sonraisecurity.com","Sonrai MyHealth - Org","ACTIVE","INVITED",Wed Aug 18 2021 18:04:47 GMT-0500 (Central Daylight Time)
+"393582650665","arn:aws:organizations::437154727976:account/o-uz3x0umdkk/393582650665","cloud+aws.myhealth.automation@sonraisecurity.com","MyHealth - Automation","ACTIVE","CREATED",Fri Jun 02 2023 14:15:27 GMT-0500 (Central Daylight Time)
+"577945324761","arn:aws:organizations::437154727976:account/o-uz3x0umdkk/577945324761","cloud+aws.myhealth.sandbox@sonraisecurity.com","MyHealth - Sandbox","ACTIVE","CREATED",Wed Aug 18 2021 18:12:51 GMT-0500 (Central Daylight Time)
+"613056517323","arn:aws:organizations::437154727976:account/o-uz3x0umdkk/613056517323","cloud+aws.myhealth.production@sonraisecurity.com","MyHealth - Production","ACTIVE","CREATED",Wed Aug 18 2021 18:11:54 GMT-0500 (Central Daylight Time)

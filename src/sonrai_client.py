@@ -69,6 +69,162 @@ class SonraiAPIClient:
             "Content-Type": "application/json"
         }
 
+    def fetch_accounts_with_unused_identities(self) -> dict:
+        """
+        Fetch all AWS accounts in the org with their unused identity counts.
+
+        Returns:
+            Dictionary mapping account numbers to counts: {account_num: count}
+        """
+        try:
+            query = """
+            query getUnusedIdentities($filters: UnusedIdentitiesFilter!) {
+                UnusedIdentities(where: $filters) {
+                    items {
+                        account
+                        count
+                    }
+                }
+            }
+            """
+
+            variables = {
+                "filters": {
+                    "scope": {
+                        "value": "aws",
+                        "op": "STARTS_WITH"
+                    },
+                    "daysSinceLastLogin": {
+                        "op": "GTE",
+                        "value": "0"
+                    }
+                }
+            }
+
+            response = requests.post(
+                self.api_url,
+                json={"query": query, "variables": variables},
+                headers=self._get_headers(),
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            accounts = {}
+            if data and "data" in data and "UnusedIdentities" in data["data"]:
+                items = data["data"]["UnusedIdentities"].get("items", [])
+                for item in items:
+                    account = item.get("account", "Unknown")
+                    count = item.get("count", 0)
+                    accounts[account] = count
+
+            logger.info(f"Fetched {len(accounts)} accounts with unused identities")
+            return accounts
+
+        except Exception as e:
+            logger.error(f"Failed to fetch accounts: {e}")
+            return {}
+
+    def fetch_third_parties_by_account(self, root_scope: str = "aws/r-ipxz") -> dict:
+        """
+        Fetch 3rd party access information per AWS account from Sonrai API.
+
+        Args:
+            root_scope: Root AWS organization scope (e.g., "aws/r-ipxz")
+
+        Returns:
+            Dictionary mapping account numbers to lists of 3rd party info:
+            {
+                "577945324761": [
+                    {"name": "nOps", "status": "Granted"},
+                    {"name": "Cloudflare", "status": "Granted"},
+                    ...
+                ]
+            }
+        """
+        try:
+            # Query for 3rd parties using the ThirdParties endpoint
+            query = """
+            query getThirdParties($scope: String!) {
+                ThirdParties(where: { scope: { value: $scope, op: EQ } }) {
+                    items {
+                        thirdPartyFriendlyName
+                        status {
+                            state
+                        }
+                        resources {
+                            service
+                            resourceType
+                            count
+                        }
+                        accountCount
+                        lastAccessed
+                        labels {
+                            name
+                            severity
+                        }
+                        thirdPartyId
+                    }
+                }
+            }
+            """
+
+            variables = {"scope": root_scope}
+
+            response = requests.post(
+                self.api_url,
+                json={"query": query, "variables": variables},
+                headers=self._get_headers(),
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            # Group 3rd parties by account
+            # Note: The ThirdParties query returns org-level data, so we'll create entries for all accounts
+            third_parties_by_account = {}
+
+            if data and "data" in data and data["data"] is not None and isinstance(data["data"], dict) and "ThirdParties" in data["data"]:
+                items = data["data"]["ThirdParties"].get("items", []) if data["data"]["ThirdParties"] else []
+
+                logger.info(f"Fetched {len(items)} 3rd parties from Sonrai API")
+
+                # Since ThirdParties query returns org-level data, we'll need to associate them with accounts
+                # For now, we'll return them as a general list that can be distributed across accounts
+                # TODO: Query each account individually if needed for account-specific 3rd parties
+
+                for item in items:
+                    third_party_name = item.get("thirdPartyFriendlyName", "Unknown")
+
+                    # Skip if name is None or empty
+                    if not third_party_name or third_party_name == "Unknown":
+                        continue
+
+                    status_obj = item.get("status", {})
+                    status = status_obj.get("state", "Unknown") if status_obj else "Unknown"
+
+                    # For now, add to a generic "all" key since we don't have per-account mapping
+                    # The caller can distribute these across accounts as needed
+                    if "all" not in third_parties_by_account:
+                        third_parties_by_account["all"] = []
+
+                    third_parties_by_account["all"].append({
+                        "name": third_party_name,
+                        "status": status,
+                        "thirdPartyId": item.get("thirdPartyId", ""),
+                        "accountCount": item.get("accountCount", 0)
+                    })
+
+            total_parties = sum(len(parties) for parties in third_parties_by_account.values())
+            logger.info(f"Processed {total_parties} 3rd party entries")
+            return third_parties_by_account
+
+        except Exception as e:
+            import traceback
+            logger.error(f"Failed to fetch 3rd parties: {e}")
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return {}
+
     def fetch_unused_identities(self, limit: int = 500, scope: str = None, days_since_login: str = "0", filter_account: str = "577945324761") -> List[UnusedIdentity]:
         """
         Fetch unused identities from the Sonrai API using the UnusedIdentities query.
@@ -324,6 +480,109 @@ class SonraiAPIClient:
         return QuarantineResult(
             success=False,
             identity_id=identity_id,
+            error_message="Max retries exceeded"
+        )
+
+    def block_third_party(self, third_party_id: str, third_party_name: str = None, root_scope: str = None) -> QuarantineResult:
+        """
+        Block/deny a 3rd party's access using GraphQL mutation.
+
+        Args:
+            third_party_id: UUID of the 3rd party to block
+            third_party_name: Name of the 3rd party (for logging)
+            root_scope: Root organizational scope (uses default if not provided)
+
+        Returns:
+            QuarantineResult with success status and any error message
+        """
+        max_retries = 3
+        retry_delay = 1.0
+
+        # Use default scope if not provided
+        if not root_scope:
+            root_scope = "aws/r-ipxz"
+
+        for attempt in range(max_retries):
+            try:
+                # GraphQL mutation to block the 3rd party
+                mutation = """
+                mutation blockThirdParty($thirdPartyId: String!, $scope: String!) {
+                    DenyThirdPartyAccess(input: { thirdPartyId: $thirdPartyId, scope: $scope }) {
+                        success
+                    }
+                }
+                """
+
+                # Build input for the mutation
+                variables = {
+                    "thirdPartyId": third_party_id,
+                    "scope": root_scope
+                }
+
+                # Log the request details (only on first attempt to avoid spam)
+                if attempt == 0:
+                    logger.info(f"Blocking 3rd party {third_party_name or third_party_id} with ID: {third_party_id[:8]}... scope: {root_scope}")
+
+                headers = self._get_headers()
+                response = requests.post(
+                    self.api_url,
+                    json={
+                        "query": mutation,
+                        "variables": variables
+                    },
+                    headers=headers,
+                    timeout=15
+                )
+                response.raise_for_status()
+
+                data = response.json()
+
+                # Log the full response if there are errors
+                if "errors" in data:
+                    logger.info(f"API error response for {third_party_name or third_party_id}: {data}")
+
+                # Check for GraphQL errors
+                if "errors" in data:
+                    error_msg = data["errors"][0].get("message", "Unknown error")
+                    raise Exception(error_msg)
+
+                # Check if the mutation was successful
+                if data.get("data") and data["data"].get("DenyThirdPartyAccess"):
+                    result = data["data"]["DenyThirdPartyAccess"]
+                    if result.get("success"):
+                        logger.info(f"Successfully blocked 3rd party {third_party_name or third_party_id}")
+                        return QuarantineResult(
+                            success=True,
+                            identity_id=third_party_id,
+                            error_message=None
+                        )
+                    else:
+                        raise Exception(f"Block returned success=false")
+
+                raise Exception("Unexpected response format")
+
+            except Exception as e:
+                logger.warning(
+                    f"Block attempt {attempt + 1}/{max_retries} failed for {third_party_name or third_party_id}: {e}"
+                )
+
+                if attempt < max_retries - 1:
+                    # Exponential backoff
+                    time.sleep(retry_delay * (2 ** attempt))
+                else:
+                    # Final attempt failed
+                    error_msg = str(e)
+                    logger.error(f"Failed to block 3rd party {third_party_name or third_party_id}: {error_msg}")
+                    return QuarantineResult(
+                        success=False,
+                        identity_id=third_party_id,
+                        error_message=error_msg
+                    )
+
+        # Should not reach here, but return failure just in case
+        return QuarantineResult(
+            success=False,
+            identity_id=third_party_id,
             error_message="Max retries exceeded"
         )
 

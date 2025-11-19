@@ -136,23 +136,30 @@ class Player:
         # Hand
         pygame.draw.rect(sprite, SKIN, (4, 28, 4, 4))
 
-        # Right arm - purple sleeve holding pistol
+        # Right arm - purple sleeve with raygun/arm cannon (Mega Man style)
         # Upper arm
-        pygame.draw.rect(sprite, PURPLE, (26, 20, 5, 10))
-        pygame.draw.rect(sprite, BLACK, (26, 20, 5, 10), 1)
-        # Sleeve shadow
-        pygame.draw.rect(sprite, DARK_PURPLE, (27, 21, 2, 8))
+        pygame.draw.rect(sprite, PURPLE, (26, 20, 5, 8))
+        pygame.draw.rect(sprite, BLACK, (26, 20, 5, 8), 1)
 
-        # Hand holding gun
-        pygame.draw.rect(sprite, SKIN, (29, 26, 4, 5))
-        pygame.draw.rect(sprite, BLACK, (29, 26, 4, 5), 1)
+        # Arm cannon/raygun (integrated with arm - Mega Man style)
+        # Cannon base (cylindrical shape)
+        cannon_base = pygame.Rect(29, 22, 6, 6)
+        pygame.draw.rect(sprite, GUN_METAL, cannon_base)
+        pygame.draw.rect(sprite, BLACK, cannon_base, 1)
 
-        # Pistol (extended forward)
-        gun_rect = pygame.Rect(32, 27, 6, 3)
-        pygame.draw.rect(sprite, GUN_METAL, gun_rect)
-        pygame.draw.rect(sprite, BLACK, gun_rect, 1)
-        # Gun barrel
-        pygame.draw.rect(sprite, DARK_METAL, (36, 27, 2, 3))
+        # Cannon highlights (top edge)
+        pygame.draw.line(sprite, (150, 150, 150), (29, 22), (34, 22), 2)
+
+        # Cannon barrel (extending forward)
+        barrel = pygame.Rect(34, 23, 4, 4)
+        pygame.draw.rect(sprite, DARK_METAL, barrel)
+        pygame.draw.rect(sprite, BLACK, barrel, 1)
+
+        # Energy core (glowing cyan center - classic raygun look)
+        pygame.draw.circle(sprite, (100, 200, 255), (32, 25), 2)  # Cyan glow
+
+        # Muzzle opening (dark)
+        pygame.draw.rect(sprite, (40, 40, 60), (36, 24, 2, 2))
 
         # Legs/pants - black pants
         # Left leg

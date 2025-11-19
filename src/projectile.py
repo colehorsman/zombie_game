@@ -40,16 +40,31 @@ class Projectile:
 
     def _create_sprite(self) -> pygame.Surface:
         """
-        Create a simple programmatic sprite for the projectile.
+        Create a retro raygun energy beam sprite with purple glow.
 
         Returns:
             Pygame surface with the projectile sprite
         """
-        size = self.radius * 2
+        # Make it larger for better visibility
+        size = 16
         sprite = pygame.Surface((size, size), pygame.SRCALPHA)
 
-        # Black circle for visibility on light background
-        pygame.draw.circle(sprite, (0, 0, 0), (self.radius, self.radius), self.radius)
+        center = size // 2
+
+        # Outer glow layer (dithered purple) - for retro soft edge effect
+        for x in range(size):
+            for y in range(size):
+                if (x + y) % 2 == 0:  # Checkerboard dithering
+                    pygame.draw.circle(sprite, (80, 40, 120), (center, center), 7)
+
+        # Middle bright layer (light purple)
+        pygame.draw.circle(sprite, (180, 100, 255), (center, center), 5)
+
+        # Inner glow (cyan/white - energy core)
+        pygame.draw.circle(sprite, (100, 200, 255), (center, center), 3)
+
+        # Core white hot center
+        pygame.draw.circle(sprite, (255, 255, 255), (center, center), 2)
 
         return sprite
 
@@ -101,3 +116,27 @@ class Projectile:
             self.position.y < -margin or
             self.position.y > screen_height + margin
         )
+
+    def hits_wall(self, game_map: 'GameMap') -> bool:
+        """
+        Check if the projectile has hit a wall tile.
+
+        Args:
+            game_map: The game map to check wall collisions against
+
+        Returns:
+            True if projectile hit a wall, False otherwise
+        """
+        if not game_map:
+            return False
+
+        # Convert projectile position to tile coordinates
+        tile_x = int(self.position.x // game_map.tile_size)
+        tile_y = int(self.position.y // game_map.tile_size)
+
+        # Check if tile is within map bounds
+        if 0 <= tile_x < game_map.tiles_wide and 0 <= tile_y < game_map.tiles_high:
+            # Check if this tile is a wall (non-zero value means wall)
+            return game_map.tile_map[tile_y][tile_x] != 0
+
+        return False

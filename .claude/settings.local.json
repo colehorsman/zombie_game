@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(python3:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(pkill:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

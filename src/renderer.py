@@ -4,11 +4,13 @@ import logging
 import pygame
 from typing import List, Optional
 
-from models import GameState, GameStatus
+from models import GameState, GameStatus, Vector2
 from player import Player
 from zombie import Zombie
 from projectile import Projectile
 from game_map import GameMap
+from door import Door
+from collectible import Collectible
 
 
 logger = logging.getLogger(__name__)
@@ -137,6 +139,114 @@ class Renderer:
         elif not hasattr(self, '_first_render'):
             self._first_render = True
 
+    def render_third_parties(self, third_parties: List, game_map: Optional[GameMap] = None) -> None:
+        """
+        Render all 3rd party entities.
+
+        Args:
+            third_parties: List of 3rd parties to render
+            game_map: Game map for coordinate conversion (None for screen coordinates)
+        """
+        for third_party in third_parties:
+            # 3rd parties are never hidden
+            if game_map:
+                # Map mode: check if 3rd party is visible on screen and render at screen position
+                if game_map.is_on_screen(third_party.position.x, third_party.position.y, third_party.width, third_party.height):
+                    screen_x, screen_y = game_map.world_to_screen(third_party.position.x, third_party.position.y)
+                    self.screen.blit(third_party.sprite, (screen_x, screen_y))
+            else:
+                # Classic mode: only render 3rd parties that are on or near the screen
+                if -100 < third_party.position.x < self.width + 100:
+                    self.screen.blit(
+                        third_party.sprite,
+                        (int(third_party.position.x), int(third_party.position.y))
+                    )
+
+    def render_doors(self, doors: List[Door], game_map: GameMap) -> None:
+        """
+        Render all pipe-style doors.
+
+        Args:
+            doors: List of doors to render
+            game_map: Game map for coordinate conversion
+        """
+        for door in doors:
+            if game_map.is_on_screen(door.position.x, door.position.y, door.width, door.height):
+                door.render(self.screen, game_map.camera_x, game_map.camera_y)
+
+    def render_collectibles(self, collectibles: List[Collectible], game_map: GameMap) -> None:
+        """
+        Render all question block collectibles.
+
+        Args:
+            collectibles: List of collectibles to render
+            game_map: Game map for coordinate conversion
+        """
+        for collectible in collectibles:
+            if not collectible.collected and game_map.is_on_screen(collectible.position.x, collectible.position.y, collectible.width, collectible.height):
+                collectible.render(self.screen, game_map.camera_x, game_map.camera_y)
+
+    def render_minimap(self, game_map: GameMap, player_position: Vector2, zombies: List[Zombie]) -> None:
+        """
+        Render a Mario-style minimap showing rooms and player position.
+
+        Args:
+            game_map: Game map instance
+            player_position: Player's current position
+            zombies: List of zombies for radar display
+        """
+        # Minimap dimensions and position (bottom-right corner)
+        minimap_width = 150
+        minimap_height = 120
+        minimap_x = self.width - minimap_width - 10
+        minimap_y = self.height - minimap_height - 10
+
+        # Background
+        bg_surface = pygame.Surface((minimap_width, minimap_height), pygame.SRCALPHA)
+        bg_surface.fill((20, 20, 30, 200))  # Semi-transparent dark background
+        self.screen.blit(bg_surface, (minimap_x, minimap_y))
+
+        # Purple border (retro theme)
+        pygame.draw.rect(self.screen, (120, 60, 180), (minimap_x, minimap_y, minimap_width, minimap_height), 2)
+
+        # Calculate scale to fit map in minimap
+        scale_x = (minimap_width - 20) / game_map.map_width
+        scale_y = (minimap_height - 20) / game_map.map_height
+        scale = min(scale_x, scale_y)
+
+        # Draw rooms as rectangles
+        if hasattr(game_map, 'rooms'):
+            for i, (rx, ry, rw, rh) in enumerate(game_map.rooms):
+                # Convert room coordinates to minimap coordinates
+                room_x = minimap_x + 10 + int(rx * game_map.tile_size * scale)
+                room_y = minimap_y + 10 + int(ry * game_map.tile_size * scale)
+                room_w = int(rw * game_map.tile_size * scale)
+                room_h = int(rh * game_map.tile_size * scale)
+
+                # Draw room outline (purple)
+                pygame.draw.rect(self.screen, (100, 60, 140), (room_x, room_y, room_w, room_h), 1)
+
+        # Draw player position (purple circle)
+        player_minimap_x = minimap_x + 10 + int(player_position.x * scale)
+        player_minimap_y = minimap_y + 10 + int(player_position.y * scale)
+        pygame.draw.circle(self.screen, (180, 100, 255), (player_minimap_x, player_minimap_y), 3)
+
+        # Draw revealed zombies (small red dots)
+        for zombie in zombies:
+            if not zombie.is_hidden:
+                zombie_minimap_x = minimap_x + 10 + int(zombie.position.x * scale)
+                zombie_minimap_y = minimap_y + 10 + int(zombie.position.y * scale)
+                # Only draw if within minimap bounds
+                if minimap_x < zombie_minimap_x < minimap_x + minimap_width and minimap_y < zombie_minimap_y < minimap_y + minimap_height:
+                    pygame.draw.circle(self.screen, (255, 0, 0), (zombie_minimap_x, zombie_minimap_y), 1)
+
+        # Draw label
+        try:
+            label_text = self.label_font.render("MAP", True, (255, 153, 0))  # AWS Orange
+            self.screen.blit(label_text, (minimap_x + 5, minimap_y - 18))
+        except:
+            pass
+
     def render_zombie_labels(self, zombies: List[Zombie], game_map: Optional[GameMap] = None) -> None:
         """
         Render numeric labels above zombies.
@@ -196,6 +306,57 @@ class Renderer:
                 # Draw the label
                 self.screen.blit(label_surface, (label_x, label_y))
 
+    def render_third_party_labels(self, third_parties: List, game_map: Optional[GameMap] = None) -> None:
+        """
+        Render name labels above 3rd party entities.
+
+        Args:
+            third_parties: List of 3rd parties to render labels for
+            game_map: Game map for coordinate conversion (None for screen coordinates)
+        """
+        for third_party in third_parties:
+            # Check visibility based on mode
+            is_visible = False
+            screen_x, screen_y = 0, 0
+
+            if game_map:
+                # Map mode: convert world to screen coordinates
+                is_visible = game_map.is_on_screen(third_party.position.x, third_party.position.y, third_party.width, third_party.height)
+                if is_visible:
+                    screen_x, screen_y = game_map.world_to_screen(third_party.position.x, third_party.position.y)
+            else:
+                # Classic mode: check screen bounds
+                is_visible = -100 < third_party.position.x < self.width + 100
+                screen_x = int(third_party.position.x)
+                screen_y = int(third_party.position.y)
+
+            if is_visible:
+                # Render 3rd party name (e.g., "nOps", "CrowdStrike")
+                label_text = third_party.name
+
+                label_surface = self.label_font.render(
+                    label_text,
+                    True,
+                    (255, 215, 0)  # Gold color for 3rd parties
+                )
+
+                # Position above the 3rd party
+                label_x = int(screen_x + third_party.width // 2 - label_surface.get_width() // 2)
+                label_y = int(screen_y - 20)
+
+                # Draw black outline for readability
+                outline_offsets = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+                for dx, dy in outline_offsets:
+                    outline_surface = self.label_font.render(
+                        label_text,
+                        True,
+                        (0, 0, 0)
+                    )
+                    self.screen.blit(outline_surface, (label_x + dx, label_y + dy))
+
+                # Draw the label
+                self.screen.blit(label_surface, (label_x, label_y))
+
     def render_projectiles(self, projectiles: List[Projectile], game_map: Optional[GameMap] = None) -> None:
         """
         Render all projectiles.
@@ -228,15 +389,15 @@ class Renderer:
         Args:
             game_state: Current game state
         """
-        # Zombies remaining
-        zombies_text = f"Remaining: {game_state.zombies_remaining}"
+        # Zombies quarantined count
+        zombies_text = f"Zombies: Quarantined {game_state.zombies_quarantined}/{game_state.total_zombies}"
         zombies_surface = self.ui_font.render(zombies_text, True, self.ui_text_color)
         self.screen.blit(zombies_surface, (10, 10))
 
-        # Quarantined count
-        quarantined_text = f"Quarantined: {game_state.zombies_quarantined}"
-        quarantined_surface = self.ui_font.render(quarantined_text, True, self.ui_text_color)
-        self.screen.blit(quarantined_surface, (10, 45))
+        # 3rd parties blocked count
+        third_parties_text = f"3rd Parties: Blocked {game_state.third_parties_blocked}/{game_state.total_third_parties}"
+        third_parties_surface = self.ui_font.render(third_parties_text, True, self.ui_text_color)
+        self.screen.blit(third_parties_surface, (10, 45))
 
         # Error message if present
         if game_state.error_message:

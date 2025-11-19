@@ -1,17 +1,24 @@
 """Map system for navigating the AWS re:invent floorplan."""
 
+import logging
 import os
 import pygame
 import random
 from typing import List, Tuple, Optional
 from models import Vector2
 from zombie import Zombie
+from door import Door
+from collectible import Collectible
+from third_party import ThirdParty
+
+
+logger = logging.getLogger(__name__)
 
 
 class GameMap:
     """Handles the floorplan map, camera, and zombie placement."""
 
-    def __init__(self, map_image_path: str, screen_width: int, screen_height: int):
+    def __init__(self, map_image_path: str, screen_width: int, screen_height: int, account_data: dict = None, third_party_data: dict = None):
         """
         Initialize the game map.
 
@@ -19,19 +26,35 @@ class GameMap:
             map_image_path: Path to the floorplan image
             screen_width: Width of the game viewport
             screen_height: Height of the game viewport
+            account_data: Dictionary mapping account names to zombie counts (e.g., {"MyHealth Sandbox": 534, "MyHealth Stage": 34})
+            third_party_data: Dictionary mapping account numbers to 3rd party info (e.g., {"577945324761": [{"name": "nOps", "status": "Granted"}]})
         """
         self.screen_width = screen_width
         self.screen_height = screen_height
 
-        # Load the actual floorplan image
-        print(f"Loading floorplan from {map_image_path}...")
-        if os.path.exists("assets/floorplan_updated.png"):
-            self._load_actual_floorplan("assets/floorplan_updated.png")
-        else:
-            # Fallback to custom floorplan if file doesn't exist
-            print("Using custom AWS re:invent themed floorplan...")
-            self._create_placeholder_map()
-        print(f"Loaded floorplan: {self.map_width}x{self.map_height}")
+        # Tile size for Mario-style grid
+        self.tile_size = 16
+
+        # AWS Account number to friendly name mapping (from assets/aws_accounts.csv)
+        self.account_names = {
+            "577945324761": "MyHealth - Sandbox",
+            "613056517323": "MyHealth - Production",
+            "514455208804": "MyHealth - Stage",
+            "393582650665": "MyHealth - Automation",
+            "160224865296": "MyHealth - Production Data",
+            "240768036625": "MyHealth-WebApp",
+            "437154727976": "Sonrai MyHealth - Org",
+            # Accounts not in CSV will display their account numbers
+        }
+
+        # Store account data and 3rd party data for room/entity creation
+        self.account_data = account_data or {"Default Account": 100}
+        self.third_party_data = third_party_data or {}
+
+        # Create Mario-style tile-based map
+        print("Creating Mario-style tile-based map...")
+        self._create_mario_style_map()
+        print(f"Created map: {self.map_width}x{self.map_height}")
 
         # Camera position (top-left corner of viewport)
         self.camera_x = 0
@@ -39,6 +62,511 @@ class GameMap:
 
         # Zombie reveal radius (pixels) - smaller radius means you have to get closer
         self.reveal_radius = 60  # Reduced from 80 to make hunting more challenging
+
+    def _generate_rooms_from_accounts(self, tiles_wide: int, tiles_high: int) -> List[Tuple[int, int, int, int]]:
+        """
+        Generate rooms dynamically based on AWS account zombie counts.
+
+        Args:
+            tiles_wide: Map width in tiles
+            tiles_high: Map height in tiles
+
+        Returns:
+            List of room tuples (x, y, width, height) in tiles
+        """
+        rooms = []
+        total_zombies = sum(self.account_data.values())
+
+        # Sort accounts by zombie count (largest first)
+        sorted_accounts = sorted(self.account_data.items(), key=lambda x: x[1], reverse=True)
+
+        # Calculate room sizes proportionally
+        # Leave space for hallways (20% of map)
+        usable_width = int(tiles_wide * 0.9)
+        usable_height = int(tiles_high * 0.9)
+
+        # Starting position (with margin)
+        current_x = 10
+        current_y = 10
+        row_height = 0
+
+        for i, (account_name, zombie_count) in enumerate(sorted_accounts):
+            # Calculate room size proportional to zombie count
+            # Minimum room size: 20x20 tiles
+            # Maximum room size: 60x50 tiles
+            proportion = zombie_count / total_zombies
+            room_width = max(20, min(60, int(40 + proportion * 40)))
+            room_height = max(20, min(50, int(30 + proportion * 30)))
+
+            # Check if we need to start a new row
+            if current_x + room_width > usable_width:
+                current_x = 10
+                current_y += row_height + 5  # Move down with spacing
+                row_height = 0
+
+            # Ensure room fits within map bounds
+            if current_y + room_height > usable_height:
+                print(f"Warning: Room {i} ({account_name}) would exceed map bounds, skipping")
+                continue
+
+            # Add room (ensuring it's within bounds)
+            room_index = len(rooms)  # Get the actual index for this room
+            rooms.append((current_x, current_y, room_width, room_height))
+
+            # Store room info for labeling (use actual room index, not iteration index)
+            if not hasattr(self, 'room_accounts'):
+                self.room_accounts = {}
+            self.room_accounts[room_index] = {
+                'name': account_name,
+                'zombie_count': zombie_count
+            }
+
+            # Update position for next room
+            current_x += room_width + 5  # Add spacing between rooms
+            row_height = max(row_height, room_height)
+
+        return rooms
+
+    def _create_mario_style_map(self) -> None:
+        """Create a Mario Bros-style tile-based map with AWS office theme."""
+        # Calculate total zombies and determine map size
+        total_zombies = sum(self.account_data.values())
+        num_accounts = len(self.account_data)
+
+        print(f"Creating map for {num_accounts} AWS accounts with {total_zombies} total zombies")
+
+        # Base map dimensions - scale based on zombie count
+        # Minimum size for small accounts, scale up for larger
+        base_tiles_wide = max(150, int(150 * (total_zombies / 500)))
+        base_tiles_high = max(112, int(112 * (total_zombies / 500)))
+
+        tiles_wide = base_tiles_wide
+        tiles_high = base_tiles_high
+
+        self.map_width = tiles_wide * self.tile_size
+        self.map_height = tiles_high * self.tile_size
+
+        # Create map surface
+        self.map_surface = pygame.Surface((self.map_width, self.map_height))
+
+        # Mario-style color palette (with purple corporate theme)
+        FLOOR_PURPLE = (80, 60, 100)      # Dark purple floor
+        FLOOR_LIGHT = (100, 80, 120)      # Light purple floor (checkered)
+        WALL_PURPLE = (60, 40, 90)        # Dark purple walls
+        WALL_HIGHLIGHT = (100, 70, 140)   # Purple wall highlights
+        WALL_SHADOW = (40, 25, 60)        # Purple wall shadows
+        BLACK = (0, 0, 0)                 # Outlines
+
+        # Create tile map (0 = floor, 1 = wall)
+        tile_map = [[0 for _ in range(tiles_wide)] for _ in range(tiles_high)]
+
+        # Add outer border walls
+        for x in range(tiles_wide):
+            tile_map[0][x] = 1
+            tile_map[tiles_high - 1][x] = 1
+        for y in range(tiles_high):
+            tile_map[y][0] = 1
+            tile_map[y][tiles_wide - 1] = 1
+
+        # Create AWS account rooms dynamically based on zombie counts
+        rooms = self._generate_rooms_from_accounts(tiles_wide, tiles_high)
+
+        print(f"Generated {len(rooms)} rooms for AWS accounts")
+
+        # Draw room walls
+        for rx, ry, rw, rh in rooms:
+            # Top and bottom walls
+            for x in range(rx, rx + rw):
+                tile_map[ry][x] = 1
+                tile_map[ry + rh - 1][x] = 1
+            # Left and right walls
+            for y in range(ry, ry + rh):
+                tile_map[y][rx] = 1
+                tile_map[y][rx + rw - 1] = 1
+
+        # Store room data for later use (AWS account integration)
+        self.rooms = rooms
+
+        # Render tiles to surface
+        for y in range(tiles_high):
+            for x in range(tiles_wide):
+                tile_x = x * self.tile_size
+                tile_y = y * self.tile_size
+
+                if tile_map[y][x] == 1:
+                    # Wall tile (Mario-style block)
+                    self._draw_wall_tile(tile_x, tile_y)
+                else:
+                    # Floor tile (checkered pattern)
+                    if (x + y) % 2 == 0:
+                        self._draw_floor_tile(tile_x, tile_y, FLOOR_PURPLE)
+                    else:
+                        self._draw_floor_tile(tile_x, tile_y, FLOOR_LIGHT)
+
+        # Store tile map for collision detection (needed by doors/collectibles)
+        self.tile_map = tile_map
+        self.tiles_wide = tiles_wide
+        self.tiles_high = tiles_high
+
+        # Add room labels
+        self._add_room_labels()
+
+        # Create doors for rooms
+        self.doors = self._create_room_doors()
+
+        # Create collectibles (question blocks)
+        self.collectibles = self._create_collectibles()
+
+        # Create 3rd party entities in hallways
+        self.third_parties = self._create_third_party_entities()
+
+    def _draw_floor_tile(self, x: int, y: int, base_color: tuple) -> None:
+        """Draw a simple Mario-style floor tile."""
+        # Fill with base color
+        pygame.draw.rect(self.map_surface, base_color, (x, y, self.tile_size, self.tile_size))
+
+        # Add subtle border for tile definition
+        border_color = tuple(max(0, c - 20) for c in base_color)
+        pygame.draw.rect(self.map_surface, border_color, (x, y, self.tile_size, self.tile_size), 1)
+
+    def _draw_wall_tile(self, x: int, y: int) -> None:
+        """Draw a Mario-style wall block with purple theme."""
+        WALL_PURPLE = (60, 40, 90)
+        WALL_HIGHLIGHT = (100, 70, 140)
+        WALL_SHADOW = (40, 25, 60)
+        BLACK = (0, 0, 0)
+
+        # Main block
+        pygame.draw.rect(self.map_surface, WALL_PURPLE, (x, y, self.tile_size, self.tile_size))
+
+        # Top and left highlights (3 pixels thick like Mario)
+        pygame.draw.line(self.map_surface, WALL_HIGHLIGHT, (x, y), (x + self.tile_size - 1, y), 3)
+        pygame.draw.line(self.map_surface, WALL_HIGHLIGHT, (x, y), (x, y + self.tile_size - 1), 3)
+
+        # Bottom and right shadows
+        pygame.draw.line(self.map_surface, WALL_SHADOW, (x, y + self.tile_size - 1), (x + self.tile_size - 1, y + self.tile_size - 1), 2)
+        pygame.draw.line(self.map_surface, WALL_SHADOW, (x + self.tile_size - 1, y), (x + self.tile_size - 1, y + self.tile_size - 1), 2)
+
+        # Black outline
+        pygame.draw.rect(self.map_surface, BLACK, (x, y, self.tile_size, self.tile_size), 1)
+
+    def _add_room_labels(self) -> None:
+        """Add AWS account labels to rooms."""
+        AWS_ORANGE = (255, 153, 0)
+        WHITE = (255, 255, 255)
+
+        try:
+            font = pygame.font.Font(None, 18)
+            small_font = pygame.font.Font(None, 14)
+
+            for i, (rx, ry, rw, rh) in enumerate(self.rooms):
+                if i in self.room_accounts:
+                    account_info = self.room_accounts[i]
+                    account_num = account_info['name']  # AWS account number
+                    zombie_count = account_info['zombie_count']
+
+                    # Get friendly name from mapping, fallback to account number
+                    friendly_name = self.account_names.get(account_num, account_num)
+
+                    # Calculate center of room
+                    center_x = (rx + rw // 2) * self.tile_size
+                    center_y = (ry + rh // 2) * self.tile_size
+
+                    # Render account name (friendly name)
+                    name_surface = font.render(friendly_name, True, AWS_ORANGE)
+                    name_rect = name_surface.get_rect(center=(center_x, center_y - 10))
+
+                    # Render zombie count
+                    count_text = f"{zombie_count} zombies"
+                    count_surface = small_font.render(count_text, True, WHITE)
+                    count_rect = count_surface.get_rect(center=(center_x, center_y + 10))
+
+                    # Draw shadows
+                    name_shadow = font.render(friendly_name, True, (0, 0, 0))
+                    count_shadow = small_font.render(count_text, True, (0, 0, 0))
+                    self.map_surface.blit(name_shadow, (name_rect.x + 2, name_rect.y + 2))
+                    self.map_surface.blit(count_shadow, (count_rect.x + 2, count_rect.y + 2))
+
+                    # Draw text
+                    self.map_surface.blit(name_surface, name_rect)
+                    self.map_surface.blit(count_surface, count_rect)
+        except Exception as e:
+            print(f"Error rendering room labels: {e}")
+            pass
+
+    def _create_room_doors(self) -> List[Door]:
+        """Create pipe-style doors for each room."""
+        doors = []
+
+        # Add one door to each room (placed at bottom center of room)
+        for i, (rx, ry, rw, rh) in enumerate(self.rooms):
+            # Calculate door position (bottom center of room)
+            door_tile_x = rx + rw // 2 - 1  # Center horizontally (door is 2 tiles wide)
+            door_tile_y = ry + rh - 2       # Near bottom of room
+
+            # Convert to pixel coordinates
+            door_x = door_tile_x * self.tile_size
+            door_y = door_tile_y * self.tile_size
+
+            # Get friendly room name if available
+            room_name = None
+            if i in self.room_accounts:
+                account_num = self.room_accounts[i]['name']
+                room_name = self.account_names.get(account_num, account_num)
+
+            # Create door leading to this room
+            door = Door(Vector2(door_x, door_y), direction="vertical", destination_room=i, destination_room_name=room_name)
+            doors.append(door)
+
+            # Clear the BOTTOM WALL tiles where the door is (make it walkable)
+            # Door is 32 pixels (2 tiles) wide, and we need to punch through the bottom wall
+            FLOOR_PURPLE = (80, 60, 100)      # Dark purple floor
+            FLOOR_LIGHT = (100, 80, 120)      # Light purple floor
+
+            for dx in range(2):
+                tile_x = door_tile_x + dx
+                # Clear both the door position AND the bottom wall
+                for dy in range(2):  # Clear door position and wall below it
+                    tile_y = door_tile_y + dy
+                    if 0 <= tile_x < self.tiles_wide and 0 <= tile_y < self.tiles_high:
+                        self.tile_map[tile_y][tile_x] = 0  # Make walkable
+
+                        # Re-render this tile as floor on map_surface
+                        pixel_x = tile_x * self.tile_size
+                        pixel_y = tile_y * self.tile_size
+                        if (tile_x + tile_y) % 2 == 0:
+                            self._draw_floor_tile(pixel_x, pixel_y, FLOOR_PURPLE)
+                        else:
+                            self._draw_floor_tile(pixel_x, pixel_y, FLOOR_LIGHT)
+
+        print(f"Created {len(doors)} doors for AWS account rooms")
+        return doors
+
+    def _create_collectibles(self) -> List[Collectible]:
+        """Create question block collectibles scattered throughout the map."""
+        collectibles = []
+
+        # Place collectibles in each room (3-5 per room)
+        for i, (rx, ry, rw, rh) in enumerate(self.rooms):
+            num_collectibles = random.randint(3, 5)
+
+            for _ in range(num_collectibles):
+                # Random position within the room (away from walls)
+                coll_tile_x = rx + random.randint(3, rw - 4)
+                coll_tile_y = ry + random.randint(3, rh - 4)
+
+                # Convert to pixel coordinates
+                coll_x = coll_tile_x * self.tile_size
+                coll_y = coll_tile_y * self.tile_size
+
+                # Create collectible with random data value
+                data_value = random.randint(5, 20)
+                collectible = Collectible(Vector2(coll_x, coll_y), data_value)
+                collectibles.append(collectible)
+
+        print(f"Created {len(collectibles)} collectible question blocks")
+        return collectibles
+
+    def _create_third_party_entities(self) -> List[ThirdParty]:
+        """
+        Create 3rd party entities in hallways near their associated AWS account rooms.
+
+        Returns:
+            List of ThirdParty entities
+        """
+        third_parties = []
+
+        if not self.third_party_data:
+            logger.info("No 3rd party data provided, skipping 3rd party entity creation")
+            return third_parties
+
+        # Check if we have org-level 3rd parties (under "all" key)
+        org_third_parties = self.third_party_data.get("all", [])
+
+        # If we have org-level 3rd parties, place them ALL around MyHealth Production room
+        if org_third_parties and self.room_accounts:
+            import math
+
+            # Find the MyHealth Production room (account 613056517323)
+            production_room_index = None
+            production_account = "613056517323"
+
+            for room_index, room_info in self.room_accounts.items():
+                if room_info['name'] == production_account:
+                    production_room_index = room_index
+                    break
+
+            if production_room_index is not None:
+                # Get room bounds (in tiles)
+                rx, ry, rw, rh = self.rooms[production_room_index]
+
+                logger.info(f"Placing ALL {len(org_third_parties)} 3rd parties around MyHealth Production (room {production_room_index})")
+
+                # Distribute 3rd parties along all 4 walls (outside the room)
+                num_parties = len(org_third_parties)
+                parties_per_wall = num_parties // 4
+                extra_parties = num_parties % 4
+
+                # Define walls: top, right, bottom, left
+                walls = ['top', 'right', 'bottom', 'left']
+                party_index = 0
+
+                for wall_idx, wall in enumerate(walls):
+                    # Distribute extra parties among first walls
+                    num_on_this_wall = parties_per_wall + (1 if wall_idx < extra_parties else 0)
+
+                    for wall_position in range(num_on_this_wall):
+                        if party_index >= num_parties:
+                            break
+
+                        third_party_info = org_third_parties[party_index]
+                        third_party_name = third_party_info.get('name', 'Unknown')
+
+                        # Calculate position based on wall
+                        hallway_distance = 4  # tiles away from room wall
+
+                        if wall == 'top':
+                            # Top wall - pace horizontally
+                            hallway_tile_y = ry - hallway_distance
+                            # Space evenly along top wall
+                            spacing = rw / (num_on_this_wall + 1)
+                            hallway_tile_x = rx + int((wall_position + 1) * spacing)
+                            patrol_axis = 'horizontal'
+                            patrol_min = rx * self.tile_size
+                            patrol_max = (rx + rw) * self.tile_size
+
+                        elif wall == 'bottom':
+                            # Bottom wall - pace horizontally
+                            hallway_tile_y = ry + rh + hallway_distance
+                            spacing = rw / (num_on_this_wall + 1)
+                            hallway_tile_x = rx + int((wall_position + 1) * spacing)
+                            patrol_axis = 'horizontal'
+                            patrol_min = rx * self.tile_size
+                            patrol_max = (rx + rw) * self.tile_size
+
+                        elif wall == 'left':
+                            # Left wall - pace vertically
+                            hallway_tile_x = rx - hallway_distance
+                            spacing = rh / (num_on_this_wall + 1)
+                            hallway_tile_y = ry + int((wall_position + 1) * spacing)
+                            patrol_axis = 'vertical'
+                            patrol_min = ry * self.tile_size
+                            patrol_max = (ry + rh) * self.tile_size
+
+                        else:  # right
+                            # Right wall - pace vertically
+                            hallway_tile_x = rx + rw + hallway_distance
+                            spacing = rh / (num_on_this_wall + 1)
+                            hallway_tile_y = ry + int((wall_position + 1) * spacing)
+                            patrol_axis = 'vertical'
+                            patrol_min = ry * self.tile_size
+                            patrol_max = (ry + rh) * self.tile_size
+
+                        # Ensure position is within map bounds
+                        hallway_tile_x = max(2, min(hallway_tile_x, self.tiles_wide - 3))
+                        hallway_tile_y = max(2, min(hallway_tile_y, self.tiles_high - 3))
+
+                        # Check if this is a walkable position
+                        max_attempts = 20
+                        position_found = False
+                        for attempt in range(max_attempts):
+                            test_x = (hallway_tile_x + (attempt % 3) - 1) * self.tile_size
+                            test_y = (hallway_tile_y + (attempt // 3) - 1) * self.tile_size
+
+                            if self.is_walkable(int(test_x), int(test_y)):
+                                third_party_x = test_x
+                                third_party_y = test_y
+                                position_found = True
+                                break
+
+                        if not position_found:
+                            third_party_x = hallway_tile_x * self.tile_size
+                            third_party_y = hallway_tile_y * self.tile_size
+
+                        # Create 3rd party entity
+                        third_party = ThirdParty(
+                            name=third_party_name,
+                            account=production_account,
+                            position=Vector2(third_party_x, third_party_y),
+                            third_party_id=third_party_info.get('thirdPartyId', None)
+                        )
+
+                        # Store patrol information for pacing along wall
+                        third_party.patrol_axis = patrol_axis  # 'horizontal' or 'vertical'
+                        third_party.patrol_min = patrol_min
+                        third_party.patrol_max = patrol_max
+
+                        third_parties.append(third_party)
+                        party_index += 1
+
+                logger.info(f"Created {len(third_parties)} 3rd party entities surrounding MyHealth Production")
+            else:
+                logger.warning("MyHealth Production room not found, 3rd parties not created")
+
+            return third_parties
+
+        # For per-account 3rd parties (if provided)
+        for room_index, room_info in self.room_accounts.items():
+            account_num = room_info['name']  # AWS account number
+            account_third_parties = self.third_party_data.get(account_num, [])
+
+            if not account_third_parties:
+                continue
+
+            # Get room bounds (in tiles)
+            rx, ry, rw, rh = self.rooms[room_index]
+
+            logger.info(f"Creating {len(account_third_parties)} 3rd parties for account {account_num} (room {room_index})")
+
+            # Place 3rd parties in the hallway outside the room door
+            # The door is at the bottom center of the room, so place them in the hallway below
+            for i, third_party_info in enumerate(account_third_parties):
+                third_party_name = third_party_info.get('name', 'Unknown')
+
+                # Calculate position in hallway outside the door
+                # Door is at (rx + rw // 2, ry + rh - 2), so place 3rd parties nearby
+                door_tile_x = rx + rw // 2 - 1
+                door_tile_y = ry + rh - 2
+
+                # Place 3rd parties in a line in the hallway below the door
+                # Offset horizontally based on index
+                hallway_tile_x = door_tile_x + (i - len(account_third_parties) // 2) * 3
+                hallway_tile_y = door_tile_y + 4  # 4 tiles below the door
+
+                # Ensure position is within map bounds
+                hallway_tile_x = max(2, min(hallway_tile_x, self.tiles_wide - 3))
+                hallway_tile_y = max(2, min(hallway_tile_y, self.tiles_high - 3))
+
+                # Check if this is a walkable position, if not, try nearby
+                max_attempts = 10
+                position_found = False
+                for attempt in range(max_attempts):
+                    test_x = (hallway_tile_x + attempt) * self.tile_size
+                    test_y = hallway_tile_y * self.tile_size
+
+                    if self.is_walkable(int(test_x), int(test_y)):
+                        # Convert to pixel coordinates
+                        third_party_x = test_x
+                        third_party_y = test_y
+                        position_found = True
+                        break
+
+                if not position_found:
+                    # Fallback: place anywhere in the hallway
+                    third_party_x = hallway_tile_x * self.tile_size
+                    third_party_y = hallway_tile_y * self.tile_size
+
+                # Create 3rd party entity
+                third_party = ThirdParty(
+                    name=third_party_name,
+                    account=account_num,
+                    position=Vector2(third_party_x, third_party_y),
+                    third_party_id=third_party_info.get('thirdPartyId', None)
+                )
+                third_parties.append(third_party)
+
+        logger.info(f"Created {len(third_parties)} 3rd party entities across all accounts")
+        return third_parties
 
     def _load_actual_floorplan(self, image_path: str) -> None:
         """
@@ -467,30 +995,29 @@ class GameMap:
 
     def is_walkable(self, x: int, y: int) -> bool:
         """
-        Check if a position is in a walkable area (aisle) vs a blocked area (booth).
+        Check if a position is in a walkable area using tile map.
 
         Args:
-            x: X coordinate
-            y: Y coordinate
+            x: X coordinate in pixels
+            y: Y coordinate in pixels
 
         Returns:
-            True if the position is walkable (light colors), False if blocked (dark colors)
+            True if the position is walkable (floor), False if blocked (wall)
         """
         # Clamp to map bounds
         x = max(0, min(int(x), self.map_width - 1))
         y = max(0, min(int(y), self.map_height - 1))
 
-        # Get the pixel color at this position
-        color = self.map_surface.get_at((x, y))
-        r, g, b = color[:3]
+        # Convert pixel coordinates to tile coordinates
+        tile_x = x // self.tile_size
+        tile_y = y // self.tile_size
 
-        # Calculate brightness (average of RGB)
-        brightness = (r + g + b) / 3
+        # Check bounds
+        if tile_x < 0 or tile_x >= self.tiles_wide or tile_y < 0 or tile_y >= self.tiles_high:
+            return False
 
-        # Much more lenient threshold for the actual floorplan - most areas should be walkable
-        # Only block very dark areas (likely booth interiors or solid objects)
-        # Threshold: if brightness > 40, it's walkable (was 100, now much more lenient)
-        return brightness > 40
+        # Check tile map (0 = walkable floor, 1 = wall)
+        return self.tile_map[tile_y][tile_x] == 0
 
     def get_random_walkable_position(self) -> Vector2:
         """
@@ -515,137 +1042,93 @@ class GameMap:
             random.uniform(margin, self.map_height - margin)
         )
 
-    def scatter_zombies(self, zombies: List[Zombie], min_distance: int = 400) -> None:
+    def scatter_zombies(self, zombies: List[Zombie], min_distance: int = 50) -> None:
         """
-        Scatter zombies randomly across the floorplan in walkable areas (aisles).
-        Ensures zombies are spread out with minimum distance between them.
+        Scatter zombies by AWS account - each account's zombies go in their room.
 
         Args:
-            zombies: List of zombie entities to place
-            min_distance: Minimum distance in pixels between zombies (default: 1000)
+            zombies: List of zombie entities to place (each has an account field)
+            min_distance: Minimum distance in pixels between zombies (default: 50)
         """
         import random as rand
+        from collections import defaultdict
 
-        placed_positions = []
-        fallback_count = 0
+        # Group zombies by account
+        zombies_by_account = defaultdict(list)
+        for zombie in zombies:
+            if hasattr(zombie, 'account') and zombie.account:
+                zombies_by_account[zombie.account].append(zombie)
+            else:
+                # Fallback for zombies without account info
+                zombies_by_account["Unknown"].append(zombie)
 
-        # Player starts at center of map - keep zombies away from this area
-        player_start_x = self.map_width / 2
-        player_start_y = self.map_height / 2
-        min_distance_from_start = 400  # Keep zombies at least this far from starting position
+        logger.info(f"Grouped zombies into {len(zombies_by_account)} accounts")
 
-        # Divide map into grid sectors to help with initial distribution
-        num_sectors_x = 8
-        num_sectors_y = 6
-        sector_width = self.map_width / num_sectors_x
-        sector_height = self.map_height / num_sectors_y
+        # Place each account's zombies in their respective room
+        for room_index, room_info in self.room_accounts.items():
+            account_num = room_info['name']  # AWS account number
+            account_zombies = zombies_by_account.get(account_num, [])
 
-        # Track which sectors have been used
-        sector_usage = {}
+            if not account_zombies:
+                logger.warning(f"No zombies found for account {account_num} (room {room_index})")
+                continue
 
-        for i, zombie in enumerate(zombies):
-            max_attempts = 500  # Increased attempts
-            position_found = False
+            # Get room bounds (in tiles)
+            rx, ry, rw, rh = self.rooms[room_index]
 
-            for attempt in range(max_attempts):
-                # For first zombies, try to use different sectors to spread them out
-                if len(placed_positions) < num_sectors_x * num_sectors_y and attempt < 100:
-                    # Pick a random unused or less-used sector
-                    sector_x = rand.randint(0, num_sectors_x - 1)
-                    sector_y = rand.randint(0, num_sectors_y - 1)
-                    sector_key = (sector_x, sector_y)
+            # Convert to pixel coordinates (with margins from walls)
+            room_x_min = (rx + 3) * self.tile_size  # 3 tiles from left wall
+            room_x_max = (rx + rw - 3) * self.tile_size  # 3 tiles from right wall
+            room_y_min = (ry + 3) * self.tile_size  # 3 tiles from top wall
+            room_y_max = (ry + rh - 3) * self.tile_size  # 3 tiles from bottom wall
 
-                    # Generate position within this sector
-                    x = sector_x * sector_width + rand.uniform(100, sector_width - 100)
-                    y = sector_y * sector_height + rand.uniform(100, sector_height - 100)
+            logger.info(f"Placing {len(account_zombies)} zombies in room {room_index} (account {account_num})")
 
-                    # Clamp to map bounds
-                    x = max(100, min(x, self.map_width - 100))
-                    y = max(100, min(y, self.map_height - 100))
+            # Place each zombie in this room
+            placed_positions = []
+            for i, zombie in enumerate(account_zombies):
+                max_attempts = 100
+                position_found = False
 
+                for attempt in range(max_attempts):
+                    # Generate random position within room bounds
+                    x = rand.uniform(room_x_min, room_x_max)
+                    y = rand.uniform(room_y_min, room_y_max)
+
+                    # Check if walkable
                     if not self.is_walkable(int(x), int(y)):
                         continue
 
                     candidate_pos = Vector2(x, y)
-                else:
-                    # Use random position
-                    candidate_pos = self.get_random_walkable_position()
 
-                # Check distance from player starting position
-                dx_start = candidate_pos.x - player_start_x
-                dy_start = candidate_pos.y - player_start_y
-                dist_from_start = (dx_start * dx_start + dy_start * dy_start) ** 0.5
-
-                if dist_from_start < min_distance_from_start:
-                    continue  # Too close to starting position
-
-                # Check if this position is far enough from all other zombies
-                too_close = False
-                for placed_pos in placed_positions:
-                    dx = candidate_pos.x - placed_pos.x
-                    dy = candidate_pos.y - placed_pos.y
-                    distance = (dx * dx + dy * dy) ** 0.5
-
-                    if distance < min_distance:
-                        too_close = True
-                        break
-
-                if not too_close:
-                    # Good position found!
-                    zombie.position = candidate_pos
-                    placed_positions.append(candidate_pos)
-                    position_found = True
-
-                    # Mark sector as used
-                    if len(placed_positions) <= num_sectors_x * num_sectors_y:
-                        sector_x = int(candidate_pos.x / sector_width)
-                        sector_y = int(candidate_pos.y / sector_height)
-                        sector_usage[(sector_x, sector_y)] = sector_usage.get((sector_x, sector_y), 0) + 1
-
-                    break
-
-            if not position_found:
-                # Fallback: place with reduced distance requirement
-                fallback_count += 1
-                reduced_distance = max(200, min_distance - 200)
-
-                for attempt in range(100):
-                    candidate_pos = self.get_random_walkable_position()
-
-                    # Check distance from player starting position
-                    dx_start = candidate_pos.x - player_start_x
-                    dy_start = candidate_pos.y - player_start_y
-                    dist_from_start = (dx_start * dx_start + dy_start * dy_start) ** 0.5
-
-                    if dist_from_start < min_distance_from_start:
-                        continue  # Too close to starting position
-
+                    # Check minimum distance from other zombies in this room
                     too_close = False
-
                     for placed_pos in placed_positions:
                         dx = candidate_pos.x - placed_pos.x
                         dy = candidate_pos.y - placed_pos.y
                         distance = (dx * dx + dy * dy) ** 0.5
 
-                        if distance < reduced_distance:
+                        if distance < min_distance:
                             too_close = True
                             break
 
                     if not too_close:
+                        # Good position found!
                         zombie.position = candidate_pos
                         placed_positions.append(candidate_pos)
                         position_found = True
                         break
 
                 if not position_found:
-                    # Last resort
-                    zombie.position = self.get_random_walkable_position()
+                    # Fallback: place anywhere in room (ignore distance)
+                    x = rand.uniform(room_x_min, room_x_max)
+                    y = rand.uniform(room_y_min, room_y_max)
+                    zombie.position = Vector2(x, y)
                     placed_positions.append(zombie.position)
 
-            zombie.is_hidden = True  # Start hidden
+                zombie.is_hidden = True  # Start hidden
 
-        if fallback_count > 0:
-            print(f"Warning: {fallback_count} zombies placed with reduced spacing due to map constraints")
+        logger.info(f"Successfully scattered {len(zombies)} zombies across {len(self.room_accounts)} rooms")
 
     def update_camera(self, player_x: float, player_y: float) -> None:
         """

@@ -131,7 +131,8 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
             zombie = Zombie(
                 identity_id=identity.identity_id,
                 identity_name=identity.identity_name,
-                position=Vector2(0, 0)
+                position=Vector2(0, 0),
+                account=aws_account
             )
             zombies.append(zombie)
 
@@ -180,8 +181,48 @@ def main():
         if not api_client.authenticate():
             raise RuntimeError("Failed to authenticate with Sonrai API")
 
-        # Fetch zombies from myhealth sandbox account (all identities, not just test-users)
-        zombies = fetch_zombies(api_client, aws_account="577945324761", filter_test_users=False, max_zombies=config['max_zombies'])
+        # Fetch accounts and their zombie counts
+        logger.info("Fetching AWS accounts from Sonrai API...")
+        account_data = api_client.fetch_accounts_with_unused_identities()
+
+        if not account_data:
+            print("\n🎉 No unused identities found! Your cloud is already secure!")
+            pygame.quit()
+            sys.exit(0)
+
+        # Log account information
+        logger.info(f"Found {len(account_data)} AWS accounts:")
+        for account, count in sorted(account_data.items(), key=lambda x: x[1], reverse=True):
+            logger.info(f"  {account}: {count} zombies")
+
+        # Fetch 3rd party access information
+        logger.info("Fetching 3rd party access from Sonrai API...")
+        third_party_data = api_client.fetch_third_parties_by_account()
+        logger.info(f"Found 3rd parties in {len(third_party_data)} accounts")
+        for account, parties in third_party_data.items():
+            if parties:
+                logger.info(f"  Account {account}: {len(parties)} 3rd parties - {', '.join([p['name'] for p in parties[:3]])}{'...' if len(parties) > 3 else ''}")
+
+        # Fetch zombies from ALL AWS accounts
+        all_zombies = []
+        for account_num, zombie_count in account_data.items():
+            if zombie_count > 0:
+                logger.info(f"Fetching {zombie_count} zombies from account {account_num}...")
+                try:
+                    account_zombies = fetch_zombies(
+                        api_client,
+                        aws_account=account_num,
+                        filter_test_users=False,
+                        max_zombies=zombie_count  # Fetch exact number for this account
+                    )
+                    all_zombies.extend(account_zombies)
+                    logger.info(f"  -> Added {len(account_zombies)} zombies from account {account_num}")
+                except Exception as e:
+                    logger.warning(f"  -> Failed to fetch zombies from account {account_num}: {e}")
+                    continue
+
+        zombies = all_zombies
+        logger.info(f"Total zombies across all accounts: {len(zombies)}")
 
         if not zombies:
             print("\n🎉 No unused identities found! Your cloud is already secure!")
@@ -203,7 +244,9 @@ def main():
         api_client=api_client,
         zombies=zombies,
         screen_width=config['game_width'],
-        screen_height=config['game_height']
+        screen_height=config['game_height'],
+        account_data=account_data,
+        third_party_data=third_party_data
     )
 
     # Distribute zombies across the level
@@ -239,6 +282,14 @@ def main():
         # Render background (map or grid)
         renderer.render_background(game_map)
 
+        # Render doors (if using map mode)
+        if game_map and hasattr(game_map, 'doors'):
+            renderer.render_doors(game_map.doors, game_map)
+
+        # Render collectibles (if using map mode)
+        if game_map and hasattr(game_map, 'collectibles'):
+            renderer.render_collectibles(game_map.collectibles, game_map)
+
         # Update renderer scroll (classic mode only)
         if not game_map:
             renderer.update_scroll(game_engine.get_scroll_offset() - renderer.scroll_offset)
@@ -247,11 +298,22 @@ def main():
         zombies = game_engine.get_zombies()
         renderer.render_zombies(zombies, game_map)
         renderer.render_zombie_labels(zombies, game_map)
+
+        # Render 3rd parties
+        third_parties = game_engine.get_third_parties()
+        renderer.render_third_parties(third_parties, game_map)
+        renderer.render_third_party_labels(third_parties, game_map)
+
         renderer.render_projectiles(game_engine.get_projectiles(), game_map)
         renderer.render_player(game_engine.get_player(), game_map)
 
         # Render UI
         renderer.render_ui(game_engine.get_game_state())
+
+        # Render minimap (if using map mode)
+        if game_map:
+            player = game_engine.get_player()
+            renderer.render_minimap(game_map, player.position, zombies)
 
         # Render congratulations message if present
         game_state = game_engine.get_game_state()
