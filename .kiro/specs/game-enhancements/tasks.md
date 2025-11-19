@@ -2,7 +2,7 @@
 
 ## Phase 1: Damage and Health System (Foundation)
 
-- [ ] 1. Implement health system for entities
+- [x] 1. Implement health system for entities
   - Add `health` and `max_health` attributes to Zombie class
   - Add `health` and `max_health` attributes to ThirdParty class (if not already present)
   - Initialize regular zombies with health=3, max_health=3
@@ -22,13 +22,13 @@
   - **Property 14: Elimination only at zero health**
   - **Validates: Requirements 3.4**
 
-- [ ] 2. Add damage attribute to projectiles
+- [x] 2. Add damage attribute to projectiles
   - Add `damage` attribute to Projectile class
   - Initialize projectiles with damage=1 by default
   - Allow damage to be set when creating projectile
   - _Requirements: 3.3, 4.5_
 
-- [ ] 3. Modify collision detection for damage system
+- [x] 3. Modify collision detection for damage system
   - Update collision handling to call `take_damage()` instead of instant removal
   - Only eliminate entity when `take_damage()` returns True (health reaches 0)
   - Keep projectile removal on hit
@@ -48,7 +48,7 @@
   - **Property 10: Damage number animation lifecycle**
   - **Validates: Requirements 8.1**
 
-- [ ] 5. Add health bar rendering
+- [x] 5. Add health bar rendering
   - Add `render_health_bar(entity, surface, camera_offset)` to Renderer
   - Health bar: 30px wide x 4px tall, centered above entity
   - Colors: gray background, red health, black border
@@ -56,26 +56,26 @@
   - Animate health bar depletion smoothly over 0.2 seconds
   - _Requirements: 3.6_
 
-- [ ] 6. Add visual damage feedback
+- [x] 6. Add visual damage feedback
   - Add flash effect when entity takes damage (0.1 second white overlay)
   - Add `is_flashing` and `flash_timer` to entity classes
   - Update entity rendering to apply flash effect
   - Integrate damage number creation on hit
   - _Requirements: 3.5, 8.1, 8.2_
 
-- [ ] 7. Integrate damage system into game engine
+- [x] 7. Integrate damage system into game engine
   - Add DamageSystem instance to GameEngine
   - Update collision handling to use damage system
   - Call damage number update and render in game loop
   - Test with existing game to ensure zombies require 3 hits
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7_
 
-- [ ] 8. Checkpoint - Test damage system
+- [x] 8. Checkpoint - Test damage system
   - Ensure all tests pass, ask the user if questions arise
 
 ## Phase 2: Protected Identities
 
-- [ ] 9. Add exemptions API method
+- [x] 9. Add exemptions API method
   - Add `fetch_exemptions(account: str)` to SonraiAPIClient
   - Implement GraphQL query for Exemptions endpoint
   - Parse response to extract resourceId, resourceName, exemptionReason, expirationDate
@@ -113,7 +113,7 @@
   - **Property 6: Purple shield visibility**
   - **Validates: Requirements 5.5**
 
-- [ ] 12. Identify and mark Sonrai 3rd party as protected
+- [x] 12. Identify and mark Sonrai 3rd party as protected
   - When loading 3rd party data, check for "Sonrai" or "Sonrai Security" in name
   - Add `is_protected` flag to 3rd party entities
   - Set protection_reason = "Sonrai Security Platform"
@@ -427,3 +427,22 @@
 
 - [ ] 50. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise
+
+
+## Phase 7: Audio and Music
+
+- [ ] 51. Add background music
+  - Create 8-bit chiptune version of "Zombie" by The Cranberries
+  - Use pygame.mixer for audio playback
+  - Loop background music during gameplay
+  - Add volume controls
+  - Mute option in settings
+  - _Requirements: Audio Enhancement_
+
+- [ ] 52. Add sound effects
+  - Projectile fire sound (retro laser)
+  - Hit/damage sound (8-bit impact)
+  - Quarantine success sound (victory chime)
+  - Level complete sound
+  - Boss spawn sound
+  - _Requirements: Audio Enhancement_

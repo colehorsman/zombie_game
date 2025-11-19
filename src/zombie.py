@@ -28,6 +28,14 @@ class Zombie:
         self.is_quarantining = False
         self.is_hidden = True  # Hidden until player gets close
 
+        # Health system
+        self.health = 3
+        self.max_health = 3
+
+        # Visual damage feedback
+        self.is_flashing = False
+        self.flash_timer = 0.0
+
         # Zombie dimensions - make them bigger and more visible
         self.width = 40
         self.height = 40
@@ -290,6 +298,24 @@ class Zombie:
         """Mark this zombie as having a pending quarantine request."""
         self.is_quarantining = True
 
+    def take_damage(self, damage: int) -> bool:
+        """
+        Apply damage to this zombie.
+
+        Args:
+            damage: Amount of damage to apply
+
+        Returns:
+            True if the zombie is eliminated (health reaches 0), False otherwise
+        """
+        self.health = max(0, self.health - damage)
+        
+        # Trigger flash effect
+        self.is_flashing = True
+        self.flash_timer = 0.1  # Flash for 0.1 seconds
+        
+        return self.health == 0
+
     def update(self, delta_time: float) -> None:
         """
         Update zombie state.
@@ -297,6 +323,13 @@ class Zombie:
         Args:
             delta_time: Time elapsed since last frame in seconds
         """
+        # Update flash effect timer
+        if self.is_flashing:
+            self.flash_timer -= delta_time
+            if self.flash_timer <= 0:
+                self.is_flashing = False
+                self.flash_timer = 0.0
+        
         # Zombies are stationary in this version
         # Could add movement logic here if needed
         pass

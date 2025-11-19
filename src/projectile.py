@@ -8,15 +8,18 @@ from models import Vector2
 class Projectile:
     """Represents a fired shot from the player."""
 
-    def __init__(self, position: Vector2, direction: Vector2 = None):
+    def __init__(self, position: Vector2, direction: Vector2 = None, damage: int = 1):
         """
         Initialize a projectile.
 
         Args:
             position: Starting position (typically from player's gun)
             direction: Direction vector (default: right)
+            damage: Amount of damage this projectile deals (default: 1)
         """
         self.position = position
+        self.damage = damage  # Damage dealt on hit
+        
         # Default to moving right if no direction specified
         if direction is None:
             self.velocity = Vector2(400, 0)

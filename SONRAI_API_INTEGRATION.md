@@ -2,98 +2,124 @@
 
 ## Current Status
 
-The game is currently using **mock data** to generate test-user-1 through test-user-500 zombies.
+✅ **FULLY INTEGRATED** - The game is now connected to the Sonrai Security API and uses real data!
 
-To integrate with real Sonrai unused identities, you need to:
+## Comprehensive API Documentation
 
-1. **Find the correct GraphQL query** for unused identities in Sonrai
-2. **Find the correct GraphQL mutation** for quarantining/deleting identities
-3. **Update the API client** with the correct queries
+For detailed documentation on all Sonrai API queries and mutations used in this game, see:
 
-## What We Need
+**[docs/sonrai-api/README.md](docs/sonrai-api/README.md)**
 
-### 1. Query for Unused Identities
+This includes:
+- Complete GraphQL queries with examples
+- Response structures and field descriptions
+- Implementation details
+- Error handling patterns
+- Schema type references
 
-We need the GraphQL query that returns unused AWS identities. It might look something like:
+## Implemented API Endpoints
 
-```graphql
-query {
-  UnusedIdentities(limit: 500) {
-    items {
-      srn
-      name
-      resourceType
-      # other fields...
-    }
-  }
-}
-```
+### Data Fetching (Queries)
 
-**Location to update:** `src/sonrai_client.py` in the `fetch_unused_identities()` method
+1. **Unused Identities** - `UnusedIdentities` query
+   - Fetches unused IAM identities (zombies)
+   - [Documentation](docs/sonrai-api/queries/unused-identities.md)
+   - Implementation: `SonraiAPIClient.fetch_unused_identities()`
 
-### 2. Mutation for Quarantining
+2. **Third Party Access** - `ThirdPartyAccessByAccount` query
+   - Fetches third-party access to AWS accounts
+   - [Documentation](docs/sonrai-api/queries/third-party-access.md)
+   - Implementation: `SonraiAPIClient.fetch_third_parties_by_account()`
 
-We need the GraphQL mutation to quarantine/delete an identity:
+3. **Exempted Identities** - `AppliedExemptedIdentities` query
+   - Fetches protected/exempted identities
+   - [Documentation](docs/sonrai-api/queries/exempted-identities.md)
+   - Implementation: `SonraiAPIClient.fetch_exemptions()`
 
-```graphql
-mutation QuarantineIdentity($srn: ID!) {
-  QuarantineIdentity(srn: $srn) {
-    success
-    message
-  }
-}
-```
+4. **Account Summary** - `AccountsWithUnusedIdentities` query
+   - Gets account list with zombie counts
+   - [Documentation](docs/sonrai-api/queries/accounts-unused-identities.md)
+   - Implementation: `SonraiAPIClient.fetch_accounts_with_unused_identities()`
 
-**Location to update:** `src/sonrai_client.py` in the `quarantine_identity()` method
+### Remediation Actions (Mutations)
 
-## How to Find the Correct Queries
+1. **Quarantine Identity** - `ChangeQuarantineStatus` mutation
+   - Quarantines unused identities via CPF
+   - [Documentation](docs/sonrai-api/queries/quarantine-identity.md)
+   - Implementation: `SonraiAPIClient.quarantine_identity()`
 
-### Option 1: Sonrai Documentation
-Check the Sonrai API documentation for:
-- Unused identity queries
-- Quarantine/remediation mutations
+2. **Block Third Party** - `SetThirdPartyControlMode` mutation
+   - Blocks third-party access via CPF
+   - [Documentation](docs/sonrai-api/queries/block-third-party.md)
+   - Implementation: `SonraiAPIClient.block_third_party()`
 
-### Option 2: Sonrai UI Network Tab
-1. Open Sonrai UI in your browser
-2. Open Developer Tools (F12) → Network tab
-3. Navigate to unused identities view
-4. Look for GraphQL requests
-5. Copy the query/mutation from the request payload
+## Schema Explorer
 
-### Option 3: Ask Sonrai Support
-Contact Sonrai support for the correct GraphQL schema for:
-- Querying unused identities
-- Quarantining identities
+Access the interactive GraphQL schema explorer at:
+https://app.sonraisecurity.com/App/GraphExplorer
 
-## Current Mock Implementation
+Use this to:
+- Explore available queries and mutations
+- Discover field names and types
+- Test queries before implementing
+- Introspect schema types
 
-The game currently generates mock identities in `src/sonrai_client.py`:
+## Adding New Queries
 
-```python
-for i in range(1, 501):
-    identity = UnusedIdentity(
-        identity_id=f"srn:{self.org_id}::User/test-user-{i}",
-        identity_name=f"test-user-{i}",
-        identity_type="User",
-        last_used=None,
-        risk_score=0.0
-    )
-```
+When adding new Sonrai API integration:
 
-## Testing the Game
+1. **Explore the schema** in the GraphQL explorer
+2. **Test the query** with sample data
+3. **Document it** in `docs/sonrai-api/queries/`
+4. **Implement** in `src/sonrai_client.py`
+5. **Update** this file with a link to the documentation
 
-You can test the game with mock data right now:
+## Implementation Location
+
+All Sonrai API integration is in:
+- **File**: `src/sonrai_client.py`
+- **Class**: `SonraiAPIClient`
+- **Methods**: One method per query/mutation
+
+## Running the Game
+
+The game connects to your Sonrai organization using credentials in `.env`:
 
 ```bash
 python3 src/main.py
 ```
 
-The game will work with 500 mock zombies named test-user-1 through test-user-500.
+The game will:
+1. Fetch real unused identities from your AWS accounts
+2. Load third-party access information
+3. Display exempted identities with purple shields
+4. Quarantine identities when you eliminate zombies
+5. Block third-party access when you eliminate third parties
 
-## Once You Have the Correct Queries
+**⚠️ Warning:** Eliminating zombies and third parties will actually quarantine/block them in Sonrai via the Cloud Permissions Firewall!
 
-1. Update `src/sonrai_client.py` with the real queries
-2. The game will automatically use real Sonrai data
-3. Quarantine actions will affect real identities in your Sonrai account
+## Configuration
 
-**⚠️ Warning:** Once connected to real data, eliminating zombies will actually quarantine identities in Sonrai!
+Set these environment variables in `.env`:
+
+```bash
+SONRAI_API_URL=https://crc.sonraisecurity.com/graphql
+SONRAI_ORG_ID=your-org-id
+SONRAI_API_TOKEN=your-api-token
+```
+
+## Error Handling
+
+All API methods include:
+- **Retry logic** with exponential backoff (3 attempts)
+- **Graceful degradation** (returns empty lists on failure)
+- **Detailed logging** for debugging
+- **User-friendly error messages** in the game UI
+
+## Future Enhancements
+
+Potential additional API integrations:
+- High-risk entities for boss battles
+- Real-time security alerts
+- Compliance status
+- Risk scoring for difficulty scaling

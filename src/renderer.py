@@ -121,15 +121,29 @@ class Renderer:
                 # Map mode: check if zombie is visible on screen and render at screen position
                 if game_map.is_on_screen(zombie.position.x, zombie.position.y, zombie.width, zombie.height):
                     screen_x, screen_y = game_map.world_to_screen(zombie.position.x, zombie.position.y)
-                    self.screen.blit(zombie.sprite, (screen_x, screen_y))
+                    
+                    # Apply flash effect if active
+                    if zombie.is_flashing:
+                        flash_sprite = zombie.sprite.copy()
+                        flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                        self.screen.blit(flash_sprite, (screen_x, screen_y))
+                    else:
+                        self.screen.blit(zombie.sprite, (screen_x, screen_y))
+                    
                     rendered_count += 1
             else:
                 # Classic mode: only render zombies that are on or near the screen
                 if -100 < zombie.position.x < self.width + 100:
-                    self.screen.blit(
-                        zombie.sprite,
-                        (int(zombie.position.x), int(zombie.position.y))
-                    )
+                    # Apply flash effect if active
+                    if zombie.is_flashing:
+                        flash_sprite = zombie.sprite.copy()
+                        flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                        self.screen.blit(flash_sprite, (int(zombie.position.x), int(zombie.position.y)))
+                    else:
+                        self.screen.blit(
+                            zombie.sprite,
+                            (int(zombie.position.x), int(zombie.position.y))
+                        )
                     rendered_count += 1
 
         # Debug log on first few frames
@@ -153,14 +167,27 @@ class Renderer:
                 # Map mode: check if 3rd party is visible on screen and render at screen position
                 if game_map.is_on_screen(third_party.position.x, third_party.position.y, third_party.width, third_party.height):
                     screen_x, screen_y = game_map.world_to_screen(third_party.position.x, third_party.position.y)
-                    self.screen.blit(third_party.sprite, (screen_x, screen_y))
+                    
+                    # Apply flash effect if active
+                    if third_party.is_flashing:
+                        flash_sprite = third_party.sprite.copy()
+                        flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                        self.screen.blit(flash_sprite, (screen_x, screen_y))
+                    else:
+                        self.screen.blit(third_party.sprite, (screen_x, screen_y))
             else:
                 # Classic mode: only render 3rd parties that are on or near the screen
                 if -100 < third_party.position.x < self.width + 100:
-                    self.screen.blit(
-                        third_party.sprite,
-                        (int(third_party.position.x), int(third_party.position.y))
-                    )
+                    # Apply flash effect if active
+                    if third_party.is_flashing:
+                        flash_sprite = third_party.sprite.copy()
+                        flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                        self.screen.blit(flash_sprite, (int(third_party.position.x), int(third_party.position.y)))
+                    else:
+                        self.screen.blit(
+                            third_party.sprite,
+                            (int(third_party.position.x), int(third_party.position.y))
+                        )
 
     def render_doors(self, doors: List[Door], game_map: GameMap) -> None:
         """
@@ -356,6 +383,99 @@ class Renderer:
 
                 # Draw the label
                 self.screen.blit(label_surface, (label_x, label_y))
+
+    def render_shield(self, entity, game_map: Optional[GameMap] = None, pulse_time: float = 0.0) -> None:
+        """
+        Render a Zelda-style purple shield around a protected entity.
+
+        Args:
+            entity: The protected entity to render shield for
+            game_map: Game map for coordinate conversion (None for screen coordinates)
+            pulse_time: Time value for pulsing animation
+        """
+        from shield import render_shield
+        
+        # Check visibility and get screen position
+        is_visible = False
+        camera_offset = (0, 0)
+
+        if game_map:
+            # Map mode: convert world to screen coordinates
+            is_visible = game_map.is_on_screen(entity.position.x, entity.position.y, entity.width, entity.height)
+            if is_visible:
+                camera_offset = (game_map.camera_x, game_map.camera_y)
+        else:
+            # Classic mode: check screen bounds
+            is_visible = -100 < entity.position.x < self.width + 100
+
+        if not is_visible:
+            return
+
+        # Use the shield module to render the small shield accessory
+        render_shield(self.screen, entity, camera_offset, pulse_time)
+
+    def render_health_bar(self, entity, game_map: Optional[GameMap] = None) -> None:
+        """
+        Render a retro-style health bar above an entity.
+
+        Args:
+            entity: The entity (zombie or third party) to render health bar for
+            game_map: Game map for coordinate conversion (None for screen coordinates)
+        """
+        # Only show health bar if entity has taken damage
+        if entity.health >= entity.max_health:
+            return
+
+        # Check visibility and get screen position
+        is_visible = False
+        screen_x, screen_y = 0, 0
+
+        if game_map:
+            # Map mode: convert world to screen coordinates
+            is_visible = game_map.is_on_screen(entity.position.x, entity.position.y, entity.width, entity.height)
+            if is_visible:
+                screen_x, screen_y = game_map.world_to_screen(entity.position.x, entity.position.y)
+        else:
+            # Classic mode: check screen bounds
+            is_visible = -100 < entity.position.x < self.width + 100
+            screen_x = int(entity.position.x)
+            screen_y = int(entity.position.y)
+
+        if not is_visible:
+            return
+
+        # Health bar dimensions (retro pixel style)
+        bar_width = 30
+        bar_height = 4
+        bar_x = int(screen_x + entity.width // 2 - bar_width // 2)
+        bar_y = int(screen_y - 8)  # Position above entity, below label
+
+        # Calculate health percentage
+        health_percent = entity.health / entity.max_health
+
+        # Draw background (gray)
+        pygame.draw.rect(
+            self.screen,
+            (128, 128, 128),
+            (bar_x, bar_y, bar_width, bar_height)
+        )
+
+        # Draw health (red)
+        health_width = int(bar_width * health_percent)
+        if health_width > 0:
+            pygame.draw.rect(
+                self.screen,
+                (220, 20, 20),
+                (bar_x, bar_y, health_width, bar_height)
+            )
+
+        # Draw border (black, retro pixel style)
+        pygame.draw.rect(
+            self.screen,
+            (0, 0, 0),
+            (bar_x, bar_y, bar_width, bar_height),
+            1
+        )
 
     def render_projectiles(self, projectiles: List[Projectile], game_map: Optional[GameMap] = None) -> None:
         """

@@ -350,6 +350,86 @@ class SonraiAPIClient:
             logger.error(f"Failed to fetch unused identities: {e}")
             raise
 
+    def fetch_exemptions(self, account: str) -> List[dict]:
+        """
+        Fetch exempted identities for a specific AWS account from Sonrai API.
+
+        Args:
+            account: AWS account number to fetch exemptions for
+
+        Returns:
+            List of exemption dictionaries with resourceId, resourceName, exemptionReason, expirationDate
+        """
+        query = """
+        query GetExemptedIdentities($filters: AppliedExemptedIdentitiesFilter!) {
+            AppliedExemptedIdentities(where: $filters) {
+                count
+                items {
+                    id
+                    identity
+                    scope
+                    scopeFriendlyName
+                    approvedBy
+                    approvedAt
+                    isCoreExemption
+                }
+            }
+        }
+        """
+
+        # Build scope filter for the specific account
+        scope_filter = f"aws/{account}"
+        
+        variables = {
+            "filters": {
+                "scope": {
+                    "value": scope_filter,
+                    "op": "EQ"
+                }
+            }
+        }
+
+        max_retries = 3
+        retry_delay = 1.0
+
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(
+                    self.api_url,
+                    json={"query": query, "variables": variables},
+                    headers=self._get_headers(),
+                    timeout=30
+                )
+
+                if response.status_code == 200:
+                    data = response.json()
+                    
+                    if 'errors' in data:
+                        logger.error(f"GraphQL errors in exemptions query: {data['errors']}")
+                        return []
+                    
+                    exemptions_data = data.get('data', {}).get('AppliedExemptedIdentities', {}).get('items', [])
+                    logger.info(f"Fetched {len(exemptions_data)} exempted identities for account {account}")
+                    return exemptions_data
+                else:
+                    logger.error(f"Failed to fetch exemptions: HTTP {response.status_code}")
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay * (attempt + 1))
+                        continue
+                    return []
+
+            except requests.exceptions.Timeout:
+                logger.warning(f"Timeout fetching exemptions (attempt {attempt + 1}/{max_retries})")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay * (attempt + 1))
+                    continue
+                return []
+            except Exception as e:
+                logger.error(f"Error fetching exemptions: {e}")
+                return []
+
+        return []
+
     def quarantine_identity(self, identity_id: str, identity_name: str = None, account: str = None, scope: str = None, root_scope: str = None) -> QuarantineResult:
         """
         Send a quarantine request for a specific identity using GraphQL mutation.

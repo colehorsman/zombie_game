@@ -298,17 +298,33 @@ def main():
         zombies = game_engine.get_zombies()
         renderer.render_zombies(zombies, game_map)
         renderer.render_zombie_labels(zombies, game_map)
+        
+        # Render health bars for zombies
+        for zombie in zombies:
+            renderer.render_health_bar(zombie, game_map)
 
         # Render 3rd parties
         third_parties = game_engine.get_third_parties()
         renderer.render_third_parties(third_parties, game_map)
         renderer.render_third_party_labels(third_parties, game_map)
+        
+        # Render health bars for 3rd parties
+        for third_party in third_parties:
+            renderer.render_health_bar(third_party, game_map)
+        
+        # Get game state for shield animation
+        game_state = game_engine.get_game_state()
+        
+        # Render purple shields for protected 3rd parties
+        for third_party in third_parties:
+            if third_party.is_protected:
+                renderer.render_shield(third_party, game_map, game_state.play_time)
 
         renderer.render_projectiles(game_engine.get_projectiles(), game_map)
         renderer.render_player(game_engine.get_player(), game_map)
 
         # Render UI
-        renderer.render_ui(game_engine.get_game_state())
+        renderer.render_ui(game_state)
 
         # Render minimap (if using map mode)
         if game_map:
@@ -316,7 +332,6 @@ def main():
             renderer.render_minimap(game_map, player.position, zombies)
 
         # Render congratulations message if present
-        game_state = game_engine.get_game_state()
         if game_state.status == GameStatus.PAUSED and game_state.congratulations_message:
             renderer.render_message_bubble(game_state.congratulations_message)
 

@@ -48,8 +48,6 @@ def check_projectile_zombie_collisions(
 
             if check_collision(projectile, zombie):
                 collisions.append((projectile, zombie))
-                # Mark zombie as quarantining to prevent multiple hits
-                zombie.mark_for_quarantine()
                 break  # Each projectile can only hit one zombie
 
     return collisions
@@ -184,9 +182,6 @@ def check_collisions_with_spatial_grid(
 
             if check_collision(projectile, zombie):
                 collisions.append((projectile, zombie))
-                # Mark for quarantine only if it's a zombie (not a 3rd party)
-                if hasattr(zombie, 'mark_for_quarantine'):
-                    zombie.mark_for_quarantine()
                 break  # Each projectile can only hit one zombie
 
     return collisions

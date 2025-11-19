@@ -220,8 +220,12 @@ class GameEngine:
             if projectile in self.projectiles:
                 self.projectiles.remove(projectile)
 
-            # Pause game and show congratulations message
-            self._handle_zombie_elimination(zombie)
+            # Apply damage to zombie
+            eliminated = zombie.take_damage(projectile.damage)
+            
+            # Only handle elimination if zombie health reached 0
+            if eliminated:
+                self._handle_zombie_elimination(zombie)
 
         # Check collisions with 3rd parties
         third_parties = self.get_third_parties()
@@ -243,12 +247,23 @@ class GameEngine:
 
             # Handle 3rd party collisions
             for projectile, third_party in third_party_collisions:
+                # Skip protected third parties (Sonrai)
+                if third_party.is_protected:
+                    # Remove projectile but don't damage protected entity
+                    if projectile in self.projectiles:
+                        self.projectiles.remove(projectile)
+                    continue
+                
                 # Remove projectile
                 if projectile in self.projectiles:
                     self.projectiles.remove(projectile)
 
-                # Pause game and show congratulations message
-                self._handle_third_party_blocking(third_party)
+                # Apply damage to third party
+                eliminated = third_party.take_damage(projectile.damage)
+                
+                # Only handle blocking if third party health reached 0
+                if eliminated:
+                    self._handle_third_party_blocking(third_party)
 
     def _handle_zombie_elimination(self, zombie: Zombie) -> None:
         """
