@@ -132,7 +132,8 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
                 identity_id=identity.identity_id,
                 identity_name=identity.identity_name,
                 position=Vector2(0, 0),
-                account=aws_account
+                account=aws_account,
+                scope=identity.scope  # Pass scope from API
             )
             zombies.append(zombie)
 
@@ -195,9 +196,9 @@ def main():
         for account, count in sorted(account_data.items(), key=lambda x: x[1], reverse=True):
             logger.info(f"  {account}: {count} zombies")
 
-        # Fetch 3rd party access information
+        # Fetch 3rd party access information (MyHealth organization)
         logger.info("Fetching 3rd party access from Sonrai API...")
-        third_party_data = api_client.fetch_third_parties_by_account()
+        third_party_data = api_client.fetch_third_parties_by_account(root_scope="aws/r-ipxz")
         logger.info(f"Found 3rd parties in {len(third_party_data)} accounts")
         for account, parties in third_party_data.items():
             if parties:

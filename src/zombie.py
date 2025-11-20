@@ -11,7 +11,7 @@ from models import Vector2
 class Zombie:
     """Represents an unused identity as a game entity."""
 
-    def __init__(self, identity_id: str, identity_name: str, position: Vector2, account: str = None):
+    def __init__(self, identity_id: str, identity_name: str, position: Vector2, account: str = None, scope: str = None):
         """
         Initialize a zombie.
 
@@ -20,11 +20,13 @@ class Zombie:
             identity_name: Name of the identity (e.g., "test-user-42")
             position: Starting position
             account: AWS account number this zombie belongs to
+            scope: Full scope path from API (e.g., "aws/r-ui1v/ou-ui1v-abc123/577945324761")
         """
         self.identity_id = identity_id
         self.identity_name = identity_name
         self.position = position
-        self.account = account  # AWS account this zombie belongs to
+        self.account = account
+        self.scope = scope  # Store scope for quarantine  # AWS account this zombie belongs to
         self.is_quarantining = False
         self.is_hidden = True  # Hidden until player gets close
 

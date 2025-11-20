@@ -39,6 +39,8 @@ class UnusedIdentity:
     identity_type: str  # IAM user, role, service account
     last_used: Optional[datetime]
     risk_score: float
+    scope: str = None  # Full scope path (e.g., "aws/r-ui1v/ou-ui1v-abc123/577945324761")
+    account: str = None  # AWS account number
 
 
 @dataclass

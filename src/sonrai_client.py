@@ -91,7 +91,7 @@ class SonraiAPIClient:
             variables = {
                 "filters": {
                     "scope": {
-                        "value": "aws",
+                        "value": "aws/r-ipxz",  # MyHealth organization (CORRECT)
                         "op": "STARTS_WITH"
                     },
                     "daysSinceLastLogin": {
@@ -130,7 +130,7 @@ class SonraiAPIClient:
         Fetch 3rd party access information per AWS account from Sonrai API.
 
         Args:
-            root_scope: Root AWS organization scope (e.g., "aws/r-ipxz")
+            root_scope: Root AWS organization scope - MyHealth: "aws/r-ipxz"
 
         Returns:
             Dictionary mapping account numbers to lists of 3rd party info:
@@ -239,6 +239,11 @@ class SonraiAPIClient:
             List of UnusedIdentity objects with real identity names from Sonrai
         """
         try:
+            # Fetch ALL account scopes ONCE using CloudHierarchyList (REAL organizational scopes with OU paths)
+            logger.info("Fetching real account scopes from CloudHierarchyList...")
+            account_scopes = self._fetch_all_account_scopes()
+            logger.info(f"Retrieved {len(account_scopes)} account scopes from CloudHierarchyList")
+
             # Query for unused identities with individual identity details
             query = """
             query getUnusedIdentities($filters: UnusedIdentitiesFilter!) {
@@ -255,11 +260,11 @@ class SonraiAPIClient:
             """
 
             # Build filters - both scope and daysSinceLastLogin are required
-            # If no scope provided, try to match the account number
+            # If no scope provided, use MyHealth organization scope
             if not scope:
-                # Try matching paths that contain the account number
+                # MyHealth organization (CORRECT)
                 scope_filter = {
-                    "value": "aws",
+                    "value": "aws/r-ipxz",
                     "op": "STARTS_WITH"
                 }
             else:
@@ -311,6 +316,15 @@ class SonraiAPIClient:
                     if filter_account and account != filter_account:
                         continue
 
+                    # Look up the REAL account scope from CloudHierarchyList (includes OU path)
+                    account_scope = account_scopes.get(account)
+
+                    if not account_scope:
+                        logger.warning(f"No scope found for account {account} in CloudHierarchyList - skipping this account")
+                        continue
+
+                    logger.info(f"Using scope for account {account}: {account_scope}")
+
                     # Get individual identities
                     identity_list = item.get("identities", [])
 
@@ -324,13 +338,15 @@ class SonraiAPIClient:
                         srn_parts = srn.split("/")
                         resource_type = srn_parts[-2] if len(srn_parts) > 1 else "Unknown"
 
-                        # Create identity object
+                        # Create identity object with REAL account scope from CloudHierarchyList
                         identity = UnusedIdentity(
                             identity_id=srn,
                             identity_name=name,
                             identity_type=resource_type,
                             last_used=None,
-                            risk_score=0.0
+                            risk_score=0.0,
+                            scope=account_scope,  # Real scope with OU path from CloudHierarchyList
+                            account=account
                         )
                         identities.append(identity)
 
@@ -430,6 +446,79 @@ class SonraiAPIClient:
 
         return []
 
+    def _fetch_all_account_scopes(self) -> dict:
+        """
+        Fetch scopes for all AWS accounts in the organization using CloudHierarchyList.
+        Only includes the 7 real MyHealth AWS accounts (filters out OUs and root).
+
+        Returns:
+            Dictionary mapping account number to full scope path
+        """
+        try:
+            # The 7 MyHealth AWS accounts from aws_accounts.csv
+            VALID_MYHEALTH_ACCOUNTS = {
+                "160224865296",  # MyHealth - Production Data
+                "240768036625",  # MyHealth-WebApp
+                "514455208804",  # MyHealth - Stage
+                "437154727976",  # Sonrai MyHealth - Org
+                "393582650665",  # MyHealth - Automation
+                "577945324761",  # MyHealth - Sandbox
+                "613056517323",  # MyHealth - Production
+            }
+
+            query = """
+            query getCloudHierarchyList($filters: CloudHierarchyFilter) {
+                CloudHierarchyList(where: $filters) {
+                    items {
+                        resourceId
+                        scope
+                        cloudType
+                        parentScope
+                        scopeFriendlyName
+                        name
+                    }
+                }
+            }
+            """
+
+            variables = {
+                "filters": {
+                    "cloudType": {"op": "EQ", "value": "aws"},
+                    "scope": {"op": "STARTS_WITH", "value": "aws/r-ipxz"},
+                    "entryType": {"op": "NEQ", "value": "managementAccount"},
+                    "active": {"op": "EQ", "value": True}
+                }
+            }
+
+            response = requests.post(
+                self.api_url,
+                json={"query": query, "variables": variables},
+                headers=self._get_headers(),
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            account_scopes = {}
+            if data and "data" in data and data["data"] and "CloudHierarchyList" in data["data"]:
+                items = data["data"]["CloudHierarchyList"].get("items", [])
+                for item in items:
+                    resource_id = item.get("resourceId")
+                    scope = item.get("scope")
+                    name = item.get("name", "")
+
+                    # Only include the 7 valid MyHealth accounts (filter out OUs and root)
+                    if resource_id and scope and resource_id in VALID_MYHEALTH_ACCOUNTS:
+                        account_scopes[resource_id] = scope
+                        logger.info(f"Mapped account {resource_id} ({name}) -> {scope}")
+
+            logger.info(f"Fetched scopes for {len(account_scopes)} MyHealth accounts (filtered to 7 real accounts)")
+            return account_scopes
+
+        except Exception as e:
+            logger.error(f"Failed to fetch account scopes: {e}")
+            return {}
+
     def quarantine_identity(self, identity_id: str, identity_name: str = None, account: str = None, scope: str = None, root_scope: str = None) -> QuarantineResult:
         """
         Send a quarantine request for a specific identity using GraphQL mutation.
@@ -468,12 +557,24 @@ class SonraiAPIClient:
             elif "/Role/" in identity_id:
                 resource_arn = f"arn:aws:iam::{account}:role/{identity_name}"
 
-        # Use default scope values if not provided
-        # Real scope from Sonrai API (internal IDs, not display names)
+        # Scope MUST be provided - never use fake scopes as they trigger alerts
         if not scope:
-            scope = f"aws/r-ipxz/ou-ipxz-95f072k5/{account}"
+            error_msg = f"Cannot quarantine without real scope - no scope provided for {identity_id}"
+            logger.error(error_msg)
+            return QuarantineResult(
+                success=False,
+                identity_id=identity_id,
+                error_message=error_msg
+            )
+
         if not root_scope:
-            root_scope = "aws/r-ipxz"
+            # Extract root scope from full scope if available
+            if scope:
+                scope_parts = scope.split("/")
+                if len(scope_parts) >= 2:
+                    root_scope = f"{scope_parts[0]}/{scope_parts[1]}"
+            if not root_scope:
+                root_scope = "aws/r-ipxz"  # MyHealth root scope (CORRECT)
 
         for attempt in range(max_retries):
             try:
@@ -503,6 +604,9 @@ class SonraiAPIClient:
                         "rootScope": root_scope
                     }
                 }
+
+                # Log the quarantine request details
+                logger.info(f"Quarantining {identity_name}: scope={scope}, rootScope={root_scope}, arn={resource_arn}")
 
                 headers = self._get_headers()
                 response = requests.post(
@@ -578,7 +682,7 @@ class SonraiAPIClient:
         max_retries = 3
         retry_delay = 1.0
 
-        # Use default scope if not provided
+        # Use default scope if not provided (MyHealth organization)
         if not root_scope:
             root_scope = "aws/r-ipxz"
 

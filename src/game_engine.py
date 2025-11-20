@@ -132,7 +132,7 @@ class GameEngine:
             delta_time: Time elapsed since last frame in seconds
         """
         # Handle pending elimination delay
-        if self.game_state.pending_elimination is not None:
+        if self.game_state.pending_elimination is not None and self.game_state.elimination_delay > 0:
             self.game_state.elimination_delay -= delta_time
             if self.game_state.elimination_delay <= 0:
                 # Delay complete - show the message and pause
@@ -153,8 +153,7 @@ class GameEngine:
                     )
                     logger.info(f"3rd party blocked: {entity.name}")
 
-                # Clear pending elimination
-                self.game_state.pending_elimination = None
+                # DON'T clear pending_elimination yet - we need it in dismiss_message()
                 return  # Don't update game entities while paused
 
         # Update scrolling (classic mode only)
@@ -296,33 +295,21 @@ class GameEngine:
     def dismiss_message(self) -> None:
         """Dismiss the congratulations message and resume gameplay."""
         if self.game_state.status == GameStatus.PAUSED and self.game_state.congratulations_message:
-            # Check if it's a zombie or 3rd party
-            eliminated_zombie = None
-            blocked_third_party = None
+            # Use the pending_elimination entity directly (no need to search)
+            entity = self.game_state.pending_elimination
 
-            # Check zombies
-            for zombie in self.zombies:
-                if zombie.is_quarantining and zombie.identity_name in self.game_state.congratulations_message:
-                    eliminated_zombie = zombie
-                    break
+            if entity:
+                # Check if it's a zombie or 3rd party
+                if hasattr(entity, 'identity_name'):
+                    # It's a zombie - quarantine via API
+                    self._quarantine_zombie(entity)
+                else:
+                    # It's a 3rd party - block via API
+                    self._block_third_party(entity)
 
-            # Check 3rd parties
-            if not eliminated_zombie:
-                third_parties = self.get_third_parties()
-                for tp in third_parties:
-                    if tp.is_blocking and tp.name in self.game_state.congratulations_message:
-                        blocked_third_party = tp
-                        break
-
-            if eliminated_zombie:
-                # Attempt to quarantine via API
-                self._quarantine_zombie(eliminated_zombie)
-            elif blocked_third_party:
-                # Attempt to block via API
-                self._block_third_party(blocked_third_party)
-
-            # Clear message and resume
+            # Clear message, pending elimination, and resume
             self.game_state.congratulations_message = None
+            self.game_state.pending_elimination = None
             self.game_state.status = GameStatus.PLAYING
 
     def _quarantine_zombie(self, zombie: Zombie) -> None:
@@ -333,9 +320,20 @@ class GameEngine:
             zombie: The zombie to quarantine
         """
         try:
+            # Extract root scope from full scope path
+            # e.g., "aws/r-ui1v/ou-ui1v-abc123/577945324761" -> "aws/r-ui1v"
+            root_scope = None
+            if zombie.scope:
+                scope_parts = zombie.scope.split("/")
+                if len(scope_parts) >= 2:
+                    root_scope = f"{scope_parts[0]}/{scope_parts[1]}"
+
             result = self.api_client.quarantine_identity(
                 identity_id=zombie.identity_id,
-                identity_name=zombie.identity_name
+                identity_name=zombie.identity_name,
+                account=zombie.account,
+                scope=zombie.scope,  # Use zombie's scope from API
+                root_scope=root_scope  # Extract root from full scope
             )
 
             if result.success:
