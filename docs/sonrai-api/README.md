@@ -21,10 +21,11 @@ https://app.sonraisecurity.com/App/GraphExplorer
 
 ### Data Fetching Queries
 
-1. **[Unused Identities](queries/unused-identities.md)** - Fetch unused IAM identities (zombies)
-2. **[Third Party Access](queries/third-party-access.md)** - Fetch third-party access to AWS accounts
-3. **[Exempted Identities](queries/exempted-identities.md)** - Fetch exempted/protected identities
-4. **[Accounts with Unused Identities](queries/accounts-unused-identities.md)** - Get account summary
+1. **[Cloud Hierarchy](queries/cloud-hierarchy.md)** - Fetch AWS org structure and account scopes (CRITICAL for quarantine)
+2. **[Unused Identities](queries/unused-identities.md)** - Fetch unused IAM identities (zombies)
+3. **[Third Party Access](queries/third-party-access.md)** - Fetch third-party access to AWS accounts
+4. **[Exempted Identities](queries/exempted-identities.md)** - Fetch exempted/protected identities
+5. **[Accounts with Unused Identities](queries/accounts-unused-identities.md)** - Get account summary
 
 ### Mutation Operations
 
@@ -36,6 +37,22 @@ https://app.sonraisecurity.com/App/GraphExplorer
 All queries are implemented in `src/sonrai_client.py` in the `SonraiAPIClient` class.
 
 ## Common Patterns
+
+### Using Real Account Scopes
+
+**CRITICAL**: Always use real scopes from the CloudHierarchyList query. Never construct or fake scopes.
+
+```python
+# CORRECT: Fetch real scopes first
+account_scopes = client._fetch_all_account_scopes()
+scope = account_scopes.get("577945324761")
+# Returns: "aws/r-ipxz/ou-ipxz-95f072k5/577945324761"
+
+# WRONG: Never construct scopes manually
+scope = f"aws/r-ipxz/ou-fake-id/{account}"  # This triggers alerts!
+```
+
+See [Cloud Hierarchy](queries/cloud-hierarchy.md) for details.
 
 ### Filtering by Scope
 
