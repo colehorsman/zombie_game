@@ -12,9 +12,46 @@ The Sonrai Security platform provides a GraphQL API for querying cloud security 
 - **Authentication**: Bearer token via `SONRAI_API_TOKEN`
 - **Organization**: Specified via `SONRAI_ORG_ID`
 
-## Schema Explorer
+## GraphQL Schema
 
-Access the interactive GraphQL schema explorer at:
+### Downloaded Schema
+
+The complete Sonrai GraphQL schema is available locally in `schema.json`. This includes:
+- All 138 available queries
+- All 154 available mutations
+- 856 total types (objects, inputs, enums, etc.)
+
+**Update the schema:**
+```bash
+python3 dev_tests/download_sonrai_schema.py
+```
+
+### Schema Search Tool
+
+Search the schema for queries, mutations, types, and fields:
+
+```bash
+# Search for queries
+python3 dev_tests/search_sonrai_schema.py --query CloudHierarchy
+
+# Search for types
+python3 dev_tests/search_sonrai_schema.py --type UnusedIdentity
+
+# Search for mutations
+python3 dev_tests/search_sonrai_schema.py --mutation Quarantine
+
+# Search for fields across all types
+python3 dev_tests/search_sonrai_schema.py --field daysSinceLogin
+
+# Show schema statistics
+python3 dev_tests/search_sonrai_schema.py --stats
+```
+
+This tool is extremely helpful when building new queries - no more guessing field names!
+
+### Interactive Schema Explorer
+
+Access the web-based GraphQL schema explorer at:
 https://app.sonraisecurity.com/App/GraphExplorer
 
 ## Available Queries
@@ -98,11 +135,15 @@ Key types used in this game:
 
 When adding new Sonrai API queries:
 
-1. Create a new markdown file in `queries/` directory
-2. Document the query, variables, and response structure
-3. Implement in `src/sonrai_client.py`
-4. Update this README with a link
-5. Add tests to verify the query works
+1. **Search the schema** using the search tool to find the right query/type:
+   ```bash
+   python3 dev_tests/search_sonrai_schema.py --query YourQueryName
+   python3 dev_tests/search_sonrai_schema.py --type YourTypeName
+   ```
+2. **Test the query** in the GraphQL explorer or create a test script
+3. **Document it** - Create a new markdown file in `queries/` directory
+4. **Implement** in `src/sonrai_client.py`
+5. **Update** this README with a link to the documentation
 
 ## Troubleshooting
 

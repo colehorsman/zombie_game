@@ -6,6 +6,7 @@ Quick lookup for all Sonrai API calls used in Zombie Blaster.
 
 | Query Name | Purpose | Method | Doc Link |
 |------------|---------|--------|----------|
+| `CloudHierarchyList` | **Fetch real account scopes** (CRITICAL) | `_fetch_all_account_scopes()` | [Link](queries/cloud-hierarchy.md) |
 | `UnusedIdentities` | Fetch zombies | `fetch_unused_identities()` | [Link](queries/unused-identities.md) |
 | `ThirdPartyAccessByAccount` | Fetch 3rd parties | `fetch_third_parties_by_account()` | [Link](queries/third-party-access.md) |
 | `AppliedExemptedIdentities` | Fetch exemptions | `fetch_exemptions()` | [Link](queries/exempted-identities.md) |

@@ -8,7 +8,9 @@
 
 For detailed documentation on all Sonrai API queries and mutations used in this game, see:
 
-**[docs/sonrai-api/README.md](docs/sonrai-api/README.md)**
+**[README.md](README.md)** - Complete API documentation index
+
+**[QUICK_REFERENCE.md](QUICK_REFERENCE.md)** - Quick lookup cheat sheet
 
 This includes:
 - Complete GraphQL queries with examples
@@ -21,36 +23,41 @@ This includes:
 
 ### Data Fetching (Queries)
 
-1. **Unused Identities** - `UnusedIdentities` query
+1. **Cloud Hierarchy** - `CloudHierarchyList` query
+   - Fetches AWS org structure and real account scopes (CRITICAL for quarantine)
+   - [Documentation](queries/cloud-hierarchy.md)
+   - Implementation: `SonraiAPIClient._fetch_all_account_scopes()`
+
+2. **Unused Identities** - `UnusedIdentities` query
    - Fetches unused IAM identities (zombies)
-   - [Documentation](docs/sonrai-api/queries/unused-identities.md)
+   - [Documentation](queries/unused-identities.md)
    - Implementation: `SonraiAPIClient.fetch_unused_identities()`
 
-2. **Third Party Access** - `ThirdPartyAccessByAccount` query
+3. **Third Party Access** - `ThirdPartyAccessByAccount` query
    - Fetches third-party access to AWS accounts
-   - [Documentation](docs/sonrai-api/queries/third-party-access.md)
+   - [Documentation](queries/third-party-access.md)
    - Implementation: `SonraiAPIClient.fetch_third_parties_by_account()`
 
-3. **Exempted Identities** - `AppliedExemptedIdentities` query
+4. **Exempted Identities** - `AppliedExemptedIdentities` query
    - Fetches protected/exempted identities
-   - [Documentation](docs/sonrai-api/queries/exempted-identities.md)
+   - [Documentation](queries/exempted-identities.md)
    - Implementation: `SonraiAPIClient.fetch_exemptions()`
 
-4. **Account Summary** - `AccountsWithUnusedIdentities` query
+5. **Account Summary** - `AccountsWithUnusedIdentities` query
    - Gets account list with zombie counts
-   - [Documentation](docs/sonrai-api/queries/accounts-unused-identities.md)
+   - [Documentation](queries/accounts-unused-identities.md)
    - Implementation: `SonraiAPIClient.fetch_accounts_with_unused_identities()`
 
 ### Remediation Actions (Mutations)
 
 1. **Quarantine Identity** - `ChangeQuarantineStatus` mutation
    - Quarantines unused identities via CPF
-   - [Documentation](docs/sonrai-api/queries/quarantine-identity.md)
+   - [Documentation](queries/quarantine-identity.md)
    - Implementation: `SonraiAPIClient.quarantine_identity()`
 
 2. **Block Third Party** - `SetThirdPartyControlMode` mutation
    - Blocks third-party access via CPF
-   - [Documentation](docs/sonrai-api/queries/block-third-party.md)
+   - [Documentation](queries/block-third-party.md)
    - Implementation: `SonraiAPIClient.block_third_party()`
 
 ## Schema Explorer
