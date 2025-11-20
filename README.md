@@ -8,9 +8,31 @@ A retro-style video game that visualizes and gamifies the process of identifying
 - 🔫 Mega Man-style character with ray gun
 - 🧟 Each zombie represents a real unused AWS identity from Sonrai
 - 🔒 Eliminating zombies triggers real quarantine actions via Sonrai API
-- 📊 Real-time progress tracking
-- 🎯 Single looping level - eliminate all 1000 zombies!
+- 💜 Protected entities with purple shields (Sonrai + exempted identities)
+- 💥 Damage system with health points (zombies: 3 HP, third parties: 10 HP)
+- 📈 Score tracking with damage multiplier (increases every 10 eliminations)
+- 📊 Real-time progress tracking and statistics
+- 🎯 Third-party access visualization and blocking
 - 💬 Retro Game Boy-style congratulations messages
+
+## Screenshots
+
+*Coming soon! Screenshots of gameplay, protected entities with purple shields, damage system, and more.*
+
+<!-- Placeholder for screenshots - to be added -->
+<!--
+![Main Gameplay](assets/screenshots/gameplay.png)
+*Main gameplay showing player shooting zombies with UI elements*
+
+![Congratulations Message](assets/screenshots/congratulations.png)
+*Retro Game Boy-style congratulations message when eliminating a zombie*
+
+![Protected Entities](assets/screenshots/protected_entities.png)
+*Purple shields indicating protected Sonrai and exempted entities*
+
+![Damage System](assets/screenshots/damage_system.png)
+*Health bars and damage numbers in action*
+-->
 
 ## Requirements
 
@@ -207,7 +229,7 @@ Quick links:
 - [Exemptions Query](docs/sonrai-api/queries/exempted-identities.md) - Protected entities
 - [Quick Reference](docs/sonrai-api/QUICK_REFERENCE.md) - All API calls at a glance
 
-See [SONRAI_API_INTEGRATION.md](SONRAI_API_INTEGRATION.md) for integration details.
+See [Integration Guide](docs/sonrai-api/INTEGRATION_GUIDE.md) for detailed integration information.
 
 ## Development
 
