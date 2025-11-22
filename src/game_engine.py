@@ -18,6 +18,7 @@ from difficulty_config import EnvironmentDifficulty, get_difficulty_for_environm
 from approval import ApprovalManager
 from powerup import PowerUp, PowerUpManager, PowerUpType, spawn_random_powerups
 from boss import Boss
+from save_manager import SaveManager
 
 
 logger = logging.getLogger(__name__)
@@ -148,6 +149,13 @@ class GameEngine:
         # Track which level account IDs have been completed
         self.completed_level_account_ids = set()
 
+        # Save/load game state
+        self.save_manager = SaveManager()
+        self.quarantined_identities = set()  # Track identity IDs that have been quarantined
+        self.blocked_third_parties = set()  # Track third-party names that have been blocked
+        self.last_autosave_time = 0.0  # Track last autosave for periodic saves
+        self.autosave_interval = 30.0  # Autosave every 30 seconds
+
         # Cheat code system
         self.cheat_enabled = False  # All levels unlocked via cheat
         self.cheat_buffer = []  # Track recent key presses for cheat detection
@@ -201,6 +209,13 @@ class GameEngine:
         Args:
             delta_time: Time elapsed since last frame in seconds
         """
+        # Periodic autosave (every 30 seconds during gameplay)
+        current_time = time.time()
+        if current_time - self.last_autosave_time >= self.autosave_interval:
+            if self.game_state.status in (GameStatus.LOBBY, GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
+                self._save_game()
+                self.last_autosave_time = current_time
+
         # Update play time
         if self.game_state.status == GameStatus.PLAYING:
             self.game_state.play_time = time.time() - self.start_time
@@ -840,7 +855,13 @@ class GameEngine:
                     self.game_state.zombies_remaining -= 1
                     self.game_state.zombies_quarantined += 1
 
+                    # Track quarantined identity for save/load
+                    self.quarantined_identities.add(zombie.identity_id)
+
                     logger.info(f"Successfully quarantined {zombie.identity_name}")
+
+                    # Save game state after successful quarantine
+                    self._save_game()
 
                     # Check for boss spawn (all zombies cleared)
                     if self.game_state.zombies_remaining == 0 and not self.boss_spawned:
@@ -877,7 +898,14 @@ class GameEngine:
                 if third_party in third_parties:
                     third_parties.remove(third_party)
                     self.game_state.third_parties_blocked += 1
+
+                    # Track blocked third party for save/load
+                    self.blocked_third_parties.add(third_party.name)
+
                     logger.info(f"Successfully blocked 3rd party {third_party.name}")
+
+                    # Save game state after successful block
+                    self._save_game()
             else:
                 # Block failed - restore 3rd party
                 third_party.is_blocking = False
@@ -966,6 +994,9 @@ class GameEngine:
 
                 # Handle quit
                 if event.key == pygame.K_ESCAPE:
+                    # Save game before quitting
+                    logger.info("Saving game before exit...")
+                    self._save_game()
                     self.running = False
 
             elif event.type == pygame.KEYUP:
@@ -1331,3 +1362,95 @@ class GameEngine:
                 self.game_map.update_camera(center_x, self.player.position.y)
             else:
                 self.game_map.update_camera(self.player.position.x, self.player.position.y)
+
+    def _save_game(self) -> None:
+        """Save current game state to disk."""
+        try:
+            # Get current level account number (None if in lobby)
+            current_level = None
+            if self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
+                if self.level_manager:
+                    level = self.level_manager.get_current_level()
+                    if level:
+                        current_level = level.account_id
+
+            # Get completed and unlocked levels
+            completed_levels = []
+            unlocked_levels = []
+            if self.level_manager:
+                for level in self.level_manager.levels:
+                    if level.is_completed:
+                        completed_levels.append(level.account_id)
+                    if level.is_unlocked:
+                        unlocked_levels.append(level.account_id)
+
+            # Save game state
+            self.save_manager.save_game(
+                player_score=self.game_state.score,
+                player_eliminations=self.game_state.eliminations,
+                damage_multiplier=self.game_state.damage_multiplier,
+                player_position=self.player.position,
+                game_status=self.game_state.status,
+                current_level=current_level,
+                play_time=self.game_state.play_time,
+                completed_levels=completed_levels,
+                unlocked_levels=unlocked_levels,
+                quarantined_identities=self.quarantined_identities,
+                blocked_third_parties=self.blocked_third_parties
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to save game: {e}")
+
+    def restore_game_state(self, save_data: dict) -> None:
+        """
+        Restore game state from saved data.
+
+        Args:
+            save_data: Dictionary of saved game state from SaveManager.load_game()
+        """
+        try:
+            # Restore player stats
+            player_data = save_data.get("player", {})
+            self.game_state.score = player_data.get("score", 0)
+            self.game_state.eliminations = player_data.get("eliminations", 0)
+            self.game_state.damage_multiplier = player_data.get("damage_multiplier", 1.0)
+
+            # Restore player position
+            position_data = player_data.get("position", {})
+            if position_data:
+                self.player.position = Vector2(
+                    position_data.get("x", self.landing_zone.x),
+                    position_data.get("y", self.landing_zone.y)
+                )
+
+            # Restore game state
+            game_state_data = save_data.get("game_state", {})
+            self.game_state.play_time = game_state_data.get("play_time", 0.0)
+
+            # Restore progress
+            progress_data = save_data.get("progress", {})
+            completed_levels = progress_data.get("completed_levels", [])
+            unlocked_levels = progress_data.get("unlocked_levels", [])
+
+            # Update level manager
+            if self.level_manager:
+                for level in self.level_manager.levels:
+                    if level.account_id in completed_levels:
+                        level.is_completed = True
+                    if level.account_id in unlocked_levels:
+                        level.is_unlocked = True
+
+            # Restore quarantined identities and blocked third parties
+            self.quarantined_identities = set(save_data.get("quarantined_identities", []))
+            self.blocked_third_parties = set(save_data.get("blocked_third_parties", []))
+
+            logger.info(f"✅ Game state restored:")
+            logger.info(f"   Score: {self.game_state.score}")
+            logger.info(f"   Eliminations: {self.game_state.eliminations}")
+            logger.info(f"   Quarantined identities: {len(self.quarantined_identities)}")
+            logger.info(f"   Blocked third parties: {len(self.blocked_third_parties)}")
+            logger.info(f"   Completed levels: {len(completed_levels)}")
+
+        except Exception as e:
+            logger.error(f"Failed to restore game state: {e}")

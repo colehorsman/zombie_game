@@ -14,6 +14,7 @@ from zombie import Zombie
 from game_engine import GameEngine
 from renderer import Renderer
 from level_manager import LevelManager
+from save_manager import SaveManager
 
 
 # Configure logging
@@ -135,7 +136,7 @@ def initialize_pygame(width: int, height: int, fullscreen: bool = False) -> tupl
         raise RuntimeError(f"Failed to initialize Pygame: {e}")
 
 
-def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761", filter_test_users: bool = True, max_zombies: int = 1000) -> List[Zombie]:
+def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761", filter_test_users: bool = True, max_zombies: int = 1000, quarantined_identities: set = None) -> List[Zombie]:
     """
     Fetch unused identities from Sonrai API and create zombie entities.
 
@@ -144,6 +145,7 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
         aws_account: AWS account number to filter
         filter_test_users: If True, only include test-user-X identities (default: True)
         max_zombies: Maximum number of zombies to create (default: 1000, configurable via MAX_ZOMBIES env var)
+        quarantined_identities: Set of identity IDs that have been quarantined (to exclude from loading)
 
     Returns:
         List of Zombie entities
@@ -152,6 +154,9 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
         RuntimeError: If API fetch fails
     """
     try:
+        if quarantined_identities is None:
+            quarantined_identities = set()
+
         logger.info(f"Fetching unused identities from Sonrai API for account {aws_account}...")
         identities = api_client.fetch_unused_identities(limit=1000, scope=None, days_since_login="0", filter_account=aws_account)
 
@@ -160,6 +165,14 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
         if not identities:
             logger.warning("No unused identities found")
             return []
+
+        # Filter out quarantined identities (from save file)
+        if quarantined_identities:
+            before_filter = len(identities)
+            identities = [i for i in identities if i.identity_id not in quarantined_identities]
+            filtered_count = before_filter - len(identities)
+            if filtered_count > 0:
+                logger.info(f"Filtered out {filtered_count} quarantined identities from save file")
 
         # Filter for test-user identities if requested
         if filter_test_users:
@@ -230,6 +243,23 @@ def main():
         sys.exit(1)
 
     try:
+        # Check for existing save file
+        save_manager = SaveManager()
+        save_data = save_manager.load_game()
+        quarantined_identities = set()
+
+        if save_data:
+            logger.info("🎮 Found existing save file! Loading progress...")
+            quarantined_identities = set(save_data.get("quarantined_identities", []))
+            save_info = save_manager.get_save_info()
+            if save_info:
+                logger.info(f"   Last saved: {save_info['last_saved']}")
+                logger.info(f"   Score: {save_info['score']}")
+                logger.info(f"   Eliminations: {save_info['eliminations']}")
+                logger.info(f"   Completed levels: {save_info['completed_levels']}")
+        else:
+            logger.info("🆕 No save file found. Starting new game...")
+
         # Initialize Sonrai API client
         logger.info("Initializing Sonrai API client...")
         api_client = SonraiAPIClient(
@@ -283,7 +313,8 @@ def main():
                         api_client,
                         aws_account=account_num,
                         filter_test_users=False,
-                        max_zombies=zombie_count  # Fetch exact number for this account
+                        max_zombies=zombie_count,  # Fetch exact number for this account
+                        quarantined_identities=quarantined_identities  # Filter out quarantined identities
                     )
                     all_zombies.extend(account_zombies)
                     logger.info(f"  -> Added {len(account_zombies)} zombies from account {account_num}")
@@ -319,6 +350,11 @@ def main():
         third_party_data=third_party_data,
         level_manager=level_manager
     )
+
+    # Restore game state from save file (if exists)
+    if save_data:
+        logger.info("Restoring game state from save file...")
+        game_engine.restore_game_state(save_data)
 
     # Don't distribute zombies - we start in lobby mode with no zombies
     # Zombies will be loaded when entering levels

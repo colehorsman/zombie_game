@@ -1,6 +1,10 @@
 # Environment variables
 .env
 
+# Game save files
+.zombie_save.json
+.zombie_save.tmp
+
 # Python
 __pycache__/
 *.py[cod]
