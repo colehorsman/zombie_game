@@ -13,6 +13,7 @@ from sonrai_client import SonraiAPIClient
 from zombie import Zombie
 from game_engine import GameEngine
 from renderer import Renderer
+from level_manager import LevelManager
 
 
 # Configure logging
@@ -196,6 +197,15 @@ def main():
         for account, count in sorted(account_data.items(), key=lambda x: x[1], reverse=True):
             logger.info(f"  {account}: {count} zombies")
 
+        # Initialize level manager
+        logger.info("Initializing level manager...")
+        try:
+            level_manager = LevelManager("assets/aws_accounts.csv")
+            logger.info(f"Loaded {len(level_manager.levels)} levels")
+        except Exception as e:
+            logger.error(f"Failed to initialize level manager: {e}")
+            level_manager = None
+
         # Fetch 3rd party access information (MyHealth organization)
         logger.info("Fetching 3rd party access from Sonrai API...")
         third_party_data = api_client.fetch_third_parties_by_account(root_scope="aws/r-ipxz")
@@ -204,7 +214,7 @@ def main():
             if parties:
                 logger.info(f"  Account {account}: {len(parties)} 3rd parties - {', '.join([p['name'] for p in parties[:3]])}{'...' if len(parties) > 3 else ''}")
 
-        # Fetch zombies from ALL AWS accounts
+        # Fetch zombies from ALL AWS accounts (for level loading)
         all_zombies = []
         for account_num, zombie_count in account_data.items():
             if zombie_count > 0:
@@ -239,19 +249,20 @@ def main():
         pygame.quit()
         sys.exit(1)
 
-    # Initialize game engine
+    # Initialize game engine (starts in LOBBY mode)
     logger.info("Initializing game engine...")
     game_engine = GameEngine(
         api_client=api_client,
-        zombies=zombies,
+        zombies=zombies,  # All zombies (will be filtered by level when entering levels)
         screen_width=config['game_width'],
         screen_height=config['game_height'],
         account_data=account_data,
-        third_party_data=third_party_data
+        third_party_data=third_party_data,
+        level_manager=level_manager
     )
 
-    # Distribute zombies across the level
-    game_engine.distribute_zombies()
+    # Don't distribute zombies - we start in lobby mode with no zombies
+    # Zombies will be loaded when entering levels
 
     # Initialize renderer
     renderer = Renderer(screen)
@@ -323,6 +334,12 @@ def main():
 
         renderer.render_projectiles(game_engine.get_projectiles(), game_map)
         renderer.render_player(game_engine.get_player(), game_map)
+
+        # Render boss if in boss battle
+        boss = game_engine.get_boss()
+        if boss:
+            renderer.render_boss(boss, game_map)
+            renderer.render_boss_health_bar(boss, game_map)
 
         # Render UI
         renderer.render_ui(game_state)

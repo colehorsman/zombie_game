@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class GameMap:
     """Handles the floorplan map, camera, and zombie placement."""
 
-    def __init__(self, map_image_path: str, screen_width: int, screen_height: int, account_data: dict = None, third_party_data: dict = None):
+    def __init__(self, map_image_path: str, screen_width: int, screen_height: int, account_data: dict = None, third_party_data: dict = None, reveal_radius: int = 60, api_client=None, mode: str = "lobby"):
         """
         Initialize the game map.
 
@@ -28,9 +28,13 @@ class GameMap:
             screen_height: Height of the game viewport
             account_data: Dictionary mapping account names to zombie counts (e.g., {"MyHealth Sandbox": 534, "MyHealth Stage": 34})
             third_party_data: Dictionary mapping account numbers to 3rd party info (e.g., {"577945324761": [{"name": "nOps", "status": "Granted"}]})
+            reveal_radius: How close player must be to reveal zombies (pixels) - varies by environment difficulty
+            api_client: Sonrai API client (optional, for resource protection status)
+            mode: Map mode - "lobby" for top-down exploration, "platformer" for side-scrolling level
         """
         self.screen_width = screen_width
         self.screen_height = screen_height
+        self.mode = mode  # "lobby" or "platformer"
 
         # Tile size for Mario-style grid
         self.tile_size = 16
@@ -50,10 +54,15 @@ class GameMap:
         # Store account data and 3rd party data for room/entity creation
         self.account_data = account_data or {"Default Account": 100}
         self.third_party_data = third_party_data or {}
+        self.api_client = api_client
 
-        # Create Mario-style tile-based map
-        print("Creating Mario-style tile-based map...")
-        self._create_mario_style_map()
+        # Create map based on mode
+        if mode == "platformer":
+            print("Creating platformer-style level...")
+            self._create_platformer_map()
+        else:
+            print("Creating lobby-style tile-based map...")
+            self._create_mario_style_map()
         print(f"Created map: {self.map_width}x{self.map_height}")
 
         # Camera position (top-left corner of viewport)
@@ -61,7 +70,7 @@ class GameMap:
         self.camera_y = 0
 
         # Zombie reveal radius (pixels) - smaller radius means you have to get closer
-        self.reveal_radius = 60  # Reduced from 80 to make hunting more challenging
+        self.reveal_radius = reveal_radius  # Can be customized per environment difficulty
 
     def _generate_rooms_from_accounts(self, tiles_wide: int, tiles_high: int) -> List[Tuple[int, int, int, int]]:
         """
@@ -219,6 +228,131 @@ class GameMap:
 
         # Create 3rd party entities in hallways
         self.third_parties = self._create_third_party_entities()
+
+    def _create_platformer_map(self) -> None:
+        """Create a side-scrolling platformer level with platforms and sky."""
+        # Calculate total zombies
+        total_zombies = sum(self.account_data.values())
+        num_accounts = len(self.account_data)
+
+        print(f"Creating platformer level for {num_accounts} AWS accounts with {total_zombies} total zombies")
+
+        # Platformer dimensions - wide horizontal level
+        tiles_wide = 156  # Wider for platformer (reduced from 3000 for simpler level)
+        tiles_high = 60   # Height for platformer
+
+        self.map_width = tiles_wide * self.tile_size
+        self.map_height = tiles_high * self.tile_size
+
+        # Create map surface
+        self.map_surface = pygame.Surface((self.map_width, self.map_height))
+
+        # Platformer color palette
+        SKY_BLUE = (100, 140, 200)
+        SKY_LIGHT = (120, 160, 220)
+        GROUND_PURPLE = (80, 60, 100)
+        GROUND_LIGHT = (100, 80, 120)
+        GROUND_TOP = (120, 90, 140)
+        BLACK = (0, 0, 0)
+
+        # Create tile map (0 = air/sky, 1 = ground/platform)
+        tile_map = [[0 for _ in range(tiles_wide)] for _ in range(tiles_high)]
+
+        # Add flat ground at bottom (8 tiles high)
+        ground_height = 8
+        for y in range(tiles_high - ground_height, tiles_high):
+            for x in range(tiles_wide):
+                tile_map[y][x] = 1
+
+        # Add floating platforms
+        import random
+        random.seed(42)  # Consistent generation
+        self.platform_positions = []
+
+        num_platforms = 25  # Moderate number of platforms
+        for i in range(num_platforms):
+            platform_x = random.randint(10, tiles_wide - 20)
+            platform_height_above_ground = random.randint(4, 15)
+            platform_y = (tiles_high - ground_height) - platform_height_above_ground
+            platform_width = random.randint(3, 12)
+
+            # Store platform position for power-ups
+            platform_center_x = (platform_x + platform_width // 2) * self.tile_size
+            platform_top_y = platform_y * self.tile_size
+            self.platform_positions.append((platform_center_x, platform_top_y, platform_width * self.tile_size))
+
+            # Draw platform
+            for x in range(platform_x, min(platform_x + platform_width, tiles_wide)):
+                if 0 <= platform_y < tiles_high:
+                    tile_map[platform_y][x] = 1
+
+        # Create single room for entire level
+        self.rooms = [(0, 0, tiles_wide, tiles_high)]
+        self.room_accounts = {0: {
+            'name': list(self.account_data.keys())[0] if self.account_data else "Default",
+            'zombie_count': total_zombies,
+            'chamber_num': 1,
+            'total_chambers': 1,
+            'room_type': 'platformer_level'
+        }}
+
+        # Render tiles to surface
+        for y in range(tiles_high):
+            for x in range(tiles_wide):
+                tile_x = x * self.tile_size
+                tile_y = y * self.tile_size
+
+                if tile_map[y][x] == 1:
+                    # Ground or platform tile
+                    if y >= tiles_high - ground_height:
+                        # Ground tiles
+                        if y == tiles_high - ground_height:
+                            self._draw_ground_top_tile(tile_x, tile_y)
+                        else:
+                            # Underground tiles (checkered)
+                            if (x + y) % 2 == 0:
+                                self._draw_floor_tile(tile_x, tile_y, GROUND_PURPLE)
+                            else:
+                                self._draw_floor_tile(tile_x, tile_y, GROUND_LIGHT)
+                    else:
+                        # Floating platform
+                        self._draw_wall_tile(tile_x, tile_y)
+                else:
+                    # Sky tiles (gradient)
+                    sky_gradient = max(0, min(1, y / (tiles_high * 0.6)))
+                    r = int(SKY_BLUE[0] + (SKY_LIGHT[0] - SKY_BLUE[0]) * sky_gradient)
+                    g = int(SKY_BLUE[1] + (SKY_LIGHT[1] - SKY_BLUE[1]) * sky_gradient)
+                    b = int(SKY_BLUE[2] + (SKY_LIGHT[2] - SKY_BLUE[2]) * sky_gradient)
+                    pygame.draw.rect(self.map_surface, (r, g, b), (tile_x, tile_y, self.tile_size, self.tile_size))
+
+        # Store tile map for collision detection
+        self.tile_map = tile_map
+        self.tiles_wide = tiles_wide
+        self.tiles_high = tiles_high
+
+        # No doors or collectibles in platformer levels
+        self.doors = []
+        self.collectibles = []
+        self.third_parties = []
+
+        print(f"Generated platformer level: {tiles_wide}x{tiles_high} tiles with {num_platforms} platforms")
+
+    def _draw_ground_top_tile(self, x: int, y: int) -> None:
+        """Draw the top layer of ground (grass-like)."""
+        GROUND_TOP = (120, 90, 140)
+        GRASS_DARK = (100, 70, 120)
+        BLACK = (0, 0, 0)
+
+        # Main ground top
+        pygame.draw.rect(self.map_surface, GROUND_TOP, (x, y, self.tile_size, self.tile_size))
+
+        # Add grass-like details
+        for i in range(3):
+            grass_x = x + 2 + i * 5
+            pygame.draw.line(self.map_surface, GRASS_DARK, (grass_x, y), (grass_x, y + 3), 1)
+
+        # Black outline
+        pygame.draw.rect(self.map_surface, BLACK, (x, y, self.tile_size, self.tile_size), 1)
 
     def _draw_floor_tile(self, x: int, y: int, base_color: tuple) -> None:
         """Draw a simple Mario-style floor tile."""

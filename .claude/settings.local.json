@@ -4,7 +4,9 @@
       "Bash(python3:*)",
       "WebSearch",
       "Bash(pkill:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(timeout 30 python3:*)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []

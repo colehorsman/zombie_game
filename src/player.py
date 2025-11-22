@@ -29,8 +29,28 @@ class Player:
         self.width = 40
         self.height = 40
 
-        # Movement speed (pixels per second) - realistic walking speed
-        self.move_speed = 120.0  # Slower for realistic navigation
+        # Movement speed (pixels per second) - realistic walking speed for lobby
+        # Platformer mode will use different speeds
+        self.base_move_speed = 120.0  # Base speed for lobby (top-down)
+        self.move_speed = 120.0  # Current movement speed
+        self.base_jump_speed = 600.0  # Base jump velocity for platformer
+        self.jump_speed = 600.0  # Current jump velocity
+        self.gravity = 1200.0    # Gravity acceleration (pixels/s²) for platformer
+        self.max_fall_speed = 600.0  # Terminal velocity
+        
+        # Ground detection for platformer mode
+        self.on_ground = False
+        if map_height:
+            ground_tiles = 8  # Number of ground tiles
+            tile_size = 16    # Tile size in pixels
+            tiles_high = map_height // tile_size
+            ground_start_tile = tiles_high - ground_tiles
+            self.ground_y = (ground_start_tile * tile_size) - self.height
+        else:
+            self.ground_y = 500
+        
+        # Crouching state
+        self.is_crouching = False
 
         # Facing direction for firing projectiles
         self.facing_direction = Vector2(1, 0)  # Start facing right
@@ -225,6 +245,30 @@ class Player:
         """Stop vertical movement."""
         self.velocity.y = 0
 
+    def jump(self) -> None:
+        """Make the player jump (platformer mode only)."""
+        if self.on_ground:
+            self.velocity.y = -self.jump_speed
+            self.on_ground = False
+
+    def crouch(self) -> None:
+        """Crouch down (platformer mode)."""
+        self.is_crouching = True
+
+    def stand_up(self) -> None:
+        """Stand up from crouching (platformer mode)."""
+        self.is_crouching = False
+
+    def set_speed_multiplier(self, multiplier: float) -> None:
+        """
+        Set the speed multiplier for movement and jumping (for power-ups).
+
+        Args:
+            multiplier: Speed multiplier (1.0 = normal, 2.0 = double speed, etc.)
+        """
+        self.move_speed = self.base_move_speed * multiplier
+        self.jump_speed = self.base_jump_speed * multiplier
+
     def fire_projectile(self) -> 'Projectile':
         """
         Create a projectile at the player's current position, firing in facing direction.
@@ -250,13 +294,21 @@ class Player:
 
         return Projectile(projectile_pos, self.facing_direction)
 
-    def update(self, delta_time: float) -> None:
+    def update(self, delta_time: float, is_platformer_mode: bool = False) -> None:
         """
         Update player position based on velocity and delta time.
 
         Args:
             delta_time: Time elapsed since last frame in seconds
+            is_platformer_mode: If True, apply platformer physics (gravity, ground collision)
         """
+        # PLATFORMER MODE: Apply gravity when in air
+        if is_platformer_mode and not self.on_ground:
+            self.velocity.y += self.gravity * delta_time
+            # Cap fall speed (terminal velocity)
+            if self.velocity.y > self.max_fall_speed:
+                self.velocity.y = self.max_fall_speed
+
         # Calculate next position
         next_x = self.position.x + self.velocity.x * delta_time
         next_y = self.position.y + self.velocity.y * delta_time
@@ -264,23 +316,49 @@ class Player:
         # Constrain to map boundaries if map dimensions are set
         if self.map_width is not None and self.map_height is not None:
             next_x = max(0, min(next_x, self.map_width - self.width))
-            next_y = max(0, min(next_y, self.map_height - self.height))
+            if not is_platformer_mode:  # Only constrain Y in top-down mode
+                next_y = max(0, min(next_y, self.map_height - self.height))
 
-        # Check collision with booth boundaries if game_map is available
+        # PLATFORMER MODE: Ground collision
+        if is_platformer_mode:
+            if next_y >= self.ground_y:
+                # Hit ground
+                self.position.y = self.ground_y
+                self.velocity.y = 0
+                self.on_ground = True
+            else:
+                # Check vertical collision with map (ceilings, platforms)
+                if self.game_map is not None:
+                    can_move_y = self._can_move_to(self.position.x, next_y)
+                    if can_move_y:
+                        self.position.y = next_y
+                        self.on_ground = False
+                    else:
+                        # Hit ceiling or platform
+                        if self.velocity.y < 0:
+                            # Hit ceiling - stop upward movement
+                            self.velocity.y = 0
+                else:
+                    self.position.y = next_y
+                    self.on_ground = False
+
+        # Check collision with map boundaries if game_map is available
         if self.game_map is not None:
-            # Try moving horizontally
+            # Check horizontal and vertical movement independently
             can_move_x = self._can_move_to(next_x, self.position.y)
             if can_move_x:
                 self.position.x = next_x
-
-            # Try moving vertically
-            can_move_y = self._can_move_to(self.position.x, next_y)
-            if can_move_y:
-                self.position.y = next_y
+            
+            # In top-down mode, check vertical movement independently
+            if not is_platformer_mode:
+                can_move_y = self._can_move_to(self.position.x, next_y)
+                if can_move_y:
+                    self.position.y = next_y
         else:
             # No collision detection - just move
             self.position.x = next_x
-            self.position.y = next_y
+            if not is_platformer_mode:
+                self.position.y = next_y
 
     def _can_move_to(self, x: float, y: float) -> bool:
         """
@@ -296,22 +374,29 @@ class Player:
         if self.game_map is None:
             return True
 
-        # Check multiple points around the player's bounding box
-        # This ensures we don't clip into walls
+        # For lobby mode (top-down), check multiple points around the player's bounding box
+        # Require at least 3 out of 5 points to be walkable to prevent going through walls
+        # but allow movement in hallways
         check_points = [
-            (x + 5, y + 5),                           # Top-left corner (with margin)
-            (x + self.width - 5, y + 5),              # Top-right corner
-            (x + 5, y + self.height - 5),             # Bottom-left corner
-            (x + self.width - 5, y + self.height - 5), # Bottom-right corner
-            (x + self.width // 2, y + self.height // 2) # Center
+            (x + self.width // 2, y + self.height // 2),  # Center (most important)
+            (x + 5, y + self.height // 2),                 # Left edge center
+            (x + self.width - 5, y + self.height // 2),   # Right edge center
+            (x + self.width // 2, y + 5),                  # Top edge center
+            (x + self.width // 2, y + self.height - 5),   # Bottom edge center
         ]
-
-        # All points must be walkable
-        for check_x, check_y in check_points:
-            if not self.game_map.is_walkable(int(check_x), int(check_y)):
-                return False
-
-        return True
+        
+        # Count how many points are walkable
+        walkable_count = sum(1 for check_x, check_y in check_points 
+                           if self.game_map.is_walkable(int(check_x), int(check_y)))
+        
+        # Require at least 3 out of 5 points to be walkable (prevents going through walls)
+        # Center point is most important - if center is walkable, allow movement
+        center_walkable = self.game_map.is_walkable(int(check_points[0][0]), int(check_points[0][1]))
+        if center_walkable and walkable_count >= 2:
+            return True
+        
+        # Otherwise require majority (3/5) to be walkable
+        return walkable_count >= 3
 
     def get_bounds(self) -> pygame.Rect:
         """

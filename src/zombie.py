@@ -318,12 +318,14 @@ class Zombie:
         
         return self.health == 0
 
-    def update(self, delta_time: float) -> None:
+    def update(self, delta_time: float, player_pos=None, game_map=None) -> None:
         """
         Update zombie state.
 
         Args:
             delta_time: Time elapsed since last frame in seconds
+            player_pos: Optional player position for AI (not used yet)
+            game_map: Optional game map for navigation (not used yet)
         """
         # Update flash effect timer
         if self.is_flashing:
@@ -331,9 +333,9 @@ class Zombie:
             if self.flash_timer <= 0:
                 self.is_flashing = False
                 self.flash_timer = 0.0
-        
+
         # Zombies are stationary in this version
-        # Could add movement logic here if needed
+        # Could add movement logic here if needed (use player_pos and game_map)
         pass
 
     def get_bounds(self) -> pygame.Rect:

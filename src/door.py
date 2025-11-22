@@ -34,6 +34,9 @@ class Door:
         # Animation state
         self.is_open = False
         self.animation_timer = 0.0
+        
+        # Completion state
+        self.is_completed = False  # True if the level this door leads to has been completed
 
         # Create door sprite
         self.sprite = self._create_pipe_sprite()

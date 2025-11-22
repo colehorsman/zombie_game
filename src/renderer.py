@@ -11,6 +11,7 @@ from projectile import Projectile
 from game_map import GameMap
 from door import Door
 from collectible import Collectible
+from boss import Boss
 
 
 logger = logging.getLogger(__name__)
@@ -200,6 +201,20 @@ class Renderer:
         for door in doors:
             if game_map.is_on_screen(door.position.x, door.position.y, door.width, door.height):
                 door.render(self.screen, game_map.camera_x, game_map.camera_y)
+                
+                # Render completion indicator if door leads to completed level
+                if door.is_completed:
+                    screen_x = int(door.position.x - game_map.camera_x)
+                    screen_y = int(door.position.y - game_map.camera_y)
+                    
+                    # Draw green checkmark or "COMPLETED" text above door
+                    try:
+                        font = pygame.font.Font(None, 14)
+                        text = font.render("✓ COMPLETED", True, (0, 255, 0))  # Green
+                        text_rect = text.get_rect(center=(screen_x + door.width // 2, screen_y - 20))
+                        self.screen.blit(text, text_rect)
+                    except:
+                        pass  # Font rendering failed, skip
 
     def render_collectibles(self, collectibles: List[Collectible], game_map: GameMap) -> None:
         """
@@ -476,6 +491,92 @@ class Renderer:
             (bar_x, bar_y, bar_width, bar_height),
             1
         )
+
+    def render_boss(self, boss: Boss, game_map: Optional[GameMap] = None) -> None:
+        """
+        Render the boss entity with cloud if on cloud.
+
+        Args:
+            boss: Boss to render
+            game_map: Game map for coordinate conversion (None for screen coordinates)
+        """
+        if not boss or boss.is_defeated:
+            return
+
+        if game_map:
+            # Map mode: always render boss if in boss battle (even if slightly off-screen during drop)
+            # Check with larger bounds to catch boss during sky drop
+            if game_map.is_on_screen(boss.position.x, boss.position.y - 200, boss.width, boss.height + 300):
+                screen_x, screen_y = game_map.world_to_screen(boss.position.x, boss.position.y)
+                
+                # Render cloud if boss is on cloud (during entrance)
+                if boss.on_cloud and hasattr(boss, 'cloud_sprite'):
+                    cloud_screen_y = screen_y + boss.height + int(boss.cloud_y_offset)
+                    cloud_screen_x = screen_x - (boss.cloud_sprite.get_width() - boss.width) // 2
+                    self.screen.blit(boss.cloud_sprite, (cloud_screen_x, cloud_screen_y))
+                
+                # Apply flash effect if active
+                if boss.is_flashing:
+                    flash_sprite = boss.sprite.copy()
+                    flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                    self.screen.blit(flash_sprite, (screen_x, screen_y))
+                else:
+                    self.screen.blit(boss.sprite, (screen_x, screen_y))
+        else:
+            # Classic mode: render if on screen
+            if -100 < boss.position.x < self.width + 100:
+                # Render cloud if boss is on cloud
+                if boss.on_cloud and hasattr(boss, 'cloud_sprite'):
+                    cloud_y = int(boss.position.y) + boss.height + int(boss.cloud_y_offset)
+                    cloud_x = int(boss.position.x) - (boss.cloud_sprite.get_width() - boss.width) // 2
+                    self.screen.blit(boss.cloud_sprite, (cloud_x, cloud_y))
+                
+                if boss.is_flashing:
+                    flash_sprite = boss.sprite.copy()
+                    flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                    self.screen.blit(flash_sprite, (int(boss.position.x), int(boss.position.y)))
+                else:
+                    self.screen.blit(boss.sprite, (int(boss.position.x), int(boss.position.y)))
+
+    def render_boss_health_bar(self, boss: Boss, game_map: Optional[GameMap] = None) -> None:
+        """
+        Render boss health bar at top of screen.
+
+        Args:
+            boss: Boss to render health bar for
+            game_map: Game map (for coordinate conversion, not used here)
+        """
+        if not boss or boss.is_defeated:
+            return
+
+        # Health bar at top center of screen
+        bar_width = 400
+        bar_height = 20
+        bar_x = (self.width - bar_width) // 2
+        bar_y = 20
+
+        # Background (dark gray)
+        pygame.draw.rect(self.screen, (64, 64, 64), (bar_x, bar_y, bar_width, bar_height))
+        
+        # Health fill (red gradient)
+        health_percent = boss.health / boss.max_health
+        health_width = int(bar_width * health_percent)
+        if health_width > 0:
+            # Red gradient
+            for i in range(health_width):
+                r = int(255 - (i / health_width) * 75)  # 255 to 180
+                color = (r, 0, 0)
+                pygame.draw.rect(self.screen, color, (bar_x + i, bar_y, 1, bar_height))
+        
+        # Gold border
+        pygame.draw.rect(self.screen, (255, 215, 0), (bar_x, bar_y, bar_width, bar_height), 2)
+
+        # Boss name above health bar
+        name_font = pygame.font.Font(None, 24)
+        name_text = name_font.render(boss.name, True, (255, 215, 0))
+        name_x = (self.width - name_text.get_width()) // 2
+        name_y = bar_y - 25
+        self.screen.blit(name_text, (name_x, name_y))
 
     def render_projectiles(self, projectiles: List[Projectile], game_map: Optional[GameMap] = None) -> None:
         """
