@@ -40,8 +40,9 @@ def load_configuration() -> dict:
         'api_url': os.getenv('SONRAI_API_URL'),
         'org_id': os.getenv('SONRAI_ORG_ID'),
         'api_token': os.getenv('SONRAI_API_TOKEN'),
-        'game_width': int(os.getenv('GAME_WIDTH', '800')),
-        'game_height': int(os.getenv('GAME_HEIGHT', '600')),
+        'game_width': int(os.getenv('GAME_WIDTH', '1280')),  # Base rendering resolution
+        'game_height': int(os.getenv('GAME_HEIGHT', '720')),
+        'fullscreen': os.getenv('FULLSCREEN', 'false').lower() == 'true',  # Fullscreen mode
         'target_fps': int(os.getenv('TARGET_FPS', '60')),
         'max_zombies': int(os.getenv('MAX_ZOMBIES', '1000'))  # Default to 1000 to capture all API zombies
     }
@@ -57,26 +58,79 @@ def load_configuration() -> dict:
     return config
 
 
-def initialize_pygame(width: int, height: int) -> pygame.Surface:
+def calculate_scaled_dimensions(game_width: int, game_height: int, display_width: int, display_height: int) -> tuple[int, int, int, int]:
     """
-    Initialize Pygame and create the game window.
+    Calculate scaled dimensions with aspect ratio preservation (letterboxing/pillarboxing).
 
     Args:
-        width: Window width
-        height: Window height
+        game_width: Base game rendering width
+        game_height: Base game rendering height
+        display_width: Display/window width
+        display_height: Display/window height
 
     Returns:
-        Pygame surface for rendering
+        Tuple of (scaled_width, scaled_height, offset_x, offset_y)
+    """
+    game_aspect = game_width / game_height
+    display_aspect = display_width / display_height
+
+    if display_aspect > game_aspect:
+        # Display is wider - pillarbox (black bars on sides)
+        scaled_height = display_height
+        scaled_width = int(scaled_height * game_aspect)
+        offset_x = (display_width - scaled_width) // 2
+        offset_y = 0
+    else:
+        # Display is taller - letterbox (black bars on top/bottom)
+        scaled_width = display_width
+        scaled_height = int(scaled_width / game_aspect)
+        offset_x = 0
+        offset_y = (display_height - scaled_height) // 2
+
+    return scaled_width, scaled_height, offset_x, offset_y
+
+
+def initialize_pygame(width: int, height: int, fullscreen: bool = False) -> tuple[pygame.Surface, pygame.Surface]:
+    """
+    Initialize Pygame and create the game window with display scaling.
+
+    Args:
+        width: Base game rendering width
+        height: Base game rendering height
+        fullscreen: Whether to start in fullscreen mode
+
+    Returns:
+        Tuple of (display_surface, game_surface)
+        - display_surface: The actual window/screen (scaled)
+        - game_surface: Internal rendering surface (base resolution)
 
     Raises:
         RuntimeError: If Pygame initialization fails
     """
     try:
         pygame.init()
-        screen = pygame.display.set_mode((width, height))
+
+        # Create display surface (fullscreen or windowed)
+        if fullscreen:
+            # Get native screen resolution
+            display_info = pygame.display.Info()
+            display = pygame.display.set_mode(
+                (display_info.current_w, display_info.current_h),
+                pygame.FULLSCREEN
+            )
+            logger.info(f"Fullscreen mode: {display_info.current_w}x{display_info.current_h}")
+        else:
+            # Windowed mode - make it resizable for macOS menu options
+            display = pygame.display.set_mode((width, height), pygame.RESIZABLE)
+            logger.info(f"Windowed mode: {width}x{height}")
+
         pygame.display.set_caption("Sonrai Zombie Blaster")
-        logger.info(f"Pygame initialized: {width}x{height}")
-        return screen
+
+        # Create internal game surface at base resolution
+        game_surface = pygame.Surface((width, height))
+        logger.info(f"Game rendering surface: {width}x{height}")
+
+        return display, game_surface
     except pygame.error as e:
         raise RuntimeError(f"Failed to initialize Pygame: {e}")
 
@@ -162,8 +216,13 @@ def main():
         sys.exit(1)
 
     try:
-        # Initialize Pygame
-        screen = initialize_pygame(config['game_width'], config['game_height'])
+        # Initialize Pygame with fullscreen support
+        display, game_surface = initialize_pygame(
+            config['game_width'],
+            config['game_height'],
+            config['fullscreen']
+        )
+        is_fullscreen = config['fullscreen']
 
     except RuntimeError as e:
         print(f"\n❌ Pygame Initialization Error: {e}")
@@ -265,7 +324,8 @@ def main():
     # Zombies will be loaded when entering levels
 
     # Initialize renderer
-    renderer = Renderer(screen)
+    # Initialize renderer with game surface (not display)
+    renderer = Renderer(game_surface)
 
     # Start the game
     game_engine.start()
@@ -280,6 +340,37 @@ def main():
 
         # Handle input
         events = pygame.event.get()
+
+        # Handle fullscreen toggle and window resize events
+        for event in events:
+            if event.type == pygame.KEYDOWN:
+                # Check for fullscreen toggle keys
+                is_toggle = (
+                    event.key == pygame.K_F11 or  # F11
+                    event.key == pygame.K_f or     # F key
+                    (event.key == pygame.K_f and (event.mod & pygame.KMOD_META))  # CMD+F on macOS
+                )
+
+                if is_toggle:
+                    is_fullscreen = not is_fullscreen
+                    logger.info(f"Fullscreen toggle detected! Switching to: {'FULLSCREEN' if is_fullscreen else 'WINDOWED'}")
+
+                    # Recreate display with new mode
+                    display, game_surface = initialize_pygame(
+                        config['game_width'],
+                        config['game_height'],
+                        is_fullscreen
+                    )
+                    # Update renderer with new game surface
+                    renderer.screen = game_surface
+                    logger.info(f"Display mode changed successfully")
+
+            elif event.type == pygame.VIDEORESIZE:
+                # Window was resized (by user or macOS menu)
+                logger.info(f"Window resized to: {event.w}x{event.h}")
+                # Update display size but keep game_surface at base resolution
+                display = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+
         game_engine.handle_input(events)
 
         # Update game state
@@ -352,6 +443,27 @@ def main():
         # Render congratulations message if present
         if game_state.status == GameStatus.PAUSED and game_state.congratulations_message:
             renderer.render_message_bubble(game_state.congratulations_message)
+
+        # Scale and display game surface with aspect ratio preservation
+        if is_fullscreen or display.get_size() != game_surface.get_size():
+            # Calculate scaled dimensions with letterboxing/pillarboxing
+            display_width, display_height = display.get_size()
+            scaled_width, scaled_height, offset_x, offset_y = calculate_scaled_dimensions(
+                config['game_width'],
+                config['game_height'],
+                display_width,
+                display_height
+            )
+
+            # Clear display (black background for letterboxing)
+            display.fill((0, 0, 0))
+
+            # Scale game surface and blit to display
+            scaled_surface = pygame.transform.scale(game_surface, (scaled_width, scaled_height))
+            display.blit(scaled_surface, (offset_x, offset_y))
+        else:
+            # Windowed mode at native resolution - direct blit
+            display.blit(game_surface, (0, 0))
 
         # Update display
         pygame.display.flip()
