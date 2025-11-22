@@ -1,10 +1,37 @@
-# Sonrai Zombie Blaster
+# Sonrai Zombie Blaster (v2 - Hybrid Mode)
+
+> **Branch: v2** - The ultimate hybrid experience combining top-down lobby exploration with Mario-style platformer levels!
+> Looking for other versions? Check out `v1` for original top-down only or `levels` for platformer only.
 
 A retro-style video game that visualizes and gamifies the process of identifying and remediating unused AWS identities through the Sonrai API. Blast zombies representing real unused identities and watch your cloud security posture improve!
 
-## Features
+## About This Version
 
-- 🎮 Simple retro graphics inspired by Chrome's offline dinosaur game
+This is **v2 - the hybrid dual-mode version** combining the best of both worlds:
+
+### Lobby Mode (Top-Down)
+- Explore a central hub with doors to each AWS account
+- Top-down navigation with fog-of-war mechanics
+- Third-party entities patrol hallways around production rooms
+- Walk through doors to enter account-specific platformer levels
+
+### Level Mode (Platformer)
+- Mario-style side-scrolling gameplay inside each AWS account
+- Jump between randomized floating platforms
+- Gravity-based physics for player and zombies
+- Dynamic level width scaling (512 zombies = 27,200px wide!)
+- Power-ups scattered on ~15% of platforms
+- No fog-of-war - see all zombies from the start
+
+### Progression System
+- 🔒 Levels unlock linearly after completing previous levels
+- 🏖️ Sandbox account always unlocked (great for learning)
+- ✅ Complete a level by quarantining all zombies and returning to lobby
+- 🔓 **Cheat codes** for testing: `UNLOCK` (all levels) and `SKIP` (current level)
+
+## Key Features
+
+- 🎮 **Dual-mode gameplay**: Lobby exploration + platformer action
 - 🔫 Mega Man-style character with ray gun
 - 🧟 Each zombie represents a real unused AWS identity from Sonrai
 - 🔒 Eliminating zombies triggers real quarantine actions via Sonrai API
@@ -12,8 +39,11 @@ A retro-style video game that visualizes and gamifies the process of identifying
 - 💥 Damage system with health points (zombies: 3 HP, third parties: 10 HP)
 - 📈 Score tracking with damage multiplier (increases every 10 eliminations)
 - 📊 Real-time progress tracking and statistics
-- 🎯 Third-party access visualization and blocking
+- 🎯 Third-party access visualization and blocking in lobby
 - 💬 Retro Game Boy-style congratulations messages
+- 🎪 Randomized platform layouts for varied gameplay
+- 🎁 Power-up collectibles in platformer levels
+- 🔓 Admin cheat codes for testing (see [CHEAT_CODES.md](CHEAT_CODES.md))
 
 ## Screenshots
 
@@ -199,10 +229,21 @@ python src/main.py
 
 ## Controls
 
+### Lobby Mode (Top-Down)
+- **Arrow Keys or WASD**: Move in 8 directions
+- **Space**: Fire ray gun at third-party entities
+- **Walk into doors**: Enter account levels
+
+### Platformer Mode (Side-Scrolling)
 - **Arrow Keys (← →) or A/D**: Move left/right
-- **Space**: Fire ray gun
-- **Enter**: Dismiss congratulations message and continue
-- **ESC**: Quit game
+- **Up Arrow or W**: Jump (gravity-based physics)
+- **Space**: Fire ray gun at zombies
+- **Return to entrance**: Complete level and return to lobby
+
+### Universal Controls
+- **Enter**: Dismiss messages and continue
+- **ESC**: Pause/quit game
+- **Cheat Codes**: Type letter sequences (see [CHEAT_CODES.md](CHEAT_CODES.md))
 
 The player character will automatically stop when you release the movement keys.
 
