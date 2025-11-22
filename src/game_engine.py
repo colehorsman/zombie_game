@@ -987,21 +987,58 @@ class GameEngine:
         # Handle continuous movement
         # LOBBY MODE: Top-down movement (4-directional)
         if self.game_state.status == GameStatus.LOBBY:
-            # Horizontal movement
-            if pygame.K_LEFT in self.keys_pressed or pygame.K_a in self.keys_pressed:
+            # Check keyboard input
+            keyboard_left = pygame.K_LEFT in self.keys_pressed or pygame.K_a in self.keys_pressed
+            keyboard_right = pygame.K_RIGHT in self.keys_pressed or pygame.K_d in self.keys_pressed
+            keyboard_up = pygame.K_UP in self.keys_pressed or pygame.K_w in self.keys_pressed
+            keyboard_down = pygame.K_DOWN in self.keys_pressed or pygame.K_s in self.keys_pressed
+
+            # Check controller D-pad/analog stick
+            controller_left = False
+            controller_right = False
+            controller_up = False
+            controller_down = False
+            if self.joystick:
+                # D-pad (hat) - primary for 8BitDo
+                if self.joystick.get_numhats() > 0:
+                    hat = self.joystick.get_hat(0)
+                    if hat[0] < 0:
+                        controller_left = True
+                    elif hat[0] > 0:
+                        controller_right = True
+                    if hat[1] > 0:
+                        controller_up = True
+                    elif hat[1] < 0:
+                        controller_down = True
+
+                # Left analog stick (axis 0 and 1) - backup
+                if self.joystick.get_numaxes() > 1:
+                    axis_x = self.joystick.get_axis(0)
+                    axis_y = self.joystick.get_axis(1)
+                    if axis_x < -0.3:  # Deadzone
+                        controller_left = True
+                    elif axis_x > 0.3:
+                        controller_right = True
+                    if axis_y < -0.3:
+                        controller_up = True
+                    elif axis_y > 0.3:
+                        controller_down = True
+
+            # Horizontal movement (keyboard or controller)
+            if keyboard_left or controller_left:
                 self.player.move_left()
-            elif pygame.K_RIGHT in self.keys_pressed or pygame.K_d in self.keys_pressed:
+            elif keyboard_right or controller_right:
                 self.player.move_right()
             else:
                 self.player.stop_horizontal()
-            
-            # Vertical movement
-            if pygame.K_UP in self.keys_pressed or pygame.K_w in self.keys_pressed:
+
+            # Vertical movement (keyboard or controller)
+            if keyboard_up or controller_up:
                 self.player.move_up()
-                logger.info(f"UP key pressed in lobby, velocity.y = {self.player.velocity.y}, position.y = {self.player.position.y}")
-            elif pygame.K_DOWN in self.keys_pressed or pygame.K_s in self.keys_pressed:
+                logger.info(f"UP pressed in lobby, velocity.y = {self.player.velocity.y}, position.y = {self.player.position.y}")
+            elif keyboard_down or controller_down:
                 self.player.move_down()
-                logger.info(f"DOWN key pressed in lobby, velocity.y = {self.player.velocity.y}, position.y = {self.player.position.y}")
+                logger.info(f"DOWN pressed in lobby, velocity.y = {self.player.velocity.y}, position.y = {self.player.position.y}")
             else:
                 self.player.stop_vertical()
         
