@@ -319,7 +319,7 @@ class Player:
             if not is_platformer_mode:  # Only constrain Y in top-down mode
                 next_y = max(0, min(next_y, self.map_height - self.height))
 
-        # PLATFORMER MODE: Ground collision
+        # PLATFORMER MODE: Ground and platform collision
         if is_platformer_mode:
             if next_y >= self.ground_y:
                 # Hit ground
@@ -327,17 +327,47 @@ class Player:
                 self.velocity.y = 0
                 self.on_ground = True
             else:
-                # Check vertical collision with map (ceilings, platforms)
-                if self.game_map is not None:
-                    can_move_y = self._can_move_to(self.position.x, next_y)
-                    if can_move_y:
-                        self.position.y = next_y
-                        self.on_ground = False
-                    else:
-                        # Hit ceiling or platform
-                        if self.velocity.y < 0:
+                # Check if landing on a platform
+                if self.game_map is not None and hasattr(self.game_map, 'tile_map'):
+                    # Check tile below player's feet
+                    feet_x = int(self.position.x + self.width // 2)
+                    feet_y = int(next_y + self.height)
+
+                    # Convert to tile coordinates
+                    tile_size = self.game_map.tile_size
+                    tile_x = feet_x // tile_size
+                    tile_y = feet_y // tile_size
+
+                    # Check if moving downward and tile below is solid (platform)
+                    if (self.velocity.y > 0 and
+                        0 <= tile_x < self.game_map.tiles_wide and
+                        0 <= tile_y < self.game_map.tiles_high and
+                        self.game_map.tile_map[tile_y][tile_x] == 1):
+                        # Landing on platform - snap to platform top
+                        platform_top_y = tile_y * tile_size - self.height
+                        self.position.y = platform_top_y
+                        self.velocity.y = 0
+                        self.on_ground = True
+                    elif self.velocity.y < 0:
+                        # Moving upward - check for ceiling collision
+                        head_x = int(self.position.x + self.width // 2)
+                        head_y = int(next_y)
+                        head_tile_x = head_x // tile_size
+                        head_tile_y = head_y // tile_size
+
+                        if (0 <= head_tile_x < self.game_map.tiles_wide and
+                            0 <= head_tile_y < self.game_map.tiles_high and
+                            self.game_map.tile_map[head_tile_y][head_tile_x] == 1):
                             # Hit ceiling - stop upward movement
                             self.velocity.y = 0
+                        else:
+                            # Can move up freely
+                            self.position.y = next_y
+                            self.on_ground = False
+                    else:
+                        # Falling through air
+                        self.position.y = next_y
+                        self.on_ground = False
                 else:
                     self.position.y = next_y
                     self.on_ground = False

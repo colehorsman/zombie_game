@@ -38,9 +38,22 @@ class Zombie:
         self.is_flashing = False
         self.flash_timer = 0.0
 
-        # Zombie dimensions - make them bigger and more visible
+        # Zombie dimensions - visual sprite size
         self.width = 40
         self.height = 40
+
+        # Collision box - smaller than visual sprite for easier navigation
+        # This makes it easier to jump over zombies
+        self.collision_width = 28  # 12px smaller than visual
+        self.collision_height = 32  # 8px smaller than visual
+        self.collision_offset_x = 6  # Center the collision box
+        self.collision_offset_y = 4  # Align to bottom
+
+        # Physics for platformer mode
+        self.velocity = Vector2(0, 0)
+        self.gravity = 1200.0  # Same as player
+        self.max_fall_speed = 600.0
+        self.on_ground = False
 
         # Extract test user number for display
         self.display_number = self.extract_test_user_number()
@@ -325,7 +338,7 @@ class Zombie:
         Args:
             delta_time: Time elapsed since last frame in seconds
             player_pos: Optional player position for AI (not used yet)
-            game_map: Optional game map for navigation (not used yet)
+            game_map: Optional game map for gravity/collision in platformer mode
         """
         # Update flash effect timer
         if self.is_flashing:
@@ -334,20 +347,68 @@ class Zombie:
                 self.is_flashing = False
                 self.flash_timer = 0.0
 
-        # Zombies are stationary in this version
-        # Could add movement logic here if needed (use player_pos and game_map)
-        pass
+        # PLATFORMER MODE: Apply gravity and ground collision
+        if game_map and hasattr(game_map, 'mode') and game_map.mode == "platformer":
+            # Apply gravity if not on ground
+            if not self.on_ground:
+                self.velocity.y += self.gravity * delta_time
+                # Cap fall speed
+                if self.velocity.y > self.max_fall_speed:
+                    self.velocity.y = self.max_fall_speed
+
+            # Update position based on velocity
+            next_y = self.position.y + self.velocity.y * delta_time
+
+            # Ground collision detection
+            if game_map and hasattr(game_map, 'tiles_high') and hasattr(game_map, 'tile_size'):
+                # Calculate ground level (same as player)
+                tiles_high = game_map.tiles_high
+                ground_height = 8  # tiles
+                tile_size = game_map.tile_size
+                ground_y = (tiles_high - ground_height) * tile_size - self.height
+
+                if next_y >= ground_y:
+                    # Hit ground
+                    self.position.y = ground_y
+                    self.velocity.y = 0
+                    self.on_ground = True
+                else:
+                    # Check if standing on a platform (check tile BELOW zombie's feet)
+                    feet_x = int(self.position.x + self.width // 2)
+                    feet_y = int(next_y + self.height)
+
+                    # Convert to tile coordinates
+                    tile_x = feet_x // tile_size
+                    tile_y = feet_y // tile_size
+
+                    # Check if tile below is solid (platform or ground)
+                    if (0 <= tile_x < game_map.tiles_wide and
+                        0 <= tile_y < tiles_high and
+                        game_map.tile_map[tile_y][tile_x] == 1):
+                        # Standing on platform - snap to platform top
+                        platform_top_y = tile_y * tile_size - self.height
+                        self.position.y = platform_top_y
+                        self.velocity.y = 0
+                        self.on_ground = True
+                    else:
+                        # Still in air - keep falling
+                        self.position.y = next_y
+                        self.on_ground = False
+        else:
+            # Lobby mode or no game map - zombies are stationary
+            pass
 
     def get_bounds(self) -> pygame.Rect:
         """
         Get the bounding rectangle for collision detection.
+        Uses smaller collision box than visual sprite for easier navigation.
 
         Returns:
-            Pygame Rect representing the zombie's bounds
+            Pygame Rect representing the zombie's collision bounds
         """
         return pygame.Rect(
-            int(self.position.x),
-            int(self.position.y),
-            self.width,
-            self.height
+            int(self.position.x + self.collision_offset_x),
+            int(self.position.y + self.collision_offset_y),
+            self.collision_width,
+            self.collision_height
         )

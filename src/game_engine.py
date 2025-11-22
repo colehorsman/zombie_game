@@ -87,11 +87,12 @@ class GameEngine:
                     zombie.is_hidden = False
                 logger.info(f"🏛️  Distributed {len(self.zombies)} zombies across lobby rooms")
 
-            # LOBBY: Spawn player at center of map (landing zone)
-            # Landing zone will be the center of the map
+            # LOBBY: Spawn player near entrance (bottom-left area, close to Sandbox door)
+            # Sandbox room is typically the first/largest room in top-left
+            # Spawn player in bottom-left quadrant for easy access
             self.landing_zone = Vector2(
-                self.game_map.map_width // 2,
-                self.game_map.map_height // 2
+                self.game_map.map_width // 4,  # Left quarter of map
+                self.game_map.map_height * 3 // 4  # Bottom quarter of map
             )
             player_start_pos = self.landing_zone
             logger.info(f"🏛️  Spawning player at LOBBY landing zone ({player_start_pos.x}, {player_start_pos.y})")
@@ -146,6 +147,14 @@ class GameEngine:
         
         # Track which level account IDs have been completed
         self.completed_level_account_ids = set()
+
+        # Cheat code system
+        self.cheat_enabled = False  # All levels unlocked via cheat
+        self.cheat_buffer = []  # Track recent key presses for cheat detection
+        self.cheat_codes = {
+            'UNLOCK': [pygame.K_u, pygame.K_n, pygame.K_l, pygame.K_o, pygame.K_c, pygame.K_k],  # "UNLOCK"
+            'SKIP': [pygame.K_s, pygame.K_k, pygame.K_i, pygame.K_p],  # "SKIP"
+        }
 
         # Timing
         self.start_time = time.time()
@@ -242,10 +251,45 @@ class GameEngine:
             player_bounds = self.player.get_bounds()
             for door in self.game_map.doors:
                 if door.check_collision(player_bounds):
-                    # Player entered a door - transition to level mode
-                    logger.info(f"🚪 Door collision detected! Door name: '{door.destination_room_name}'")
-                    self._enter_level(door)
-                    break
+                    # Check if this door's level is unlocked BEFORE attempting to enter
+                    door_name = door.destination_room_name
+
+                    # Find the level that matches this door
+                    level_unlocked = False
+                    locked_reason = ""
+                    for level in self.level_manager.levels:
+                        if level.account_name == door_name:
+                            # Check if level is unlocked
+                            is_sandbox = level.account_id == "577945324761"  # Sandbox is always unlocked
+                            if is_sandbox or self.cheat_enabled:
+                                level_unlocked = True
+                            else:
+                                # Check if previous level is complete
+                                level_index = self.level_manager.levels.index(level)
+                                if level_index > 0:
+                                    prev_level = self.level_manager.levels[level_index - 1]
+                                    if prev_level.account_id in self.completed_level_account_ids:
+                                        level_unlocked = True
+                                    else:
+                                        locked_reason = f"🔒 Level Locked\\n\\nComplete {prev_level.account_name} to unlock\\n{level.account_name}\\n\\nPress ESC to continue"
+                                else:
+                                    level_unlocked = True
+                            break
+
+                    if level_unlocked:
+                        # Player entered an unlocked door - transition to level mode
+                        logger.info(f"🚪 Door collision detected! Door name: '{door_name}'")
+                        self._enter_level(door)
+                        break
+                    else:
+                        # Door is locked - show message but DON'T enter
+                        if locked_reason:
+                            logger.info(f"🔒 Attempted to enter locked door: {door_name}")
+                            self.game_state.congratulations_message = locked_reason
+                            self.game_state.status = GameStatus.PAUSED
+                            # Move player away from door to prevent repeated collision
+                            self.player.position.x -= 50  # Push player back
+                        break
         
         # Update projectiles (for zapping third parties)
         for projectile in self.projectiles[:]:
@@ -872,7 +916,30 @@ class GameEngine:
                 # Keep only last 8 inputs
                 if len(self.konami_input) > 8:
                     self.konami_input = self.konami_input[-8:]
-                
+
+                # Check for admin cheat codes (UNLOCK, SKIP)
+                self.cheat_buffer.append(event.key)
+                if len(self.cheat_buffer) > 6:  # Max cheat code length
+                    self.cheat_buffer = self.cheat_buffer[-6:]
+
+                # Check UNLOCK cheat (unlocks all levels)
+                if self.cheat_buffer == self.cheat_codes['UNLOCK']:
+                    self.cheat_enabled = True
+                    self.game_state.congratulations_message = "🔓 CHEAT ACTIVATED\\n\\nAll Levels Unlocked!\\n\\nPress ESC to continue"
+                    self.game_state.status = GameStatus.PAUSED
+                    logger.info("🔓 CHEAT: All levels unlocked!")
+                    self.cheat_buffer = []
+
+                # Check SKIP cheat (skip current level)
+                if self.cheat_buffer == self.cheat_codes['SKIP']:
+                    if self.game_state.status == GameStatus.PLAYING and self.level_manager:
+                        # Mark current level as complete and return to lobby
+                        current_level = self.level_manager.levels[self.level_manager.current_level_index]
+                        self.completed_level_account_ids.add(current_level.account_id)
+                        logger.info(f"🔓 CHEAT: Skipping level {current_level.account_name}")
+                        self._return_to_lobby(current_level.account_id)
+                    self.cheat_buffer = []
+
                 # Check if Konami code matches
                 if len(self.konami_input) >= 8:
                     if self.konami_input[-8:] == self.konami_code:

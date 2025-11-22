@@ -237,9 +237,15 @@ class GameMap:
 
         print(f"Creating platformer level for {num_accounts} AWS accounts with {total_zombies} total zombies")
 
-        # Platformer dimensions - wide horizontal level
-        tiles_wide = 156  # Wider for platformer (reduced from 3000 for simpler level)
+        # Platformer dimensions - scale width based on zombie count
+        # With 128 pixel spacing (8 tiles), we need room for zombies across multiple platform layers
+        # Assume zombies distributed across 3-4 vertical layers
+        zombies_per_layer = total_zombies // 3
+        # Each zombie needs ~10 tiles of space (8 for spacing + 2 for zombie width)
+        tiles_wide = max(200, zombies_per_layer * 10)  # Scale based on zombie count
         tiles_high = 60   # Height for platformer
+
+        print(f"Calculated level width: {tiles_wide} tiles ({tiles_wide * self.tile_size} pixels) for {total_zombies} zombies")
 
         self.map_width = tiles_wide * self.tile_size
         self.map_height = tiles_high * self.tile_size
@@ -264,27 +270,45 @@ class GameMap:
             for x in range(tiles_wide):
                 tile_map[y][x] = 1
 
-        # Add floating platforms
+        # Create more randomized but navigable platform layout
         import random
-        random.seed(42)  # Consistent generation
+        random.seed(42)  # Consistent generation for same level each time
         self.platform_positions = []
 
-        num_platforms = 25  # Moderate number of platforms
-        for i in range(num_platforms):
-            platform_x = random.randint(10, tiles_wide - 20)
-            platform_height_above_ground = random.randint(4, 15)
-            platform_y = (tiles_high - ground_height) - platform_height_above_ground
-            platform_width = random.randint(3, 12)
+        # Create platforms with varied heights and widths for interesting navigation
+        current_x = 10  # Start from left edge
+        current_y = (tiles_high - ground_height) - 8  # Start at mid height
 
-            # Store platform position for power-ups
-            platform_center_x = (platform_x + platform_width // 2) * self.tile_size
-            platform_top_y = platform_y * self.tile_size
-            self.platform_positions.append((platform_center_x, platform_top_y, platform_width * self.tile_size))
+        while current_x < tiles_wide - 20:
+            # Randomize platform dimensions
+            platform_width = random.randint(6, 15)  # Varied widths (6-15 tiles)
+            gap_width = random.randint(3, 6)        # Varied jumpable gaps (3-6 tiles)
 
-            # Draw platform
-            for x in range(platform_x, min(platform_x + platform_width, tiles_wide)):
-                if 0 <= platform_y < tiles_high:
-                    tile_map[platform_y][x] = 1
+            # Randomize height variation (stay within jumpable range)
+            # Player can jump ~6-7 tiles high, so keep variations within that
+            height_change = random.randint(-3, 3)  # Move up or down by 0-3 tiles
+            current_y = max(
+                (tiles_high - ground_height) - 18,  # Don't go too high (ceiling)
+                min((tiles_high - ground_height) - 4, current_y + height_change)  # Don't go too low
+            )
+
+            # Draw platform at this position
+            for x in range(current_x, min(current_x + platform_width, tiles_wide)):
+                if 0 <= current_y < tiles_high:
+                    tile_map[current_y][x] = 1
+
+            # Store platform position for zombie/power-up placement
+            self.platform_positions.append((current_x * self.tile_size, current_y * self.tile_size, platform_width * self.tile_size))
+
+            # Move to next platform position (with gap)
+            current_x += platform_width + gap_width
+
+        # Also store ground segments for zombie placement
+        ground_y = (tiles_high - ground_height) * self.tile_size
+        for x in range(0, tiles_wide, 12):  # Ground segments every 12 tiles
+            self.platform_positions.append((x * self.tile_size, ground_y, 12 * self.tile_size))
+
+        print(f"Created {len(self.platform_positions)} randomized platform segments")
 
         # Create single room for entire level
         self.rooms = [(0, 0, tiles_wide, tiles_high)]
@@ -330,12 +354,14 @@ class GameMap:
         self.tiles_wide = tiles_wide
         self.tiles_high = tiles_high
 
-        # No doors or collectibles in platformer levels
+        # No doors or third parties in platformer levels
         self.doors = []
-        self.collectibles = []
         self.third_parties = []
 
-        print(f"Generated platformer level: {tiles_wide}x{tiles_high} tiles with {num_platforms} platforms")
+        # Create power-ups/collectibles on platforms (somewhat infrequent)
+        self.collectibles = self._create_platformer_collectibles()
+
+        print(f"Generated platformer level: {tiles_wide}x{tiles_high} tiles with {len(self.platform_positions)} platform segments")
 
     def _draw_ground_top_tile(self, x: int, y: int) -> None:
         """Draw the top layer of ground (grass-like)."""
@@ -499,6 +525,29 @@ class GameMap:
                 collectibles.append(collectible)
 
         print(f"Created {len(collectibles)} collectible question blocks")
+        return collectibles
+
+    def _create_platformer_collectibles(self) -> List[Collectible]:
+        """Create power-ups/collectibles on platforms in platformer levels."""
+        collectibles = []
+
+        # Place collectibles on some platforms (not all - keep it somewhat infrequent)
+        # Place on roughly every 5th-8th platform
+        for i, (platform_x, platform_y, platform_width) in enumerate(self.platform_positions):
+            # Skip most platforms - only place power-up on ~15% of platforms
+            if random.randint(1, 100) > 15:
+                continue
+
+            # Place collectible on center of platform (floating above it)
+            coll_x = platform_x + platform_width // 2
+            coll_y = platform_y - 24  # Float 24 pixels above platform
+
+            # Random data value for collectible
+            data_value = random.randint(10, 30)
+            collectible = Collectible(Vector2(coll_x, coll_y), data_value)
+            collectibles.append(collectible)
+
+        print(f"Created {len(collectibles)} power-ups in platformer level")
         return collectibles
 
     def _create_third_party_entities(self) -> List[ThirdParty]:
@@ -1216,51 +1265,131 @@ class GameMap:
             room_y_min = (ry + 3) * self.tile_size  # 3 tiles from top wall
             room_y_max = (ry + rh - 3) * self.tile_size  # 3 tiles from bottom wall
 
-            logger.info(f"Placing {len(account_zombies)} zombies in room {room_index} (account {account_num})")
+            # PLATFORMER MODE: Place zombies ON platforms, not randomly in air
+            if self.mode == "platformer":
+                # Increase spacing to at least 8 tiles (128 pixels) for better navigation
+                min_distance = max(min_distance, 128)
 
-            # Place each zombie in this room
-            placed_positions = []
-            for i, zombie in enumerate(account_zombies):
-                max_attempts = 100
-                position_found = False
+                # Get list of platform positions to place zombies on
+                if not hasattr(self, 'platform_positions') or not self.platform_positions:
+                    logger.error("No platform positions available for zombie placement!")
+                    continue
 
-                for attempt in range(max_attempts):
-                    # Generate random position within room bounds
-                    x = rand.uniform(room_x_min, room_x_max)
-                    y = rand.uniform(room_y_min, room_y_max)
+                logger.info(f"Platformer mode: Placing {len(account_zombies)} zombies ON {len(self.platform_positions)} platforms with {min_distance}px spacing")
 
-                    # Check if walkable
-                    if not self.is_walkable(int(x), int(y)):
-                        continue
+                # Place zombies on platforms
+                placed_positions = []
+                platform_index = 0
 
-                    candidate_pos = Vector2(x, y)
+                for i, zombie in enumerate(account_zombies):
+                    max_attempts = 200
+                    position_found = False
 
-                    # Check minimum distance from other zombies in this room
-                    too_close = False
-                    for placed_pos in placed_positions:
-                        dx = candidate_pos.x - placed_pos.x
-                        dy = candidate_pos.y - placed_pos.y
-                        distance = (dx * dx + dy * dy) ** 0.5
+                    for attempt in range(max_attempts):
+                        # Pick a random platform
+                        if platform_index >= len(self.platform_positions):
+                            platform_index = 0  # Wrap around
 
-                        if distance < min_distance:
-                            too_close = True
+                        platform_x, platform_y, platform_width = self.platform_positions[platform_index]
+
+                        # Place zombie randomly along this platform
+                        # Add some padding from platform edges
+                        padding = 32
+                        x = rand.uniform(platform_x + padding, platform_x + platform_width - padding)
+                        y = platform_y - 16  # Place zombie on TOP of platform (16 pixels above platform surface)
+
+                        # Skip if too far left (player spawns at x=100)
+                        if x < 400:
+                            platform_index += 1
+                            continue
+
+                        candidate_pos = Vector2(x, y)
+
+                        # Check minimum distance from other zombies
+                        too_close = False
+                        for placed_pos in placed_positions:
+                            dx = candidate_pos.x - placed_pos.x
+                            dy = candidate_pos.y - placed_pos.y
+                            distance = (dx * dx + dy * dy) ** 0.5
+
+                            if distance < min_distance:
+                                too_close = True
+                                break
+
+                        if not too_close:
+                            # Good position found on this platform!
+                            zombie.position = candidate_pos
+                            placed_positions.append(candidate_pos)
+                            position_found = True
+                            zombie.on_ground = True  # Zombie starts on platform
+                            zombie.velocity.y = 0    # No falling
                             break
 
-                    if not too_close:
-                        # Good position found!
-                        zombie.position = candidate_pos
-                        placed_positions.append(candidate_pos)
-                        position_found = True
-                        break
+                        # Try next platform
+                        platform_index += 1
 
-                if not position_found:
-                    # Fallback: place anywhere in room (ignore distance)
-                    x = rand.uniform(room_x_min, room_x_max)
-                    y = rand.uniform(room_y_min, room_y_max)
-                    zombie.position = Vector2(x, y)
-                    placed_positions.append(zombie.position)
+                    if not position_found:
+                        # Fallback: place on any platform (ignore distance)
+                        platform_x, platform_y, platform_width = self.platform_positions[platform_index % len(self.platform_positions)]
+                        x = platform_x + platform_width // 2
+                        y = platform_y - 16
+                        zombie.position = Vector2(x, y)
+                        placed_positions.append(zombie.position)
+                        zombie.on_ground = True
+                        zombie.velocity.y = 0
+                        platform_index += 1
 
-                zombie.is_hidden = True  # Start hidden
+                logger.info(f"Placed {len(account_zombies)} zombies on platforms")
+
+            else:
+                # LOBBY MODE: Original random placement
+                logger.info(f"Placing {len(account_zombies)} zombies in room {room_index} (account {account_num})")
+
+                # Place each zombie in this room
+                placed_positions = []
+                for i, zombie in enumerate(account_zombies):
+                    max_attempts = 100
+                    position_found = False
+
+                    for attempt in range(max_attempts):
+                        # Generate random position within room bounds
+                        x = rand.uniform(room_x_min, room_x_max)
+                        y = rand.uniform(room_y_min, room_y_max)
+
+                        # Check if walkable
+                        if not self.is_walkable(int(x), int(y)):
+                            continue
+
+                        candidate_pos = Vector2(x, y)
+
+                        # Check minimum distance from other zombies in this room
+                        too_close = False
+                        for placed_pos in placed_positions:
+                            dx = candidate_pos.x - placed_pos.x
+                            dy = candidate_pos.y - placed_pos.y
+                            distance = (dx * dx + dy * dy) ** 0.5
+
+                            if distance < min_distance:
+                                too_close = True
+                                break
+
+                        if not too_close:
+                            # Good position found!
+                            zombie.position = candidate_pos
+                            placed_positions.append(candidate_pos)
+                            position_found = True
+                            break
+
+                    if not position_found:
+                        # Fallback: place anywhere in room (ignore distance)
+                        x = rand.uniform(room_x_min, room_x_max)
+                        y = rand.uniform(room_y_min, room_y_max)
+                        zombie.position = Vector2(x, y)
+                        placed_positions.append(zombie.position)
+
+                # PLATFORMER MODE: Zombies visible from start (no fog-of-war)
+                # LOBBY MODE: Zombies start hidden (fog-of-war)
+                zombie.is_hidden = False if self.mode == "platformer" else True
 
         logger.info(f"Successfully scattered {len(zombies)} zombies across {len(self.room_accounts)} rooms")
 
