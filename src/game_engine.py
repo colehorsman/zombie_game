@@ -469,7 +469,13 @@ class GameEngine:
 
             logger.info(f"🚪 Step 13: Spawning power-ups for level")
             # Spawn AWS-themed power-ups (stars and lambda speed) on platforms
-            self.spawn_powerups()
+            try:
+                self.spawn_powerups()
+                logger.info(f"✅ Power-up spawning completed: {len(self.powerups)} powerups active")
+            except Exception as e:
+                logger.error(f"⚠️  Power-up spawning failed: {e}", exc_info=True)
+                self.powerups = []  # Continue level without powerups rather than crash
+                logger.warning("Continuing level entry without powerups")
 
             logger.info(f"🚪 === ENTERED LEVEL {current_level.level_number}: {current_level.account_name} - SUCCESS ===")
         except Exception as e:
@@ -1244,8 +1250,38 @@ class GameEngine:
             logger.info(f"Distributed {len(self.zombies)} zombies. First zombie at ({self.zombies[0].position.x}, {self.zombies[0].position.y})")
 
     def spawn_powerups(self) -> None:
-        """Spawn AWS-themed power-ups ON platforms for exploration reward."""
-        if self.use_map and self.game_map and hasattr(self.game_map, 'platform_positions'):
+        """
+        Spawn AWS-themed power-ups ON platforms for exploration reward.
+
+        Validates all dependencies before spawning to ensure stability.
+        Gracefully handles missing platforms or invalid game state.
+        """
+        # Validation 1: Check if using map-based mode
+        if not self.use_map:
+            logger.debug("Not using map mode - powerups skipped")
+            return
+
+        # Validation 2: Check game map exists
+        if not self.game_map:
+            logger.warning("Cannot spawn powerups - no game map initialized")
+            return
+
+        # Validation 3: Check platform positions attribute exists
+        if not hasattr(self.game_map, 'platform_positions'):
+            logger.error("GameMap missing platform_positions attribute - powerups skipped")
+            return
+
+        # Validation 4: Check platform positions is not None or empty
+        if not self.game_map.platform_positions:
+            logger.warning("No platforms available for power-up placement (empty list)")
+            return
+
+        # Validation 5: Verify we're in platformer mode (not lobby)
+        if hasattr(self.game_map, 'mode') and self.game_map.mode != "platformer":
+            logger.debug(f"Powerups only spawn in platformer mode (current: {self.game_map.mode})")
+            return
+
+        try:
             import random
             from powerup import PowerUp, PowerUpType
 
@@ -1256,7 +1292,7 @@ class GameEngine:
             available_platforms = [p for p in self.game_map.platform_positions if p[0] > 100]
 
             if not available_platforms:
-                logger.warning("No platforms available for power-up placement")
+                logger.warning("No platforms available after filtering (all < x=100)")
                 return
 
             # Randomly select platforms for power-ups, spread across the level
@@ -1287,6 +1323,10 @@ class GameEngine:
 
             star_count = sum(1 for p in self.powerups if p.powerup_type == PowerUpType.STAR_POWER)
             logger.info(f"✨ Spawned {len(self.powerups)} power-ups ON platforms ({star_count} stars)")
+
+        except Exception as e:
+            logger.error(f"Failed to spawn powerups: {e}", exc_info=True)
+            self.powerups = []  # Ensure powerups list exists even on failure
 
     def _apply_powerup_effect(self, powerup: PowerUp) -> None:
         """
