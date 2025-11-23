@@ -1037,10 +1037,10 @@ class GameEngine:
                         controller_left = True
                     elif hat[0] > 0:
                         controller_right = True
-                    if hat[1] > 0:
-                        controller_up = True
-                    elif hat[1] < 0:
-                        controller_down = True
+                    if hat[1] < 0:
+                        controller_up = True  # Hat Y-axis: negative = UP
+                    elif hat[1] > 0:
+                        controller_down = True  # Hat Y-axis: positive = DOWN
 
                 # Left analog stick (axis 0 and 1) - backup
                 if self.joystick.get_numaxes() > 1:
@@ -1051,9 +1051,9 @@ class GameEngine:
                     elif axis_x > 0.3:
                         controller_right = True
                     if axis_y < -0.3:
-                        controller_up = True
+                        controller_up = True  # Stick Y-axis: negative = UP
                     elif axis_y > 0.3:
-                        controller_down = True
+                        controller_down = True  # Stick Y-axis: positive = DOWN
 
             # Horizontal movement (keyboard or controller)
             if keyboard_left or controller_left:
@@ -1084,6 +1084,7 @@ class GameEngine:
             controller_left = False
             controller_right = False
             controller_down = False
+            controller_jump = False  # Continuous jump button check
             if self.joystick:
                 # D-pad (hat)
                 if self.joystick.get_numhats() > 0:
@@ -1108,6 +1109,14 @@ class GameEngine:
                     if axis_y > 0.3:  # Down on stick
                         controller_down = True
 
+                # Check B button (1) for jump - continuous state
+                if self.joystick.get_numbuttons() > 1:
+                    if self.joystick.get_button(1):  # B button held
+                        controller_jump = True
+
+            # Check keyboard jump
+            keyboard_jump = pygame.K_UP in self.keys_pressed or pygame.K_w in self.keys_pressed
+
             # Apply movement
             if keyboard_left or controller_left:
                 self.player.move_left()
@@ -1115,6 +1124,10 @@ class GameEngine:
                 self.player.move_right()
             else:
                 self.player.stop_horizontal()
+
+            # Handle jumping (continuous check allows jump+move simultaneously)
+            if keyboard_jump or controller_jump:
+                self.player.jump()
 
             # Handle crouching
             if keyboard_down or controller_down:
