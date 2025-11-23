@@ -1014,6 +1014,10 @@ class GameEngine:
                     elif event.button == 1:
                         if self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
                             self.player.jump()
+                    # Start button (7) - Dismiss messages / Continue
+                    elif event.button == 7:
+                        if self.game_state.status == GameStatus.PAUSED:
+                            self.dismiss_message()
 
         # Handle continuous movement
         # LOBBY MODE: Top-down movement (4-directional)
