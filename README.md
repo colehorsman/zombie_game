@@ -29,6 +29,43 @@ This is **v2 - the hybrid dual-mode version** combining the best of both worlds:
 - ✅ Complete a level by quarantining all zombies and returning to lobby
 - 🔓 **Cheat codes** for testing: `UNLOCK` (all levels) and `SKIP` (current level)
 
+## Choosing Your Version
+
+This repository maintains **two long-term branches** to support different use cases:
+
+### `main` branch (v2 - Hybrid Mode) - **Recommended**
+The full-featured experience with dual-mode gameplay (lobby + platformer). This is the most polished and feature-rich version with:
+- Complete progression system with 7 levels
+- Boss battles, power-ups, and difficulty scaling
+- Save/load system for persistent progress
+- Best for: Playing the complete game experience
+
+**Get started**: `git clone <repo> && cd zombie_game` (defaults to main)
+
+### `v1` branch (Original Top-Down) - **For Builders**
+A simpler, more focused codebase with only top-down gameplay. Maintained long-term for developers who want:
+- Easier codebase to understand and modify (~3,000 fewer lines)
+- Single game mode (top-down only, no platformer complexity)
+- Simpler architecture (no dual-engine, no mode transitions)
+- Better starting point for building custom features or forks
+
+**Get started**: `git clone <repo> && git checkout v1`
+
+### Which Should You Choose?
+
+**Choose `main` (v2) if you want to**:
+- Play the complete game with all features
+- Experience the full hybrid gameplay
+- Build upon the most advanced version
+
+**Choose `v1` if you want to**:
+- Learn from a simpler codebase
+- Build custom features without dual-mode complexity
+- Fork the project for a different direction
+- Understand core concepts before tackling v2
+
+Both branches are fully functional, documented, and maintained. Pick the one that fits your goals!
+
 ## Key Features
 
 - 🎮 **Dual-mode gameplay**: Lobby exploration + platformer action
