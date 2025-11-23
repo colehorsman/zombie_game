@@ -467,6 +467,10 @@ class GameEngine:
             self.boss = None
             self.boss_spawned = False
 
+            logger.info(f"🚪 Step 13: Spawning power-ups for level")
+            # Spawn AWS-themed power-ups (stars and lambda speed) on platforms
+            self.spawn_powerups()
+
             logger.info(f"🚪 === ENTERED LEVEL {current_level.level_number}: {current_level.account_name} - SUCCESS ===")
         except Exception as e:
             logger.error(f"❌ ❌ ❌ CRASH in _enter_level: {e}", exc_info=True)

@@ -223,8 +223,8 @@ class GameMap:
         # Create doors for rooms
         self.doors = self._create_room_doors()
 
-        # Create collectibles (question blocks)
-        self.collectibles = self._create_collectibles()
+        # Collectibles removed - using AWS-themed power-ups instead
+        self.collectibles = []
 
         # Create 3rd party entities in hallways
         self.third_parties = self._create_third_party_entities()
@@ -358,8 +358,8 @@ class GameMap:
         self.doors = []
         self.third_parties = []
 
-        # Create power-ups/collectibles on platforms (somewhat infrequent)
-        self.collectibles = self._create_platformer_collectibles()
+        # Collectibles (? boxes) removed - using AWS-themed power-ups (stars/lambda) instead
+        self.collectibles = []
 
         print(f"Generated platformer level: {tiles_wide}x{tiles_high} tiles with {len(self.platform_positions)} platform segments")
 
