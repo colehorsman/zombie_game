@@ -6,7 +6,12 @@
       "Bash(pkill:*)",
       "Bash(find:*)",
       "Bash(timeout 30 python3:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(system_profiler:*)",
+      "Bash(ps:*)",
+      "Bash(xargs basename:*)",
+      "Bash(echo:*)",
+      "Bash(mv:*)"
     ],
     "deny": [],
     "ask": []

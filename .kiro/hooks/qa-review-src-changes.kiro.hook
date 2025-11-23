@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "QA Review on src/ Changes",
+  "description": "When an agent execution completes and modifies files in src/, trigger a QA review to verify tests pass and check coverage",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "/Users/cole.horsman/Documents/_development/zombie_game/src/*"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "#qa-testing-agent Please review the code changes just made. Run pytest tests/ -v to verify all tests pass. Check if new tests are needed for the changes. Report any test failures or missing coverage."
+  }
+}

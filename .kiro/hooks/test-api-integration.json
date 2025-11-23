@@ -1,0 +1,12 @@
+{
+  "name": "Test API Integration",
+  "description": "Run comprehensive API integration tests including success and failure scenarios",
+  "enabled": true,
+  "trigger": {
+    "type": "manual"
+  },
+  "action": {
+    "type": "sendMessage",
+    "message": "Act as the QA Testing Agent using #qa-testing-agent context. Please test the Sonrai API integration:\n\n1. Review src/sonrai_client.py for all API methods\n2. Create/update tests for:\n   - Successful API responses\n   - Authentication failures\n   - Network timeouts\n   - Rate limiting\n   - Invalid response data\n   - Missing fields in responses\n3. Run the API tests with mocked responses\n4. Verify error handling and logging\n5. Report any issues or missing test coverage\n\nEnsure all API failure scenarios are properly handled."
+  }
+}

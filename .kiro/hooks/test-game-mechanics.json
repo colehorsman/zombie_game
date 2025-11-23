@@ -1,0 +1,12 @@
+{
+  "name": "Test Game Mechanics",
+  "description": "Run tests for core game mechanics like collision, movement, and scoring",
+  "enabled": true,
+  "trigger": {
+    "type": "manual"
+  },
+  "action": {
+    "type": "sendMessage",
+    "message": "Act as the QA Testing Agent using #qa-testing-agent context. Test core game mechanics:\n\n1. **Collision Detection**:\n   - Projectile-zombie collisions\n   - Projectile-third party collisions\n   - Protected entity collision handling\n   - Boundary collisions\n\n2. **Movement Systems**:\n   - Player movement and controls\n   - Zombie pathfinding\n   - Projectile trajectories\n\n3. **Scoring and Progression**:\n   - Score increments\n   - Damage multiplier calculations\n   - Level completion detection\n\n4. **Health and Damage**:\n   - Damage application\n   - Health tracking\n   - Entity elimination\n\nCreate tests for any missing coverage and run the full test suite."
+  }
+}

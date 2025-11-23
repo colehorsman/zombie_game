@@ -1,0 +1,12 @@
+{
+  "name": "Generate Coverage Report",
+  "description": "Generate and analyze test coverage report",
+  "enabled": true,
+  "trigger": {
+    "type": "manual"
+  },
+  "action": {
+    "type": "shellCommand",
+    "command": "pytest --cov=src --cov-report=term-missing --cov-report=html tests/"
+  }
+}
