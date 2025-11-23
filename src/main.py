@@ -289,7 +289,7 @@ def main():
         # Initialize level manager
         logger.info("Initializing level manager...")
         try:
-            level_manager = LevelManager("assets/aws_accounts.csv")
+            level_manager = LevelManager("../assets/aws_accounts.csv")
             logger.info(f"Loaded {len(level_manager.levels)} levels")
         except Exception as e:
             logger.error(f"Failed to initialize level manager: {e}")

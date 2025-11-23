@@ -272,24 +272,29 @@ class GameEngine:
                     # Find the level that matches this door
                     level_unlocked = False
                     locked_reason = ""
-                    for level in self.level_manager.levels:
-                        if level.account_name == door_name:
-                            # Check if level is unlocked
-                            is_sandbox = level.account_id == "577945324761"  # Sandbox is always unlocked
-                            if is_sandbox or self.cheat_enabled:
-                                level_unlocked = True
-                            else:
-                                # Check if previous level is complete
-                                level_index = self.level_manager.levels.index(level)
-                                if level_index > 0:
-                                    prev_level = self.level_manager.levels[level_index - 1]
-                                    if prev_level.account_id in self.completed_level_account_ids:
-                                        level_unlocked = True
-                                    else:
-                                        locked_reason = f"🔒 Level Locked\\n\\nComplete {prev_level.account_name} to unlock\\n{level.account_name}\\n\\nPress ESC to continue"
-                                else:
+
+                    # If level_manager doesn't exist, allow all doors (sandbox mode)
+                    if not self.level_manager:
+                        level_unlocked = True
+                    else:
+                        for level in self.level_manager.levels:
+                            if level.account_name == door_name:
+                                # Check if level is unlocked
+                                is_sandbox = level.account_id == "577945324761"  # Sandbox is always unlocked
+                                if is_sandbox or self.cheat_enabled:
                                     level_unlocked = True
-                            break
+                                else:
+                                    # Check if previous level is complete
+                                    level_index = self.level_manager.levels.index(level)
+                                    if level_index > 0:
+                                        prev_level = self.level_manager.levels[level_index - 1]
+                                        if prev_level.account_id in self.completed_level_account_ids:
+                                            level_unlocked = True
+                                        else:
+                                            locked_reason = f"🔒 Level Locked\\n\\nComplete {prev_level.account_name} to unlock\\n{level.account_name}\\n\\nPress ESC to continue"
+                                    else:
+                                        level_unlocked = True
+                                break
 
                     if level_unlocked:
                         # Player entered an unlocked door - transition to level mode
@@ -1044,6 +1049,17 @@ class GameEngine:
             controller_up = False
             controller_down = False
             if self.joystick:
+                # D-pad buttons (for controllers without hat, like 8BitDo in X-input mode)
+                if self.joystick.get_numbuttons() > 14:
+                    if self.joystick.get_button(11):  # D-pad UP
+                        controller_up = True
+                    if self.joystick.get_button(12):  # D-pad DOWN
+                        controller_down = True
+                    if self.joystick.get_button(13):  # D-pad LEFT
+                        controller_left = True
+                    if self.joystick.get_button(14):  # D-pad RIGHT
+                        controller_right = True
+
                 # D-pad (hat) - primary for 8BitDo
                 if self.joystick.get_numhats() > 0:
                     hat = self.joystick.get_hat(0)
@@ -1100,6 +1116,15 @@ class GameEngine:
             controller_down = False
             controller_jump = False  # Continuous jump button check
             if self.joystick:
+                # D-pad buttons (for controllers without hat, like 8BitDo in X-input mode)
+                if self.joystick.get_numbuttons() > 14:
+                    if self.joystick.get_button(12):  # D-pad DOWN
+                        controller_down = True
+                    if self.joystick.get_button(13):  # D-pad LEFT
+                        controller_left = True
+                    if self.joystick.get_button(14):  # D-pad RIGHT
+                        controller_right = True
+
                 # D-pad (hat)
                 if self.joystick.get_numhats() > 0:
                     hat = self.joystick.get_hat(0)
