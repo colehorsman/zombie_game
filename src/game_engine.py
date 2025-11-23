@@ -196,6 +196,10 @@ class GameEngine:
         self.konami_timeout = 2.0  # Reset sequence after 2 seconds of no input
         self.last_konami_input_time = 0.0
 
+        # Pause menu (Zelda-style)
+        self.pause_menu_options = ["Return to Game", "Return to Lobby", "Save Game", "Quit Game"]
+        self.pause_menu_selected_index = 0
+
     def start(self) -> None:
         """Start the game."""
         self.running = True
@@ -834,6 +838,85 @@ class GameEngine:
         # Block immediately via API (no pause, no delay)
         self._block_third_party(third_party)
 
+    def _show_pause_menu(self) -> None:
+        """Show Zelda-style pause menu with options."""
+        # Reset menu selection to first option
+        self.pause_menu_selected_index = 0
+
+        # Build pause menu message
+        pause_message = self._build_pause_menu_message()
+
+        # Set pause state
+        self.game_state.congratulations_message = pause_message
+        self.game_state.previous_status = self.game_state.status
+        self.game_state.status = GameStatus.PAUSED
+        logger.info("⏸️  Game paused - showing menu")
+
+    def _build_pause_menu_message(self) -> str:
+        """Build the pause menu message with current selection highlighted."""
+        menu_message = "⏸️  PAUSED\\n\\n"
+
+        for i, option in enumerate(self.pause_menu_options):
+            if i == self.pause_menu_selected_index:
+                # Highlight selected option with arrow
+                menu_message += f"▶ {option}\\n"
+            else:
+                # Unselected option
+                menu_message += f"  {option}\\n"
+
+        menu_message += "\\nUse ↑↓ to select, ENTER to confirm"
+        return menu_message
+
+    def _navigate_pause_menu(self, direction: int) -> None:
+        """
+        Navigate the pause menu up or down.
+
+        Args:
+            direction: -1 for up, 1 for down
+        """
+        self.pause_menu_selected_index = (self.pause_menu_selected_index + direction) % len(self.pause_menu_options)
+        # Update the menu display
+        self.game_state.congratulations_message = self._build_pause_menu_message()
+        logger.debug(f"Menu selection: {self.pause_menu_options[self.pause_menu_selected_index]}")
+
+    def _execute_pause_menu_option(self) -> None:
+        """Execute the currently selected pause menu option."""
+        selected_option = self.pause_menu_options[self.pause_menu_selected_index]
+        logger.info(f"Executing menu option: {selected_option}")
+
+        if selected_option == "Return to Game":
+            # Resume the game
+            self.dismiss_message()
+        elif selected_option == "Return to Lobby":
+            # Return to lobby (only if in a level)
+            if self.game_state.previous_status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
+                self.game_state.congratulations_message = None
+                self.game_state.status = self.game_state.previous_status
+                self._return_to_lobby()
+            else:
+                # Already in lobby, just resume
+                self.dismiss_message()
+        elif selected_option == "Save Game":
+            # Save the game
+            self._save_game()
+            # Show brief confirmation in the menu
+            logger.info("✅ Game saved from pause menu")
+            # Rebuild menu with save confirmation
+            menu_message = "⏸️  PAUSED\\n\\n"
+            menu_message += "✅ Game Saved!\\n\\n"
+            for i, option in enumerate(self.pause_menu_options):
+                if i == self.pause_menu_selected_index:
+                    menu_message += f"▶ {option}\\n"
+                else:
+                    menu_message += f"  {option}\\n"
+            menu_message += "\\nUse ↑↓ to select, ENTER to confirm"
+            self.game_state.congratulations_message = menu_message
+        elif selected_option == "Quit Game":
+            # Save and quit
+            logger.info("Saving game before quit...")
+            self._save_game()
+            self.running = False
+
     def dismiss_message(self) -> None:
         """Dismiss the congratulations message and resume gameplay."""
         if self.game_state.status == GameStatus.PAUSED and self.game_state.congratulations_message:
@@ -957,6 +1040,27 @@ class GameEngine:
             elif event.type == pygame.KEYDOWN:
                 self.keys_pressed.add(event.key)
 
+                # Handle pause menu navigation (if paused with menu active)
+                if self.game_state.status == GameStatus.PAUSED:
+                    # Check if we're showing the actual pause menu (not a different message)
+                    if self.game_state.congratulations_message and "PAUSED" in self.game_state.congratulations_message:
+                        # UP arrow - move selection up
+                        if event.key == pygame.K_UP:
+                            self._navigate_pause_menu(-1)
+                            continue
+                        # DOWN arrow - move selection down
+                        elif event.key == pygame.K_DOWN:
+                            self._navigate_pause_menu(1)
+                            continue
+                        # ENTER - execute selected option
+                        elif event.key == pygame.K_RETURN:
+                            self._execute_pause_menu_option()
+                            continue
+                        # ESC - cancel and return to game
+                        elif event.key == pygame.K_ESCAPE:
+                            self.dismiss_message()
+                            continue
+
                 # Konami code detection (up up down down left right left right)
                 current_time = time.time()
                 if current_time - self.last_konami_input_time > self.konami_timeout:
@@ -992,7 +1096,7 @@ class GameEngine:
                         current_level = self.level_manager.levels[self.level_manager.current_level_index]
                         self.completed_level_account_ids.add(current_level.account_id)
                         logger.info(f"🔓 CHEAT: Skipping level {current_level.account_name}")
-                        self._return_to_lobby(current_level.account_id)
+                        self._return_to_lobby()
                     self.cheat_buffer = []
 
                 # Check if Konami code matches
@@ -1019,12 +1123,25 @@ class GameEngine:
                         projectile = self.player.fire_projectile()
                         self.projectiles.append(projectile)
 
-                # Handle quit
+                # ESC key - Pause/Resume or Quit
                 if event.key == pygame.K_ESCAPE:
-                    # Save game before quitting
-                    logger.info("Saving game before exit...")
-                    self._save_game()
-                    self.running = False
+                    if self.game_state.status == GameStatus.PAUSED:
+                        # Resume game
+                        self.dismiss_message()
+                    elif self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
+                        # Show pause menu
+                        self._show_pause_menu()
+                    else:
+                        # In lobby - quit game
+                        logger.info("Saving game before exit...")
+                        self._save_game()
+                        self.running = False
+
+                # L key - Return to lobby (from levels only)
+                elif event.key == pygame.K_l:
+                    if self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
+                        logger.info("🏠 L key pressed - returning to lobby")
+                        self._return_to_lobby()
 
             elif event.type == pygame.KEYUP:
                 self.keys_pressed.discard(event.key)
@@ -1032,6 +1149,26 @@ class GameEngine:
             # Controller button events
             elif event.type == pygame.JOYBUTTONDOWN:
                 if self.joystick:
+                    # Handle pause menu navigation with controller
+                    if self.game_state.status == GameStatus.PAUSED:
+                        if self.game_state.congratulations_message and "PAUSED" in self.game_state.congratulations_message:
+                            # D-pad UP (11) - navigate up
+                            if event.button == 11:
+                                self._navigate_pause_menu(-1)
+                                continue
+                            # D-pad DOWN (12) - navigate down
+                            elif event.button == 12:
+                                self._navigate_pause_menu(1)
+                                continue
+                            # A button (0) - confirm selection
+                            elif event.button == 0:
+                                self._execute_pause_menu_option()
+                                continue
+                            # B button (1) or Start (7) - cancel and return to game
+                            elif event.button == 1 or event.button == 7:
+                                self.dismiss_message()
+                                continue
+
                     # A button (0) - Fire (works in all modes)
                     if event.button == 0:
                         if self.game_state.status in (GameStatus.LOBBY, GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
@@ -1041,10 +1178,18 @@ class GameEngine:
                     elif event.button == 1:
                         if self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
                             self.player.jump()
-                    # Start button (7) - Dismiss messages / Continue
+                    # Start button (7) - Pause menu / Dismiss messages
                     elif event.button == 7:
                         if self.game_state.status == GameStatus.PAUSED:
                             self.dismiss_message()
+                        elif self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
+                            # Toggle pause menu
+                            self._show_pause_menu()
+                    # Star/Home button (10) - Return to lobby (only in levels)
+                    elif event.button == 10:
+                        if self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
+                            logger.info("⭐ Star button pressed - returning to lobby")
+                            self._return_to_lobby()
 
         # Handle continuous movement
         # LOBBY MODE: Top-down movement (4-directional)
