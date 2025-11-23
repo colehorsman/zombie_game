@@ -301,6 +301,8 @@ class GameEngine:
                         if locked_reason:
                             logger.info(f"🔒 Attempted to enter locked door: {door_name}")
                             self.game_state.congratulations_message = locked_reason
+                            # Save current status before pausing
+                            self.game_state.previous_status = self.game_state.status
                             self.game_state.status = GameStatus.PAUSED
                             # Move player away from door to prevent repeated collision
                             self.player.position.x -= 50  # Push player back
@@ -822,7 +824,13 @@ class GameEngine:
             # Just clear the message and resume
             self.game_state.congratulations_message = None
             self.game_state.pending_elimination = None
-            self.game_state.status = GameStatus.PLAYING
+            # Restore previous status (LOBBY or PLAYING) instead of hardcoding PLAYING
+            if self.game_state.previous_status:
+                self.game_state.status = self.game_state.previous_status
+                self.game_state.previous_status = None
+            else:
+                # Fallback to PLAYING if previous_status wasn't set
+                self.game_state.status = GameStatus.PLAYING
 
     def _quarantine_zombie(self, zombie: Zombie) -> None:
         """
@@ -954,6 +962,8 @@ class GameEngine:
                 if self.cheat_buffer == self.cheat_codes['UNLOCK']:
                     self.cheat_enabled = True
                     self.game_state.congratulations_message = "🔓 CHEAT ACTIVATED\\n\\nAll Levels Unlocked!\\n\\nPress ESC to continue"
+                    # Save current status before pausing
+                    self.game_state.previous_status = self.game_state.status
                     self.game_state.status = GameStatus.PAUSED
                     logger.info("🔓 CHEAT: All levels unlocked!")
                     self.cheat_buffer = []

@@ -52,6 +52,7 @@ class GameState:
     zombies_remaining: int
     zombies_quarantined: int
     total_zombies: int
+    previous_status: Optional[GameStatus] = None  # Status before pausing
     third_parties_blocked: int = 0
     total_third_parties: int = 0
     error_message: Optional[str] = None
