@@ -324,6 +324,35 @@ pytest --cov=src
 pytest -k property
 ```
 
+### Automated Test Launcher
+
+For manual testing with guided test plans:
+
+```bash
+# Launch with current test plan (powerups)
+python test_launcher.py
+
+# Test specific features
+python test_launcher.py --feature powerups      # Powerup system
+python test_launcher.py --feature level_entry   # Level transitions
+python test_launcher.py --feature full          # Full game test
+
+# Watch logs in real-time during testing
+python test_launcher.py --watch-logs
+
+# List available test plans
+python test_launcher.py --list
+```
+
+The test launcher will:
+- Display test objectives and success criteria
+- Show step-by-step testing instructions
+- Automatically launch the game
+- Optionally show logs in real-time
+- Provide post-test report checklist
+
+Perfect for QA sessions and feature testing!
+
 ### Project Structure
 
 ```

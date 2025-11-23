@@ -7,6 +7,6 @@
   },
   "action": {
     "type": "sendMessage",
-    "message": "I need you to act as the QA Testing Agent. Use the #qa-testing-agent steering context. Please:\n\n1. Review recent code changes in the src/ directory\n2. Identify any missing test coverage\n3. Run the existing test suite and report results\n4. Suggest new tests for untested functionality\n5. Test critical game mechanics (collision, scoring, level progression)\n6. Verify API error handling\n\nFocus on ensuring quality and catching potential bugs."
+    "message": "I need you to act as the QA Testing Agent. Use the #qa-testing-agent steering context. Please:\n\n1. Review recent code changes in the src/ directory\n2. Identify any missing test coverage\n3. Run the existing test suite and report results\n4. Suggest new tests for untested functionality\n5. Test critical game mechanics (collision, scoring, level progression)\n6. Verify API error handling\n7. When ready for manual testing, run: python test_launcher.py\n\nFocus on ensuring quality and catching potential bugs."
   }
 }
