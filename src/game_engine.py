@@ -264,8 +264,10 @@ class GameEngine:
         # Check for door collisions
         if self.game_map and hasattr(self.game_map, 'doors'):
             player_bounds = self.player.get_bounds()
+            logger.debug(f"Checking {len(self.game_map.doors)} doors for collision with player at ({self.player.position.x}, {self.player.position.y})")
             for door in self.game_map.doors:
                 if door.check_collision(player_bounds):
+                    logger.info(f"🚪 Door collision! Door at ({door.position.x}, {door.position.y}) → {door.destination_room_name}")
                     # Check if this door's level is unlocked BEFORE attempting to enter
                     door_name = door.destination_room_name
 
@@ -1214,6 +1216,10 @@ class GameEngine:
         """Get the list of projectiles."""
         return self.projectiles
 
+    def get_powerups(self) -> List:
+        """Get the list of active power-ups."""
+        return self.powerups
+
     def get_boss(self) -> Optional[Boss]:
         """Get the boss instance (None if no boss active)."""
         return self.boss
@@ -1288,23 +1294,31 @@ class GameEngine:
             # More power-ups in sandbox for help (1 per 50 zombies, minimum 6, maximum 12)
             num_powerups = min(12, max(6, len(self.zombies) // 50))
 
-            # Get available platforms (start from x=100 so stars appear immediately at game start)
-            available_platforms = [p for p in self.game_map.platform_positions if p[0] > 100]
+            # Prioritize EARLY platforms (first 3000 pixels) so players see powerups quickly
+            early_platforms = [p for p in self.game_map.platform_positions if 100 < p[0] < 3000]
+            later_platforms = [p for p in self.game_map.platform_positions if p[0] >= 3000]
 
-            if not available_platforms:
-                logger.warning("No platforms available after filtering (all < x=100)")
+            if not early_platforms:
+                logger.warning("No early platforms available for powerup spawning")
                 return
 
-            # Randomly select platforms for power-ups, spread across the level
-            selected_platforms = random.sample(available_platforms, min(num_powerups, len(available_platforms)))
+            # Spawn most powerups (70%) in early section, rest scattered later
+            num_early = int(num_powerups * 0.7)
+            num_later = num_powerups - num_early
+
+            selected_platforms = []
+            if early_platforms:
+                selected_platforms.extend(random.sample(early_platforms, min(num_early, len(early_platforms))))
+            if later_platforms and num_later > 0:
+                selected_platforms.extend(random.sample(later_platforms, min(num_later, len(later_platforms))))
 
             # Create power-ups on selected platforms
-            # In sandbox (many zombies), spawn mostly STAR power-ups for help
-            # In production (fewer zombies), mix it up more
+            # Star Power (*) should be RARE (AWS wildcard reference)
+            # Lambda Speed (λ) should be COMMON for early gameplay boost
             self.powerups = []
 
-            # Determine power-up distribution based on zombie count
-            star_ratio = 0.7 if len(self.zombies) > 200 else 0.4  # 70% stars in sandbox, 40% in production
+            # Star power is rare - only 15% chance (1-2 stars in a typical level)
+            star_ratio = 0.15
 
             for platform_x, platform_y, platform_width in selected_platforms:
                 # Place power-up on top of platform (slightly above surface)

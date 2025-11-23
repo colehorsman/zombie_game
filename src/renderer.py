@@ -228,6 +228,18 @@ class Renderer:
             if not collectible.collected and game_map.is_on_screen(collectible.position.x, collectible.position.y, collectible.width, collectible.height):
                 collectible.render(self.screen, game_map.camera_x, game_map.camera_y)
 
+    def render_powerups(self, powerups: List, game_map: GameMap) -> None:
+        """
+        Render all AWS-themed power-ups.
+
+        Args:
+            powerups: List of power-ups to render
+            game_map: Game map for coordinate conversion
+        """
+        for powerup in powerups:
+            if not powerup.collected and game_map.is_on_screen(powerup.position.x, powerup.position.y, powerup.width, powerup.height):
+                powerup.render(self.screen, game_map.camera_x, game_map.camera_y)
+
     def render_minimap(self, game_map: GameMap, player_position: Vector2, zombies: List[Zombie]) -> None:
         """
         Render a Mario-style minimap showing rooms and player position.

@@ -27,7 +27,7 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
     "sandbox": EnvironmentDifficulty(
         environment="sandbox",
         zombie_hp=3,
-        reveal_radius=60,  # Normal visibility
+        reveal_radius=400,  # Large radius for platformer mode (tutorial level)
         approvals_needed=0,
         change_delay=0.0,  # Instant quarantine
         boss_hp_multiplier=50,
@@ -39,7 +39,7 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
     "staging": EnvironmentDifficulty(
         environment="staging",
         zombie_hp=3,
-        reveal_radius=60,
+        reveal_radius=350,  # Generous radius for early level
         approvals_needed=0,
         change_delay=0.0,
         boss_hp_multiplier=50,
@@ -51,7 +51,7 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
     "automation": EnvironmentDifficulty(
         environment="automation",
         zombie_hp=4,
-        reveal_radius=60,
+        reveal_radius=300,  # Medium radius - can see nearby platforms
         approvals_needed=0,
         change_delay=0.0,
         boss_hp_multiplier=50,
@@ -63,7 +63,7 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
     "webapp": EnvironmentDifficulty(
         environment="webapp",
         zombie_hp=4,
-        reveal_radius=50,  # Harder to find
+        reveal_radius=250,  # Moderate radius - strategic positioning needed
         approvals_needed=0,
         change_delay=0.0,
         boss_hp_multiplier=60,
@@ -75,7 +75,7 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
     "production-data": EnvironmentDifficulty(
         environment="production-data",
         zombie_hp=5,
-        reveal_radius=30,  # Much harder to find
+        reveal_radius=200,  # Smaller radius - harder to find targets
         approvals_needed=1,  # Need 1 approval
         change_delay=15.0,  # 15 second change window
         boss_hp_multiplier=70,
@@ -87,7 +87,7 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
     "production": EnvironmentDifficulty(
         environment="production",
         zombie_hp=6,
-        reveal_radius=20,  # Very hard to find
+        reveal_radius=150,  # Small radius - must get close to targets
         approvals_needed=3,  # Need 3 approvals (CAB process)
         change_delay=30.0,  # 30 second change window
         boss_hp_multiplier=80,
@@ -99,7 +99,7 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
     "org": EnvironmentDifficulty(
         environment="org",
         zombie_hp=7,
-        reveal_radius=15,  # Extremely hard to find
+        reveal_radius=100,  # Very small radius - extreme difficulty
         approvals_needed=5,  # Need 5 approvals (ultimate red tape)
         change_delay=30.0,  # 30 second change window
         boss_hp_multiplier=100,

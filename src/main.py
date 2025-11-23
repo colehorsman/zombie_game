@@ -289,7 +289,7 @@ def main():
         # Initialize level manager
         logger.info("Initializing level manager...")
         try:
-            level_manager = LevelManager("../assets/aws_accounts.csv")
+            level_manager = LevelManager("assets/aws_accounts.csv")
             logger.info(f"Loaded {len(level_manager.levels)} levels")
         except Exception as e:
             logger.error(f"Failed to initialize level manager: {e}")
@@ -428,6 +428,11 @@ def main():
         # Render collectibles (if using map mode)
         if game_map and hasattr(game_map, 'collectibles'):
             renderer.render_collectibles(game_map.collectibles, game_map)
+
+        # Render powerups (AWS-themed power-ups)
+        powerups = game_engine.get_powerups()
+        if powerups and game_map:
+            renderer.render_powerups(powerups, game_map)
 
         # Update renderer scroll (classic mode only)
         if not game_map:
