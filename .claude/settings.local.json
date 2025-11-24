@@ -1,20 +1,12 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python3:*)",
-      "WebSearch",
-      "Bash(pkill:*)",
-      "Bash(find:*)",
-      "Bash(timeout 30 python3:*)",
-      "Bash(git add:*)",
-      "Bash(system_profiler:*)",
-      "Bash(ps:*)",
-      "Bash(xargs basename:*)",
-      "Bash(echo:*)",
-      "Bash(mv:*)",
-      "Bash(git commit:*)",
-      "Bash(permissions to run unauthorized inference jobs on)",
-      "Bash(sensitive data.\"\n- \"Your cloud just trained the enemy.\"\n- More impactful and specific to security context\n\nThis creates a tense, fair race with meaningful consequences!\n\n🚀 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+      "Bash(__NEW_LINE__ You protected the Bedrock service! Sensitive API calls)",
+      "Bash(to the Bedrock service will now require ChatOps approval)",
+      "Bash(through Slack or Teams!)",
+      "Bash(__NEW_LINE__ The Cloud Permissions Firewall blocked unauthorized)",
+      "Bash(inference jobs on your data.)",
+      "Bash(__NEW_LINE__ Press ENTER to continue\"\n\nBug fix:\n- Previous code set message but didn''t pause game\n- Message was immediately overwritten/dismissed\n- Player never saw victory dialogue\n- Now properly pauses and shows message\n\nAPI verification:\n- Logs confirm API call succeeded\n- Protected account 577945324761 (MyHealth Sandbox)\n- Scope: aws/r-ipxz/ou-ipxz-95f072k5/577945324761\n- Protection may take time to show in Sonrai console\n\n🚀 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

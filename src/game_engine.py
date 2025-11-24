@@ -368,17 +368,22 @@ class GameEngine:
                 # Stop hacker
                 self.hacker = None
 
-                # Show success message
+                # Pause game to show success message
+                self.game_state.status = GameStatus.PAUSED
+
+                # Show success message with ChatOps info
                 self.game_state.congratulations_message = (
                     f"🛡️ SERVICE PROTECTED!\n\n"
-                    f"The {quest.service_type.capitalize()} service is now safe "
-                    "from unauthorized access!\n\n"
-                    "You used the Cloud Permissions Firewall to protect against "
-                    "prompt injection attacks!\n\n"
+                    f"You protected the Bedrock service! Sensitive API calls "
+                    f"to the Bedrock service will now require ChatOps approval "
+                    f"through Slack or Teams!\n\n"
+                    f"The Cloud Permissions Firewall blocked unauthorized "
+                    f"inference jobs on your data.\n\n"
                     "Press ENTER to continue"
                 )
 
                 logger.info(f"✅ PLAYER WON THE RACE! Service protected at x={service_node.position.x}")
+                logger.info(f"🎉 Showing success message to player")
             else:
                 # API error - show error message but don't fail quest
                 error_msg = result.error_message or "Unknown error"
