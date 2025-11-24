@@ -863,3 +863,144 @@ class Renderer:
 
         # Draw the hint
         self.screen.blit(hint_surface, (hint_x, hint_y))
+
+    def render_auditor(self, auditor, game_map: GameMap) -> None:
+        """
+        Render the auditor character with suit appearance.
+
+        Args:
+            auditor: Auditor entity
+            game_map: Game map for coordinate conversion
+        """
+        if not auditor:
+            return
+
+        # Check if auditor is on screen
+        if not game_map.is_on_screen(auditor.position.x, auditor.position.y, auditor.width, auditor.height):
+            return
+
+        # Get screen position
+        screen_x, screen_y = game_map.world_to_screen(auditor.position.x, auditor.position.y)
+
+        # Draw auditor body (gray suit)
+        body_rect = pygame.Rect(
+            int(screen_x - auditor.width // 2),
+            int(screen_y - auditor.height // 2),
+            auditor.width,
+            auditor.height
+        )
+        pygame.draw.rect(self.screen, (80, 80, 80), body_rect)  # Dark gray suit
+
+        # Draw head (lighter gray)
+        head_size = auditor.width // 2
+        head_x = int(screen_x)
+        head_y = int(screen_y - auditor.height // 2 - head_size // 2)
+        pygame.draw.circle(self.screen, (120, 120, 120), (head_x, head_y), head_size // 2)
+
+        # Draw clipboard (white rectangle)
+        clipboard_width = 12
+        clipboard_height = 16
+        clipboard_x = int(screen_x + auditor.width // 4)
+        clipboard_y = int(screen_y)
+        pygame.draw.rect(
+            self.screen,
+            (240, 240, 240),
+            (clipboard_x, clipboard_y, clipboard_width, clipboard_height)
+        )
+        # Clipboard border
+        pygame.draw.rect(
+            self.screen,
+            (0, 0, 0),
+            (clipboard_x, clipboard_y, clipboard_width, clipboard_height),
+            1
+        )
+
+    def render_admin_roles(self, admin_roles: List, game_map: GameMap, pulse_time: float = 0.0) -> None:
+        """
+        Render admin role characters with crowns.
+
+        Args:
+            admin_roles: List of AdminRole entities
+            game_map: Game map for coordinate conversion
+            pulse_time: Time value for shield pulsing animation
+        """
+        for admin_role in admin_roles:
+            # Check if on screen
+            if not game_map.is_on_screen(admin_role.position.x, admin_role.position.y, admin_role.width, admin_role.height):
+                continue
+
+            # Get screen position
+            screen_x, screen_y = game_map.world_to_screen(admin_role.position.x, admin_role.position.y)
+
+            # Draw body (similar to zombie but distinct color)
+            body_rect = pygame.Rect(
+                int(screen_x - admin_role.width // 2),
+                int(screen_y - admin_role.height // 2),
+                admin_role.width,
+                admin_role.height
+            )
+            
+            # Color based on JIT status
+            if admin_role.has_jit:
+                body_color = (100, 200, 100)  # Green if protected
+            else:
+                body_color = (200, 150, 50)  # Gold/yellow if unprotected
+            
+            pygame.draw.rect(self.screen, body_color, body_rect)
+
+            # Draw crown on top
+            crown_y = int(screen_y - admin_role.height // 2 - 10)
+            crown_x = int(screen_x)
+            
+            # Crown base (yellow/gold)
+            crown_points = [
+                (crown_x - 12, crown_y),
+                (crown_x - 8, crown_y - 8),
+                (crown_x - 4, crown_y - 2),
+                (crown_x, crown_y - 10),
+                (crown_x + 4, crown_y - 2),
+                (crown_x + 8, crown_y - 8),
+                (crown_x + 12, crown_y),
+            ]
+            pygame.draw.polygon(self.screen, (255, 215, 0), crown_points)  # Gold
+            pygame.draw.polygon(self.screen, (0, 0, 0), crown_points, 1)  # Black outline
+
+            # Draw purple shield if JIT protected
+            if admin_role.has_jit:
+                from shield import render_shield
+                camera_offset = (game_map.camera_x, game_map.camera_y)
+                render_shield(self.screen, admin_role, camera_offset, pulse_time)
+
+            # Draw label with permission set name
+            try:
+                font = pygame.font.Font(None, 16)
+                label_text = admin_role.permission_set.name[:20]  # Truncate long names
+                label_surface = font.render(label_text, True, (255, 255, 255))
+                label_x = int(screen_x - label_surface.get_width() // 2)
+                label_y = int(screen_y - admin_role.height // 2 - 25)
+                
+                # Black outline
+                outline_offsets = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+                for dx, dy in outline_offsets:
+                    outline_surface = font.render(label_text, True, (0, 0, 0))
+                    self.screen.blit(outline_surface, (label_x + dx, label_y + dy))
+                
+                self.screen.blit(label_surface, (label_x, label_y))
+            except:
+                pass  # Font rendering failed
+
+    def render_jit_quest_message(self, jit_quest_state) -> None:
+        """
+        Render JIT quest messages.
+
+        Args:
+            jit_quest_state: JitQuestState object
+        """
+        if not jit_quest_state or not jit_quest_state.quest_message:
+            return
+
+        if jit_quest_state.quest_message_timer <= 0:
+            return
+
+        # Render message bubble
+        self.render_message_bubble(jit_quest_state.quest_message)

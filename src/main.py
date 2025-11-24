@@ -499,6 +499,21 @@ def main():
             if game_state.service_hint_message and game_state.service_hint_timer > 0:
                 renderer.render_service_hint(game_state.service_hint_message, game_state.service_hint_timer)
 
+        # Render JIT Access Quest elements
+        if game_state.status == GameStatus.PLAYING and game_state.jit_quest and game_state.jit_quest.active:
+            # Render auditor
+            auditor = game_engine.auditor
+            if auditor:
+                renderer.render_auditor(auditor, game_map)
+            
+            # Render admin roles
+            admin_roles = game_engine.admin_roles
+            if admin_roles:
+                renderer.render_admin_roles(admin_roles, game_map, game_state.play_time)
+            
+            # Render JIT quest messages
+            renderer.render_jit_quest_message(game_state.jit_quest)
+
         # Render UI
         renderer.render_ui(game_state)
 
