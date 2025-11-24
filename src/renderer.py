@@ -932,47 +932,64 @@ class Renderer:
             # Get screen position
             screen_x, screen_y = game_map.world_to_screen(admin_role.position.x, admin_role.position.y)
 
-            # Draw character similar to third party style but with gold suit
-            body_width = admin_role.width
-            body_height = admin_role.height
+            # Draw character exactly like third party but with gold suit and crown
+            # Colors
+            GOLD_SUIT = (218, 165, 32)      # Gold suit for admin
+            GREEN_SUIT = (60, 140, 60)      # Green suit when protected
+            SKIN = (220, 180, 140)          # Skin tone
+            BLACK = (0, 0, 0)               # Outlines
+            WHITE = (255, 255, 255)         # Shirt
+            CROWN_GOLD = (255, 215, 0)      # Crown color
             
             # Suit color based on JIT status
-            if admin_role.has_jit:
-                suit_color = (100, 200, 100)  # Green if protected
-            else:
-                suit_color = (218, 165, 32)  # Goldenrod - gold suit for unprotected
+            suit_color = GREEN_SUIT if admin_role.has_jit else GOLD_SUIT
             
-            # Draw body (rectangle like third party)
-            body_rect = pygame.Rect(
-                int(screen_x - body_width // 2),
-                int(screen_y - body_height // 2),
-                body_width,
-                body_height
-            )
-            pygame.draw.rect(self.screen, suit_color, body_rect)
+            # Calculate base position (center of character)
+            base_x = int(screen_x - admin_role.width // 2)
+            base_y = int(screen_y - admin_role.height // 2)
             
-            # Draw head (circle on top like third party)
-            head_radius = body_width // 3
-            head_x = int(screen_x)
-            head_y = int(screen_y - body_height // 2 - head_radius)
-            pygame.draw.circle(self.screen, (220, 180, 140), (head_x, head_y), head_radius)  # Skin tone
+            # Head (rectangle like third party)
+            head_rect = pygame.Rect(base_x + 12, base_y + 4, 16, 12)
+            pygame.draw.rect(self.screen, SKIN, head_rect)
+            pygame.draw.rect(self.screen, BLACK, head_rect, 1)
             
-            # Draw small crown on top of head
-            crown_y = int(head_y - head_radius - 3)
-            crown_x = int(screen_x)
+            # Hair
+            pygame.draw.rect(self.screen, BLACK, (base_x + 12, base_y + 4, 16, 4))
             
-            # Small crown
+            # Eyes
+            pygame.draw.rect(self.screen, BLACK, (base_x + 15, base_y + 10, 2, 2))  # Left eye
+            pygame.draw.rect(self.screen, BLACK, (base_x + 23, base_y + 10, 2, 2))  # Right eye
+            
+            # Smile
+            pygame.draw.line(self.screen, BLACK, (base_x + 16, base_y + 13), (base_x + 24, base_y + 13), 1)
+            
+            # Body - gold business suit
+            suit_rect = pygame.Rect(base_x + 10, base_y + 16, 20, 16)
+            pygame.draw.rect(self.screen, suit_color, suit_rect)
+            pygame.draw.rect(self.screen, BLACK, suit_rect, 1)
+            
+            # White shirt collar
+            pygame.draw.rect(self.screen, WHITE, (base_x + 14, base_y + 16, 12, 3))
+            
+            # Cute little crown on top of head
+            crown_center_x = base_x + 20  # Center of head
+            crown_y = base_y + 2  # Just above head
+            
+            # Draw crown (cute and small)
             crown_points = [
-                (crown_x - 6, crown_y),
-                (crown_x - 4, crown_y - 4),
-                (crown_x - 2, crown_y - 1),
-                (crown_x, crown_y - 5),
-                (crown_x + 2, crown_y - 1),
-                (crown_x + 4, crown_y - 4),
-                (crown_x + 6, crown_y),
+                (crown_center_x - 5, crown_y + 3),      # Left base
+                (crown_center_x - 4, crown_y),          # Left peak
+                (crown_center_x - 2, crown_y + 2),      # Left valley
+                (crown_center_x, crown_y - 1),          # Center peak
+                (crown_center_x + 2, crown_y + 2),      # Right valley
+                (crown_center_x + 4, crown_y),          # Right peak
+                (crown_center_x + 5, crown_y + 3),      # Right base
             ]
-            pygame.draw.polygon(self.screen, (255, 215, 0), crown_points)  # Gold
-            pygame.draw.polygon(self.screen, (0, 0, 0), crown_points, 1)  # Black outline
+            pygame.draw.polygon(self.screen, CROWN_GOLD, crown_points)
+            pygame.draw.polygon(self.screen, BLACK, crown_points, 1)
+            
+            # Add jewels on crown (small colored dots)
+            pygame.draw.circle(self.screen, (255, 0, 0), (crown_center_x, crown_y), 1)  # Red jewel
 
             # Draw purple shield if JIT protected
             if admin_role.has_jit:
