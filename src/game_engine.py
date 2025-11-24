@@ -309,8 +309,7 @@ class GameEngine:
                 for service_node in self.service_nodes:
                     if service_node.position.x == active_quest.service_position.x:
                         if not service_node.protected:
-                            # TODO: Will implement _try_protect_service() in Phase 6
-                            logger.info("Player within range to protect service!")
+                            self._try_protect_service(active_quest, service_node)
 
     def _distance(self, pos1: Vector2, pos2: Vector2) -> float:
         """Calculate Euclidean distance between two positions."""
@@ -319,13 +318,71 @@ class GameEngine:
         return (dx * dx + dy * dy) ** 0.5
 
     def _handle_quest_failure(self, quest, reason: str) -> None:
-        """Handle quest failure - placeholder for now."""
+        """Handle quest failure."""
         from models import QuestStatus
         quest.status = QuestStatus.COMPLETED
         quest.player_won = False
         self.hacker = None
+
+        # Show game over message
+        self.game_state.congratulations_message = (
+            "💀 GAME OVER\n\n"
+            f"{reason}\n\n"
+            "The hacker compromised the Bedrock service and injected "
+            "malicious prompts into the AI system!\n\n"
+            "Press ENTER to continue"
+        )
+
         logger.info(f"❌ QUEST FAILED: {reason}")
-        # TODO: Show game over message in Phase 5
+
+    def _try_protect_service(self, quest, service_node: ServiceNode) -> None:
+        """
+        Attempt to protect service via Sonrai API.
+
+        Args:
+            quest: Active quest
+            service_node: Service node to protect
+        """
+        try:
+            from models import QuestStatus
+
+            # TODO Phase 6: Call real Sonrai API here
+            # result = self.api_client.protect_service(
+            #     service_type=quest.service_type,
+            #     account_id=self.game_state.current_level_account_id,
+            #     service_name=f"{quest.service_type.capitalize()} Service"
+            # )
+
+            # For now, simulate success
+            result_success = True
+
+            if result_success:
+                # Success! Player won the race
+                service_node.protected = True
+                quest.status = QuestStatus.COMPLETED
+                quest.player_won = True
+                self.game_state.services_protected += 1
+
+                # Stop hacker
+                self.hacker = None
+
+                # Show success message
+                self.game_state.congratulations_message = (
+                    f"🛡️ SERVICE PROTECTED!\n\n"
+                    f"The {quest.service_type.capitalize()} service is now safe "
+                    "from unauthorized access!\n\n"
+                    "You used the Cloud Permissions Firewall to protect against "
+                    "prompt injection attacks!\n\n"
+                    "Press ENTER to continue"
+                )
+
+                logger.info(f"✅ PLAYER WON THE RACE! Service protected at x={service_node.position.x}")
+            else:
+                # API error (will implement in Phase 6)
+                logger.error("Failed to protect service")
+
+        except Exception as e:
+            logger.error(f"Exception protecting service: {e}")
 
     def update(self, delta_time: float) -> None:
         """
