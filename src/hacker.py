@@ -17,14 +17,15 @@ class Hacker:
         Initialize hacker character.
 
         Args:
-            spawn_position: Starting position (high in the sky)
+            spawn_position: Starting position (on ground for side-by-side race)
             target_position: Service icon position to race toward
         """
         self.position = Vector2(spawn_position.x, spawn_position.y)
         self.velocity = Vector2(0.0, 0.0)
         self.target_position = target_position
         self.speed = HACKER_SPEED
-        self.grounded = False
+        # Start grounded if spawned near ground level
+        self.grounded = spawn_position.y > 700  # If y > 700, assume on ground
 
         # Visual properties
         self.width = 24

@@ -1337,9 +1337,12 @@ class GameEngine:
                             # Dismiss quest dialog
                             self.game_state.quest_message = None
 
-                            # Spawn hacker FAR to the RIGHT of service (fair race!)
-                            spawn_x = active_quest.service_position.x + 2000  # 2000px to the right
-                            spawn_y = 100  # High in the sky
+                            # Spawn hacker ON GROUND near player for side-by-side race!
+                            # Both start from ~same position, both run toward service
+                            # Player: 4800px @ 120px/s = 40s, Hacker: 4800px @ 150px/s = 32s
+                            # Hacker wins by 8 seconds - close race!
+                            spawn_x = self.player.position.x - 50  # Slightly behind player
+                            spawn_y = 832 - 32  # On the ground (ground_y - hacker_height)
                             self.hacker = Hacker(
                                 spawn_position=Vector2(spawn_x, spawn_y),
                                 target_position=active_quest.service_position
