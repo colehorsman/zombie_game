@@ -27,6 +27,8 @@ from service_protection_quest import (
     SERVICE_ICON_Y
 )
 from hacker import Hacker
+from jit_access_quest import Auditor, AdminRole, create_jit_quest_entities
+from models import JitQuestState, PermissionSet
 
 
 logger = logging.getLogger(__name__)
@@ -213,6 +215,17 @@ class GameEngine:
         self.service_nodes: List[ServiceNode] = []
         self.hacker: Optional[Hacker] = None
 
+        # JIT Access Quest
+        self.auditor: Optional[Auditor] = None
+        self.admin_roles: List[AdminRole] = []
+        
+        # Production account IDs for JIT quest
+        self.JIT_QUEST_ACCOUNTS = {
+            "160224865296",  # MyHealth - Production Data
+            "613056517323",  # MyHealth - Production
+            "437154727976",  # Sonrai MyHealth - Org
+        }
+
     def start(self) -> None:
         """Start the game."""
         self.running = True
@@ -270,6 +283,101 @@ class GameEngine:
                 logger.info(f"✅ Created Production Bedrock AgentCore quest (service is unprotected)")
             else:
                 logger.info(f"⏭️  Skipping Production quest - bedrock-agentcore already protected")
+
+    def _initialize_jit_quest(self, account_id: str) -> None:
+        """
+        Initialize JIT Access Quest for production accounts.
+        
+        Args:
+            account_id: AWS account ID to check
+        """
+        # Reset JIT quest entities
+        self.auditor = None
+        self.admin_roles = []
+        self.game_state.jit_quest = None
+        
+        # Only initialize for production accounts
+        if account_id not in self.JIT_QUEST_ACCOUNTS:
+            logger.info(f"⏭️  Account {account_id} is not a production account - skipping JIT quest")
+            return
+        
+        try:
+            logger.info(f"🔍 Checking for admin/privileged permission sets in account {account_id}...")
+            
+            # Fetch permission sets (admin/privileged roles)
+            permission_sets_data = self.api_client.fetch_permission_sets(account_id)
+            
+            if not permission_sets_data:
+                logger.info(f"⏭️  No admin/privileged permission sets found - skipping JIT quest")
+                return
+            
+            # Fetch JIT configuration to see which are already protected
+            jit_config = self.api_client.fetch_jit_configuration(account_id)
+            enrolled_ids = set(jit_config.get("enrolledPermissionSets", []))
+            
+            # Create PermissionSet objects and mark which have JIT
+            permission_sets = []
+            unprotected_count = 0
+            for ps_data in permission_sets_data:
+                has_jit = ps_data["id"] in enrolled_ids
+                perm_set = PermissionSet(
+                    id=ps_data["id"],
+                    name=ps_data["name"],
+                    identity_labels=ps_data["identityLabels"],
+                    user_count=ps_data["userCount"],
+                    has_jit=has_jit
+                )
+                permission_sets.append(perm_set)
+                if not has_jit:
+                    unprotected_count += 1
+                    logger.info(f"  ⚠️  {perm_set.name} - UNPROTECTED (needs JIT)")
+                else:
+                    logger.info(f"  ✅ {perm_set.name} - already has JIT protection")
+            
+            # Only create quest if there are unprotected roles
+            if unprotected_count == 0:
+                logger.info(f"⏭️  All admin/privileged roles already have JIT - skipping quest")
+                return
+            
+            # Create quest entities
+            logger.info(f"✅ Creating JIT Access Quest with {len(permission_sets)} permission sets ({unprotected_count} unprotected)")
+            
+            # Calculate ground level for platformer mode
+            # Use the same ground level as zombies - get from platform positions
+            # The last platforms in the list are the ground segments
+            ground_y = 400  # Default fallback
+            if hasattr(self.game_map, 'platform_positions') and self.game_map.platform_positions:
+                # Get the ground platform (last ones in the list are ground segments)
+                # Ground platforms have y position around 600-650
+                for platform_x, platform_y, platform_width in self.game_map.platform_positions:
+                    if platform_y > ground_y:
+                        ground_y = platform_y
+                logger.info(f"Using ground_y = {ground_y} from platform positions")
+            
+            self.auditor, self.admin_roles = create_jit_quest_entities(
+                permission_sets,
+                self.game_map.map_width,
+                ground_y
+            )
+            
+            # Initialize quest state
+            self.game_state.jit_quest = JitQuestState(
+                active=True,
+                auditor_position=self.auditor.position,
+                admin_roles=permission_sets,
+                protected_count=len(permission_sets) - unprotected_count,
+                total_count=len(permission_sets),
+                quest_completed=False,
+                quest_failed=False
+            )
+            
+            logger.info(f"✅ JIT Access Quest initialized: {unprotected_count}/{len(permission_sets)} roles need protection")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize JIT quest: {e}", exc_info=True)
+            self.auditor = None
+            self.admin_roles = []
+            self.game_state.jit_quest = None
 
     def _update_quests(self, delta_time: float) -> None:
         """Update service protection quests."""
@@ -420,6 +528,108 @@ class GameEngine:
         except Exception as e:
             logger.error(f"Exception protecting service: {e}")
 
+    def _update_jit_quest(self, delta_time: float) -> None:
+        """Update JIT Access Quest entities and check for interactions."""
+        if not self.game_state.jit_quest or not self.game_state.jit_quest.active:
+            return
+        
+        # Update auditor patrol
+        if self.auditor:
+            self.auditor.update(delta_time)
+            self.game_state.jit_quest.auditor_position = self.auditor.position
+        
+        # Update admin roles
+        for admin_role in self.admin_roles:
+            admin_role.update(delta_time)
+        
+        # Update quest message timer
+        if self.game_state.jit_quest.quest_message_timer > 0:
+            self.game_state.jit_quest.quest_message_timer -= delta_time
+            if self.game_state.jit_quest.quest_message_timer <= 0:
+                self.game_state.jit_quest.quest_message = None
+        
+        # Check for player interaction with admin roles
+        if self.player:
+            player_bounds = self.player.get_bounds()
+            
+            for admin_role in self.admin_roles:
+                if not admin_role.has_jit:  # Only interact with unprotected roles
+                    role_bounds = admin_role.get_bounds()
+                    
+                    # Check if player is near admin role
+                    if player_bounds.colliderect(role_bounds):
+                        # Player is touching unprotected admin role - apply JIT!
+                        self._apply_jit_to_admin_role(admin_role)
+
+    def _apply_jit_to_admin_role(self, admin_role: AdminRole) -> None:
+        """
+        Apply JIT protection to an admin role via Sonrai API.
+        
+        Args:
+            admin_role: AdminRole entity to protect
+        """
+        try:
+            logger.info(f"Applying JIT protection to {admin_role.permission_set.name}...")
+            
+            # Call REAL Sonrai API to apply JIT protection
+            result = self.api_client.apply_jit_protection(
+                account_id=self.game_state.current_level_account_id,
+                permission_set_id=admin_role.permission_set.id,
+                permission_set_name=admin_role.permission_set.name
+            )
+            
+            if result.success:
+                # Success! Mark role as protected
+                admin_role.apply_jit_protection()
+                self.game_state.jit_quest.protected_count += 1
+                
+                # Show success message
+                self.game_state.jit_quest.quest_message = (
+                    f"✅ JIT Protection Applied!\n\n"
+                    f"{admin_role.permission_set.name} now requires\n"
+                    f"Just-In-Time approval for access.\n\n"
+                    f"Progress: {self.game_state.jit_quest.protected_count}/{self.game_state.jit_quest.total_count} roles protected"
+                )
+                self.game_state.jit_quest.quest_message_timer = 3.0
+                
+                logger.info(f"✅ JIT applied to {admin_role.permission_set.name}")
+                
+                # Check if all roles are now protected
+                if self.game_state.jit_quest.protected_count >= self.game_state.jit_quest.total_count:
+                    self._complete_jit_quest()
+            else:
+                # API error
+                error_msg = result.error_message or "Unknown error"
+                logger.error(f"Failed to apply JIT protection: {error_msg}")
+                self.game_state.jit_quest.quest_message = (
+                    f"⚠️ JIT Protection Failed\n\n"
+                    f"Error: {error_msg}\n\n"
+                    "Try again!"
+                )
+                self.game_state.jit_quest.quest_message_timer = 3.0
+                
+        except Exception as e:
+            logger.error(f"Exception applying JIT protection: {e}")
+
+    def _complete_jit_quest(self) -> None:
+        """Handle JIT quest completion."""
+        self.game_state.jit_quest.quest_completed = True
+        
+        # Pause game to show success message
+        self.game_state.status = GameStatus.PAUSED
+        
+        # Show audit success message
+        self.game_state.congratulations_message = (
+            "🎉 Audit Deficiency Prevented!\n\n"
+            "All admin and privileged roles now require\n"
+            "Just-In-Time approval for access!\n\n"
+            "Standing admin access has been eliminated,\n"
+            "preventing a significant audit finding.\n\n"
+            "Press ENTER to continue"
+        )
+        
+        logger.info(f"✅ JIT QUEST COMPLETED! All {self.game_state.jit_quest.total_count} roles protected")
+
     def update(self, delta_time: float) -> None:
         """
         Update game state for one frame.
@@ -511,7 +721,7 @@ class GameEngine:
                                         if prev_level.account_id in self.completed_level_account_ids:
                                             level_unlocked = True
                                         else:
-                                            locked_reason = f"🔒 Level Locked\\n\\nComplete {prev_level.account_name} to unlock\\n{level.account_name}\\n\\nPress ESC to continue"
+                                            locked_reason = f"🔒 Level Locked\n\nComplete {prev_level.account_name} to unlock\n{level.account_name}\n\nPress ESC to continue"
                                     else:
                                         level_unlocked = True
                                 break
@@ -722,6 +932,10 @@ class GameEngine:
                 logger.error(f"⚠️  Service node creation failed: {e}", exc_info=True)
                 self.service_nodes = []
 
+            logger.info(f"🚪 Step 15: Initializing JIT Access Quest (if production account)")
+            # Initialize JIT Access Quest for production accounts
+            self._initialize_jit_quest(account_id)
+
             logger.info(f"🚪 === ENTERED LEVEL {current_level.level_number}: {current_level.account_name} - SUCCESS ===")
         except Exception as e:
             logger.error(f"❌ ❌ ❌ CRASH in _enter_level: {e}", exc_info=True)
@@ -735,6 +949,28 @@ class GameEngine:
         Transition from level back to lobby mode.
         """
         logger.info("🏛️  Returning to lobby...")
+        
+        # Check if JIT quest was active but not completed
+        if self.game_state.jit_quest and self.game_state.jit_quest.active:
+            if not self.game_state.jit_quest.quest_completed:
+                unprotected = self.game_state.jit_quest.total_count - self.game_state.jit_quest.protected_count
+                if unprotected > 0:
+                    # Quest failed - show warning
+                    self.game_state.jit_quest.quest_failed = True
+                    logger.warning(f"⚠️ JIT Quest failed: {unprotected} admin roles left unprotected")
+                    
+                    # Show failure message
+                    self.game_state.congratulations_message = (
+                        "⚠️ Audit Failed!\n\n"
+                        f"{unprotected} admin/privileged role(s) still have\n"
+                        "standing access without JIT protection.\n\n"
+                        "This is a SIGNIFICANT DEFICIENCY in your\n"
+                        "internal audit findings.\n\n"
+                        "Press ENTER to continue"
+                    )
+                    # Pause to show message
+                    self.game_state.previous_status = GameStatus.LOBBY
+                    self.game_state.status = GameStatus.PAUSED
         
         # Mark current level as completed
         completed_account_id = self.game_state.current_level_account_id
@@ -785,6 +1021,11 @@ class GameEngine:
                 quest.hacker_spawned = False
                 quest.player_won = False
                 quest.time_remaining = quest.time_limit
+        
+        # Clear JIT quest data
+        self.auditor = None
+        self.admin_roles = []
+        self.game_state.jit_quest = None
         
         # Update game state
         self.game_state.status = GameStatus.LOBBY
@@ -964,6 +1205,9 @@ class GameEngine:
         # Update service protection quests
         self._update_quests(delta_time)
 
+        # Update JIT Access Quest
+        self._update_jit_quest(delta_time)
+
         # Update projectiles
         for projectile in self.projectiles[:]:
             projectile.update(delta_time)
@@ -1108,17 +1352,17 @@ class GameEngine:
 
     def _build_pause_menu_message(self) -> str:
         """Build the pause menu message with current selection highlighted."""
-        menu_message = "⏸️  PAUSED\\n\\n"
+        menu_message = "⏸️  PAUSED\n\n"
 
         for i, option in enumerate(self.pause_menu_options):
             if i == self.pause_menu_selected_index:
                 # Highlight selected option with arrow
-                menu_message += f"▶ {option}\\n"
+                menu_message += f"▶ {option}\n"
             else:
                 # Unselected option
-                menu_message += f"  {option}\\n"
+                menu_message += f"  {option}\n"
 
-        menu_message += "\\nUse ↑↓ to select, ENTER to confirm"
+        menu_message += "\nUse ↑↓ to select, ENTER to confirm"
         return menu_message
 
     def _navigate_pause_menu(self, direction: int) -> None:
@@ -1336,7 +1580,7 @@ class GameEngine:
                 # Check UNLOCK cheat (unlocks all levels)
                 if self.cheat_buffer == self.cheat_codes['UNLOCK']:
                     self.cheat_enabled = True
-                    self.game_state.congratulations_message = "🔓 CHEAT ACTIVATED\\n\\nAll Levels Unlocked!\\n\\nPress ESC to continue"
+                    self.game_state.congratulations_message = "🔓 CHEAT ACTIVATED\n\nAll Levels Unlocked!\n\nPress ESC to continue"
                     # Save current status before pausing
                     self.game_state.previous_status = self.game_state.status
                     self.game_state.status = GameStatus.PAUSED
