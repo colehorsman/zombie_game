@@ -19,6 +19,14 @@ from approval import ApprovalManager
 from powerup import PowerUp, PowerUpManager, PowerUpType, spawn_random_powerups
 from boss import Boss
 from save_manager import SaveManager
+from service_protection_quest import (
+    ServiceProtectionQuestManager,
+    ServiceNode,
+    create_bedrock_protection_quest,
+    create_service_node,
+    SERVICE_ICON_Y
+)
+from hacker import Hacker
 
 
 logger = logging.getLogger(__name__)
@@ -200,11 +208,124 @@ class GameEngine:
         self.pause_menu_options = ["Return to Game", "Return to Lobby", "Save Game", "Quit Game"]
         self.pause_menu_selected_index = 0
 
+        # Service Protection Quests
+        self.quest_manager: Optional[ServiceProtectionQuestManager] = None
+        self.service_nodes: List[ServiceNode] = []
+        self.hacker: Optional[Hacker] = None
+
     def start(self) -> None:
         """Start the game."""
         self.running = True
         self.start_time = time.time()
         logger.info("Game started")
+
+        # Initialize service protection quests
+        self._initialize_quests()
+
+    def _initialize_quests(self) -> None:
+        """Initialize service protection quests for Sandbox and Production levels."""
+        if not self.level_manager:
+            return
+
+        self.quest_manager = ServiceProtectionQuestManager()
+
+        # Sandbox quest (Level 1) - x=300 trigger, x=600 service at y=784
+        sandbox_quest = create_bedrock_protection_quest(
+            quest_id="sandbox_bedrock",
+            level=1,
+            trigger_pos=Vector2(300, 400),
+            service_pos=Vector2(600, SERVICE_ICON_Y)
+        )
+        self.quest_manager.add_quest(sandbox_quest)
+        logger.info(f"Created Sandbox Bedrock protection quest at x=600, y={SERVICE_ICON_Y}")
+
+        # Production quest (Level 6) - x=300 trigger, x=800 service at y=784
+        production_quest = create_bedrock_protection_quest(
+            quest_id="production_bedrock",
+            level=6,
+            trigger_pos=Vector2(300, 400),
+            service_pos=Vector2(800, SERVICE_ICON_Y)
+        )
+        self.quest_manager.add_quest(production_quest)
+        logger.info(f"Created Production Bedrock protection quest at x=800, y={SERVICE_ICON_Y}")
+
+    def _update_quests(self, delta_time: float) -> None:
+        """Update service protection quests."""
+        if not self.quest_manager:
+            return
+
+        from models import QuestStatus
+
+        # Get quest for current level
+        active_quest = self.quest_manager.get_quest_for_level(self.game_state.current_level)
+        if not active_quest:
+            return
+
+        # Check for quest trigger (player crosses x=300)
+        if active_quest.status == QuestStatus.NOT_STARTED:
+            if self.player.position.x > active_quest.trigger_position.x:
+                # Trigger quest - show warning dialog
+                active_quest.status = QuestStatus.TRIGGERED
+                self.game_state.quest_message = (
+                    "⚠️ WARNING! ⚠️\n\n"
+                    f"You have {active_quest.time_limit:.0f} SECONDS to protect "
+                    "the Bedrock service before a hacker deletes Bedrock "
+                    "guardrails allowing PROMPT INJECTION!\n\n"
+                    "Press ENTER to begin the race!"
+                )
+                self.game_state.quest_message_timer = 999.0  # Show until dismissed
+                logger.info(f"🎮 Quest triggered at x={self.player.position.x}")
+
+        # Update active quest
+        if active_quest.status == QuestStatus.ACTIVE:
+            # Update timer
+            active_quest.time_remaining -= delta_time
+
+            # Check if timer expired
+            if active_quest.time_remaining <= 0:
+                self._handle_quest_failure(active_quest, "Time's up!")
+                return
+
+            # Update hacker
+            if self.hacker:
+                self.hacker.update(delta_time, self.game_map)
+
+                # Check if hacker reached service
+                hacker_dist = self._distance(
+                    self.hacker.position,
+                    active_quest.service_position
+                )
+                if hacker_dist < 50:  # Hacker reached icon
+                    self._handle_quest_failure(active_quest, "Hacker reached service first!")
+                    return
+
+            # Check if player near service (auto-protect within 80px)
+            player_dist = self._distance(
+                self.player.position,
+                active_quest.service_position
+            )
+            if player_dist < 80:  # Auto-protect range
+                # Find service node
+                for service_node in self.service_nodes:
+                    if service_node.position.x == active_quest.service_position.x:
+                        if not service_node.protected:
+                            # TODO: Will implement _try_protect_service() in Phase 6
+                            logger.info("Player within range to protect service!")
+
+    def _distance(self, pos1: Vector2, pos2: Vector2) -> float:
+        """Calculate Euclidean distance between two positions."""
+        dx = pos2.x - pos1.x
+        dy = pos2.y - pos1.y
+        return (dx * dx + dy * dy) ** 0.5
+
+    def _handle_quest_failure(self, quest, reason: str) -> None:
+        """Handle quest failure - placeholder for now."""
+        from models import QuestStatus
+        quest.status = QuestStatus.COMPLETED
+        quest.player_won = False
+        self.hacker = None
+        logger.info(f"❌ QUEST FAILED: {reason}")
+        # TODO: Show game over message in Phase 5
 
     def update(self, delta_time: float) -> None:
         """
@@ -710,6 +831,9 @@ class GameEngine:
         for third_party in third_parties:
             third_party.update(delta_time, self.game_map)
 
+        # Update service protection quests
+        self._update_quests(delta_time)
+
         # Update projectiles
         for projectile in self.projectiles[:]:
             projectile.update(delta_time)
@@ -1108,6 +1232,29 @@ class GameEngine:
 
                 # Handle message dismissal
                 if event.key == pygame.K_RETURN:
+                    # Check for quest dialog dismissal and hacker spawn
+                    if self.quest_manager and self.game_state.quest_message:
+                        from models import QuestStatus
+                        active_quest = self.quest_manager.get_quest_for_level(self.game_state.current_level)
+                        if active_quest and active_quest.status == QuestStatus.TRIGGERED:
+                            # Dismiss quest dialog
+                            self.game_state.quest_message = None
+
+                            # Spawn hacker above service position
+                            spawn_x = active_quest.service_position.x
+                            spawn_y = 100  # High in the sky
+                            self.hacker = Hacker(
+                                spawn_position=Vector2(spawn_x, spawn_y),
+                                target_position=active_quest.service_position
+                            )
+
+                            # Start the race!
+                            active_quest.status = QuestStatus.ACTIVE
+                            active_quest.hacker_spawned = True
+
+                            logger.info(f"🎮 RACE STARTED! Hacker spawned at ({spawn_x}, {spawn_y})")
+                            continue
+
                     if self.game_state.status == GameStatus.PAUSED:
                         self.dismiss_message()
 
