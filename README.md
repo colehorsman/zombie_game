@@ -72,6 +72,12 @@ Both branches are fully functional, documented, and maintained. Pick the one tha
 - 🔫 Mega Man-style character with ray gun
 - 🧟 Each zombie represents a real unused AWS identity from Sonrai
 - 🔒 Eliminating zombies triggers real quarantine actions via Sonrai API
+- 🛡️ **Service Protection Quests**: Race against AI hackers to protect AWS services
+  - Dynamic quest system checks Sonrai API for unprotected services
+  - Bedrock AgentCore quest protects 8 high-risk AI permissions
+  - Real-time race with black-hoodie hacker character
+  - Success: Service protected via Sonrai ProtectService API
+  - Failure: Dramatic consequences explaining the security breach
 - 💜 Protected entities with purple shields (Sonrai + exempted identities)
 - 💥 Damage system with health points (zombies: 3 HP, third parties: 10 HP)
 - 📈 Score tracking with damage multiplier (increases every 10 eliminations)
