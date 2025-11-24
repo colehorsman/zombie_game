@@ -1,6 +1,7 @@
 """Rendering system for the game."""
 
 import logging
+import math
 import pygame
 from typing import List, Optional
 
@@ -775,9 +776,7 @@ class Renderer:
 
                 # Apply pulsing animation if not protected
                 if not service_node.protected:
-                    # Pulse scale: 1.0 to 1.1
-                    pulse_scale = 1.0 + 0.05 * (1 + pygame.math.Vector2(0, 0).sin() * 0.5)
-                    import math
+                    # Pulse scale: 1.0 to 1.05 (subtle pulsing effect)
                     pulse_scale = 1.0 + 0.05 * abs(math.sin(pulse_time * 2))
 
                     # Scale sprite for pulsing effect
