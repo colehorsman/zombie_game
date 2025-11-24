@@ -665,6 +665,26 @@ class GameEngine:
                 self.powerups = []  # Continue level without powerups rather than crash
                 logger.warning("Continuing level entry without powerups")
 
+            logger.info(f"🚪 Step 14: Creating service nodes for quest (if applicable)")
+            # Create service nodes for service protection quests in Sandbox (1) and Production (6)
+            try:
+                if current_level.level_number == 1:
+                    # Sandbox Bedrock service at x=600
+                    service_node = create_service_node("bedrock", Vector2(600, SERVICE_ICON_Y))
+                    self.service_nodes = [service_node]
+                    logger.info(f"✅ Created Bedrock service node for Sandbox level")
+                elif current_level.level_number == 6:
+                    # Production Bedrock service at x=800
+                    service_node = create_service_node("bedrock", Vector2(800, SERVICE_ICON_Y))
+                    self.service_nodes = [service_node]
+                    logger.info(f"✅ Created Bedrock service node for Production level")
+                else:
+                    # No service nodes for other levels
+                    self.service_nodes = []
+            except Exception as e:
+                logger.error(f"⚠️  Service node creation failed: {e}", exc_info=True)
+                self.service_nodes = []
+
             logger.info(f"🚪 === ENTERED LEVEL {current_level.level_number}: {current_level.account_name} - SUCCESS ===")
         except Exception as e:
             logger.error(f"❌ ❌ ❌ CRASH in _enter_level: {e}", exc_info=True)
@@ -716,6 +736,18 @@ class GameEngine:
         self.powerups = []
         self.boss = None
         self.boss_spawned = False
+
+        # Clear service protection quest data
+        self.service_nodes = []
+        self.hacker = None
+        # Reset all quests to NOT_STARTED
+        if self.quest_manager:
+            from models import QuestStatus
+            for quest in self.quest_manager.quests:
+                quest.status = QuestStatus.NOT_STARTED
+                quest.hacker_spawned = False
+                quest.player_won = False
+                quest.time_remaining = quest.time_limit
         
         # Update game state
         self.game_state.status = GameStatus.LOBBY
@@ -1717,6 +1749,18 @@ class GameEngine:
         if self.use_map and self.game_map and hasattr(self.game_map, 'third_parties'):
             return self.game_map.third_parties
         return []
+
+    def get_service_nodes(self) -> List[ServiceNode]:
+        """Get the list of service nodes for service protection quests."""
+        return self.service_nodes
+
+    def get_hacker(self):
+        """Get the hacker character (if spawned)."""
+        return self.hacker
+
+    def get_active_quest(self):
+        """Get the currently active service protection quest."""
+        return self.quest_manager.get_active_quest() if self.quest_manager else None
 
     def _spawn_boss(self) -> None:
         """Spawn the wizard boss - drops from sky with clouds."""

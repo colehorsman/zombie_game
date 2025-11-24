@@ -4,7 +4,7 @@ import logging
 import pygame
 from typing import List, Optional
 
-from models import GameState, GameStatus, Vector2
+from models import GameState, GameStatus, Vector2, QuestStatus
 from player import Player
 from zombie import Zombie
 from projectile import Projectile
@@ -755,3 +755,119 @@ class Renderer:
             delta: Amount to scroll
         """
         self.scroll_offset += delta
+
+    def render_service_nodes(self, service_nodes: List, game_map: GameMap, pulse_time: float = 0.0) -> None:
+        """
+        Render AWS service icons with pulsing animation.
+
+        Args:
+            service_nodes: List of ServiceNode instances to render
+            game_map: Game map for coordinate conversion
+            pulse_time: Time value for pulsing animation
+        """
+        for service_node in service_nodes:
+            if game_map.is_on_screen(service_node.position.x, service_node.position.y, 48, 48):
+                screen_x = int(service_node.position.x - game_map.camera_x)
+                screen_y = int(service_node.position.y - game_map.camera_y)
+
+                # Get appropriate sprite based on protection state
+                sprite = service_node.get_current_sprite()
+
+                # Apply pulsing animation if not protected
+                if not service_node.protected:
+                    # Pulse scale: 1.0 to 1.1
+                    pulse_scale = 1.0 + 0.05 * (1 + pygame.math.Vector2(0, 0).sin() * 0.5)
+                    import math
+                    pulse_scale = 1.0 + 0.05 * abs(math.sin(pulse_time * 2))
+
+                    # Scale sprite for pulsing effect
+                    scaled_size = int(48 * pulse_scale)
+                    scaled_sprite = pygame.transform.scale(sprite, (scaled_size, scaled_size))
+
+                    # Center the scaled sprite
+                    offset = (scaled_size - 48) // 2
+                    self.screen.blit(scaled_sprite, (screen_x - offset, screen_y - offset))
+                else:
+                    # No animation for protected services
+                    self.screen.blit(sprite, (screen_x, screen_y))
+
+    def render_race_timer(self, time_remaining: float, quest_status) -> None:
+        """
+        Render countdown timer during active race.
+
+        Args:
+            time_remaining: Seconds remaining in the race
+            quest_status: Current quest status (only show if ACTIVE)
+        """
+        if quest_status != QuestStatus.ACTIVE:
+            return
+
+        # Timer position (top center of screen)
+        timer_text = f"TIME: {int(time_remaining)}s"
+
+        # Color based on urgency (red if < 10s, yellow if < 30s, white otherwise)
+        if time_remaining < 10:
+            color = (255, 50, 50)  # Red
+        elif time_remaining < 30:
+            color = (255, 200, 0)  # Yellow
+        else:
+            color = (255, 255, 255)  # White
+
+        timer_font = pygame.font.Font(None, 48)
+        timer_surface = timer_font.render(timer_text, True, color)
+
+        # Position at top center
+        timer_x = (self.width - timer_surface.get_width()) // 2
+        timer_y = 20
+
+        # Black outline for readability
+        outline_offsets = [(-2, -2), (-2, 2), (2, -2), (2, 2)]
+        for dx, dy in outline_offsets:
+            outline_surface = timer_font.render(timer_text, True, (0, 0, 0))
+            self.screen.blit(outline_surface, (timer_x + dx, timer_y + dy))
+
+        # Draw the timer
+        self.screen.blit(timer_surface, (timer_x, timer_y))
+
+    def render_hacker(self, hacker, game_map: GameMap) -> None:
+        """
+        Render the hacker character.
+
+        Args:
+            hacker: Hacker instance to render
+            game_map: Game map for coordinate conversion
+        """
+        if not hacker:
+            return
+
+        # Check if hacker is on screen
+        if game_map.is_on_screen(hacker.position.x, hacker.position.y, hacker.width, hacker.height):
+            camera_offset = Vector2(game_map.camera_x, game_map.camera_y)
+            hacker.render(self.screen, camera_offset)
+
+    def render_service_hint(self, hint_message: str, hint_timer: float) -> None:
+        """
+        Render hint message near service icon.
+
+        Args:
+            hint_message: The hint text to display
+            hint_timer: Timer value (message fades after timer expires)
+        """
+        if hint_timer <= 0 or not hint_message:
+            return
+
+        # Render hint at bottom center of screen
+        hint_font = pygame.font.Font(None, 24)
+        hint_surface = hint_font.render(hint_message, True, (255, 200, 100))  # Light orange
+
+        hint_x = (self.width - hint_surface.get_width()) // 2
+        hint_y = self.height - 80
+
+        # Black outline for readability
+        outline_offsets = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
+        for dx, dy in outline_offsets:
+            outline_surface = hint_font.render(hint_message, True, (0, 0, 0))
+            self.screen.blit(outline_surface, (hint_x + dx, hint_y + dy))
+
+        # Draw the hint
+        self.screen.blit(hint_surface, (hint_x, hint_y))

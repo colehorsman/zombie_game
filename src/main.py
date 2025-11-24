@@ -473,6 +473,32 @@ def main():
             renderer.render_boss(boss, game_map)
             renderer.render_boss_health_bar(boss, game_map)
 
+        # Render service protection quest elements
+        if game_map and game_map.mode == "platformer":
+            # Render service nodes (Bedrock icons)
+            service_nodes = game_engine.get_service_nodes()
+            if service_nodes:
+                renderer.render_service_nodes(service_nodes, game_map, game_state.play_time)
+
+            # Render hacker character
+            hacker = game_engine.get_hacker()
+            if hacker:
+                renderer.render_hacker(hacker, game_map)
+
+            # Render race timer and quest messages
+            active_quest = game_engine.get_active_quest()
+            if active_quest:
+                # Render countdown timer
+                renderer.render_race_timer(active_quest.time_remaining, active_quest.status)
+
+                # Render quest warning message
+                if game_state.quest_message and game_state.quest_message_timer > 0:
+                    renderer.render_message_bubble(game_state.quest_message)
+
+            # Render service hint
+            if game_state.service_hint_message and game_state.service_hint_timer > 0:
+                renderer.render_service_hint(game_state.service_hint_message, game_state.service_hint_timer)
+
         # Render UI
         renderer.render_ui(game_state)
 

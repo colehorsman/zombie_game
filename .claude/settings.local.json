@@ -11,7 +11,8 @@
       "Bash(ps:*)",
       "Bash(xargs basename:*)",
       "Bash(echo:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []
