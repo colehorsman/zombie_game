@@ -139,8 +139,8 @@ def create_jit_quest_entities(permission_sets: list, level_width: int, ground_y:
         x = spacing * (i + 1)
         # Position is the CENTER of the character, so to place bottom at ground:
         # y = ground_y - (height / 2)
-        # This makes the bottom of the character at ground_y
-        y = ground_y - (admin_role_height // 2)
+        # Adjust up by 16 pixels (one tile) to match zombie positioning exactly
+        y = ground_y - (admin_role_height // 2) - 16
         admin_role = AdminRole(perm_set, x, y)
         admin_roles.append(admin_role)
         logger.info(f"Created AdminRole for {perm_set.name} at ({x}, {y}), hasJit={perm_set.has_jit}")
