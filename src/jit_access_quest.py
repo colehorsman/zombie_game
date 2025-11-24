@@ -137,12 +137,9 @@ def create_jit_quest_entities(permission_sets: list, level_width: int, ground_y:
 
     for i, perm_set in enumerate(permission_sets):
         x = spacing * (i + 1)
-        # Zombies: height=40, positioned at platform_y - 16 (center point)
-        # Admin roles: height=50, need to adjust for 10px height difference
-        # To match zombie positioning: place center 5px higher (half the height difference)
-        zombie_height = 40
-        height_diff = admin_role_height - zombie_height  # 50 - 40 = 10
-        y = ground_y - (admin_role_height // 2) - 16 - (height_diff // 2)
+        # Use EXACT same positioning as zombies: platform_y - 16
+        # This is the center point of the character
+        y = ground_y - 16
         admin_role = AdminRole(perm_set, x, y)
         admin_roles.append(admin_role)
         logger.info(f"Created AdminRole for {perm_set.name} at ({x}, {y}), hasJit={perm_set.has_jit}")
