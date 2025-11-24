@@ -859,6 +859,12 @@ class SonraiAPIClient:
             }
 
             logger.info(f"Calling ProtectService API for {service_type} in account {account_id}...")
+            logger.info(f"📤 SENDING TO API:")
+            logger.info(f"  controlKey: {control_key}")
+            logger.info(f"  scope: {scope}")
+            logger.info(f"  account: {account_id}")
+            logger.info(f"  identities: []")
+            logger.info(f"  ssoActorIds: []")
 
             response = requests.post(
                 self.api_url,
@@ -869,10 +875,14 @@ class SonraiAPIClient:
             response.raise_for_status()
             data = response.json()
 
+            logger.info(f"📥 RECEIVED FROM API:")
+            logger.info(f"  Full response: {data}")
+
             # Check for GraphQL errors
             if "errors" in data:
                 error_msg = data["errors"][0].get("message", "Unknown GraphQL error")
                 logger.error(f"ProtectService GraphQL error: {error_msg}")
+                logger.error(f"  Full error: {data['errors']}")
                 return QuarantineResult(success=False, identity_id="", error_message=error_msg)
 
             # Extract result
