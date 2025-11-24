@@ -137,9 +137,10 @@ def create_jit_quest_entities(permission_sets: list, level_width: int, ground_y:
 
     for i, perm_set in enumerate(permission_sets):
         x = spacing * (i + 1)
-        # Place at ground level - ground_y is typically around 650-680 in platformer mode
-        # Position so the bottom of the character touches the ground
-        y = ground_y - admin_role_height
+        # Position is the CENTER of the character, so to place bottom at ground:
+        # y = ground_y - (height / 2)
+        # This makes the bottom of the character at ground_y
+        y = ground_y - (admin_role_height // 2)
         admin_role = AdminRole(perm_set, x, y)
         admin_roles.append(admin_role)
         logger.info(f"Created AdminRole for {perm_set.name} at ({x}, {y}), hasJit={perm_set.has_jit}")
