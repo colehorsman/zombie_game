@@ -971,6 +971,13 @@ class Renderer:
             # White shirt collar
             pygame.draw.rect(self.screen, WHITE, (base_x + 14, base_y + 16, 12, 3))
             
+            # Legs (same as zombie - 8 pixels tall at bottom)
+            leg_color = (40, 40, 60) if admin_role.has_jit else (60, 50, 30)  # Dark pants
+            pygame.draw.rect(self.screen, leg_color, (base_x + 12, base_y + 32, 6, 8))  # Left leg
+            pygame.draw.rect(self.screen, leg_color, (base_x + 22, base_y + 32, 6, 8))  # Right leg
+            pygame.draw.rect(self.screen, BLACK, (base_x + 12, base_y + 32, 6, 8), 1)
+            pygame.draw.rect(self.screen, BLACK, (base_x + 22, base_y + 32, 6, 8), 1)
+            
             # Cute little crown on top of head
             crown_center_x = base_x + 20  # Center of head
             crown_y = base_y + 2  # Just above head
