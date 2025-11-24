@@ -17,6 +17,14 @@ class GameStatus(Enum):
     ERROR = "error"
 
 
+class QuestStatus(Enum):
+    """Service protection quest state enumeration."""
+    NOT_STARTED = "not_started"  # Quest exists but not triggered
+    TRIGGERED = "triggered"  # Dialog shown, waiting for ENTER
+    ACTIVE = "active"  # Hacker spawned, race in progress
+    COMPLETED = "completed"  # Service protected successfully
+
+
 @dataclass
 class Vector2:
     """2D vector for position and velocity."""
@@ -69,6 +77,13 @@ class GameState:
     completed_levels: set = field(default_factory=set)  # Set of completed level account IDs
     current_level_account_id: Optional[str] = None  # Account ID of current level being played
 
+    # Service Protection Quest fields
+    quest_message: Optional[str] = None  # Current quest message
+    quest_message_timer: float = 0.0  # Time to display quest message
+    service_hint_message: Optional[str] = None  # Hint at bottom of screen
+    service_hint_timer: float = 0.0  # Time to display hint
+    services_protected: int = 0  # Count of protected services
+
 
 @dataclass
 class QuarantineResult:
@@ -76,3 +91,18 @@ class QuarantineResult:
     success: bool
     identity_id: str
     error_message: Optional[str] = None
+
+
+@dataclass
+class ServiceProtectionQuest:
+    """Represents a service protection race quest."""
+    quest_id: str  # Unique identifier
+    level: int  # Level number (1 for Sandbox, 6 for Production)
+    service_type: str  # "bedrock", "s3", etc.
+    trigger_position: Vector2  # Where quest triggers (x=300)
+    service_position: Vector2  # Where service icon is located
+    time_limit: float  # Race time limit (60.0 seconds)
+    time_remaining: float  # Current countdown
+    status: QuestStatus  # NOT_STARTED, TRIGGERED, ACTIVE, COMPLETED
+    hacker_spawned: bool = False  # Whether hacker has been spawned
+    player_won: bool = False  # Race outcome
