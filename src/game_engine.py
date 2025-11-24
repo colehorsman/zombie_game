@@ -229,12 +229,14 @@ class GameEngine:
 
         self.quest_manager = ServiceProtectionQuestManager()
 
-        # Sandbox quest (Level 1) - x=300 trigger, x=600 service at y=784
+        # Sandbox quest (Level 1) - x=200 trigger, x=1200 service at y=784
+        # Quest layout: Trigger early, service far right, hacker spawns even further
+        # Player runs 1000px, Hacker runs 200px + falls from sky
         sandbox_quest = create_bedrock_protection_quest(
             quest_id="sandbox_bedrock",
             level=1,
-            trigger_pos=Vector2(300, 400),
-            service_pos=Vector2(600, SERVICE_ICON_Y)
+            trigger_pos=Vector2(200, 400),
+            service_pos=Vector2(1200, SERVICE_ICON_Y)
         )
         self.quest_manager.add_quest(sandbox_quest)
         logger.info(f"Created Sandbox Bedrock protection quest at x=600, y={SERVICE_ICON_Y}")
@@ -669,10 +671,10 @@ class GameEngine:
             # Create service nodes for service protection quests in Sandbox (1) and Production (6)
             try:
                 if current_level.level_number == 1:
-                    # Sandbox Bedrock service at x=600
-                    service_node = create_service_node("bedrock", Vector2(600, SERVICE_ICON_Y))
+                    # Sandbox Bedrock service at x=1200 (far enough for a race!)
+                    service_node = create_service_node("bedrock", Vector2(1200, SERVICE_ICON_Y))
                     self.service_nodes = [service_node]
-                    logger.info(f"✅ Created Bedrock service node for Sandbox level")
+                    logger.info(f"✅ Created Bedrock service node for Sandbox level at x=1200")
                 elif current_level.level_number == 6:
                     # Production Bedrock service at x=800
                     service_node = create_service_node("bedrock", Vector2(800, SERVICE_ICON_Y))
@@ -1333,8 +1335,8 @@ class GameEngine:
                             # Dismiss quest dialog
                             self.game_state.quest_message = None
 
-                            # Spawn hacker above service position
-                            spawn_x = active_quest.service_position.x
+                            # Spawn hacker to the RIGHT of service (creates a race!)
+                            spawn_x = active_quest.service_position.x + 200  # 200px to the right
                             spawn_y = 100  # High in the sky
                             self.hacker = Hacker(
                                 spawn_position=Vector2(spawn_x, spawn_y),

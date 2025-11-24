@@ -68,7 +68,7 @@ class Hacker:
 
     def render(self, surface: pygame.Surface, camera_offset: Vector2) -> None:
         """
-        Render hacker character.
+        Render hacker character (black hoodie style).
 
         Args:
             surface: Surface to draw on
@@ -78,19 +78,23 @@ class Hacker:
         screen_x = int(self.position.x - camera_offset.x)
         screen_y = int(self.position.y - camera_offset.y)
 
-        # Red body (24x32)
+        # Black body/hoodie (24x32)
         body_rect = pygame.Rect(screen_x, screen_y, self.width, self.height)
-        pygame.draw.rect(surface, (200, 0, 0), body_rect)
+        pygame.draw.rect(surface, (20, 20, 20), body_rect)
 
-        # Black hat (30x8) - "black hat hacker"
-        hat_rect = pygame.Rect(screen_x - 3, screen_y - 8, 30, 8)
-        pygame.draw.rect(surface, (0, 0, 0), hat_rect)
+        # Dark gray hoodie overlay (slightly wider for depth)
+        hoodie_rect = pygame.Rect(screen_x - 2, screen_y, 28, 20)
+        pygame.draw.rect(surface, (40, 40, 40), hoodie_rect)
 
-        # Yellow eyes (4x4 each) - menacing
-        left_eye = pygame.Rect(screen_x + 6, screen_y + 8, 4, 4)
-        right_eye = pygame.Rect(screen_x + 14, screen_y + 8, 4, 4)
-        pygame.draw.rect(surface, (255, 255, 0), left_eye)
-        pygame.draw.rect(surface, (255, 255, 0), right_eye)
+        # Face shadow (hidden under hoodie)
+        face_rect = pygame.Rect(screen_x + 6, screen_y + 6, 12, 10)
+        pygame.draw.rect(surface, (10, 10, 10), face_rect)
+
+        # Small glowing red eyes (2x2 each) - menacing hacker
+        left_eye = pygame.Rect(screen_x + 8, screen_y + 10, 2, 2)
+        right_eye = pygame.Rect(screen_x + 14, screen_y + 10, 2, 2)
+        pygame.draw.rect(surface, (255, 0, 0), left_eye)
+        pygame.draw.rect(surface, (255, 0, 0), right_eye)
 
     def get_bounds(self) -> pygame.Rect:
         """
