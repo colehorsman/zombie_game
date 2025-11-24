@@ -229,30 +229,47 @@ class GameEngine:
 
         self.quest_manager = ServiceProtectionQuestManager()
 
-        # Sandbox quest (Level 1) - Challenging 40-second race!
-        # Trigger: x=200, Service: x=5000
-        # Side-by-side race: Both start at x=200, both run to x=5000
-        # Player: 4800px @ 120px/s = 40 seconds
-        # Hacker: 4800px @ 130px/s = 37 seconds
-        # Very close race - player can win with skill!
-        sandbox_quest = create_bedrock_protection_quest(
-            quest_id="sandbox_bedrock",
-            level=1,
-            trigger_pos=Vector2(200, 400),
-            service_pos=Vector2(5000, SERVICE_ICON_Y)
-        )
-        self.quest_manager.add_quest(sandbox_quest)
-        logger.info(f"Created Sandbox Bedrock protection quest at x=600, y={SERVICE_ICON_Y}")
+        # Check which services are unprotected in each level's account
+        # Level 1: Sandbox (577945324761)
+        # Level 6: Production (613056517323)
 
-        # Production quest (Level 6) - x=300 trigger, x=800 service at y=784
-        production_quest = create_bedrock_protection_quest(
-            quest_id="production_bedrock",
-            level=6,
-            trigger_pos=Vector2(300, 400),
-            service_pos=Vector2(800, SERVICE_ICON_Y)
-        )
-        self.quest_manager.add_quest(production_quest)
-        logger.info(f"Created Production Bedrock protection quest at x=800, y={SERVICE_ICON_Y}")
+        # Sandbox quest (Level 1) - only create if bedrock-agentcore is unprotected
+        sandbox_level = next((l for l in self.level_manager.levels if l.level_number == 1), None)
+        if sandbox_level:
+            logger.info(f"🔍 Checking protection status for Sandbox account {sandbox_level.account_id}...")
+            unprotected_services = self.api_client.get_unprotected_services(sandbox_level.account_id)
+
+            if "bedrock-agentcore" in unprotected_services:
+                # Service is unprotected - create quest!
+                sandbox_quest = create_bedrock_protection_quest(
+                    quest_id="sandbox_bedrock_agentcore",
+                    level=1,
+                    trigger_pos=Vector2(200, 400),
+                    service_pos=Vector2(5000, SERVICE_ICON_Y)
+                )
+                self.quest_manager.add_quest(sandbox_quest)
+                logger.info(f"✅ Created Sandbox Bedrock AgentCore quest (service is unprotected)")
+            else:
+                logger.info(f"⏭️  Skipping Sandbox quest - bedrock-agentcore already protected")
+
+        # Production quest (Level 6) - only create if bedrock-agentcore is unprotected
+        production_level = next((l for l in self.level_manager.levels if l.level_number == 6), None)
+        if production_level:
+            logger.info(f"🔍 Checking protection status for Production account {production_level.account_id}...")
+            unprotected_services = self.api_client.get_unprotected_services(production_level.account_id)
+
+            if "bedrock-agentcore" in unprotected_services:
+                # Service is unprotected - create quest!
+                production_quest = create_bedrock_protection_quest(
+                    quest_id="production_bedrock_agentcore",
+                    level=6,
+                    trigger_pos=Vector2(300, 400),
+                    service_pos=Vector2(800, SERVICE_ICON_Y)
+                )
+                self.quest_manager.add_quest(production_quest)
+                logger.info(f"✅ Created Production Bedrock AgentCore quest (service is unprotected)")
+            else:
+                logger.info(f"⏭️  Skipping Production quest - bedrock-agentcore already protected")
 
     def _update_quests(self, delta_time: float) -> None:
         """Update service protection quests."""
@@ -274,8 +291,8 @@ class GameEngine:
                 self.game_state.quest_message = (
                     "⚠️ WARNING! ⚠️\n\n"
                     f"You have {active_quest.time_limit:.0f} SECONDS to protect "
-                    "the Bedrock service before a hacker deletes Bedrock "
-                    "guardrails allowing PROMPT INJECTION!\n\n"
+                    "Bedrock AgentCore before a hacker creates unauthorized "
+                    "AI agent runtimes and code interpreters!\n\n"
                     "Press ENTER to begin the race!"
                 )
                 self.game_state.quest_message_timer = 999.0  # Show until dismissed
@@ -329,12 +346,16 @@ class GameEngine:
         quest.player_won = False
         self.hacker = None
 
+        # Pause game to show failure message
+        self.game_state.status = GameStatus.PAUSED
+
         # Show mission failed message
         self.game_state.congratulations_message = (
-            "❌ Mission Failed: Bedrock Breach\n\n"
-            "The hacker reached Bedrock first and exploited AI permissions "
-            "to run unauthorized inference jobs on sensitive data.\n\n"
-            "Your cloud just trained the enemy.\n\n"
+            "❌ Mission Failed: AgentCore Compromised\n\n"
+            "The hacker reached Bedrock AgentCore first and created "
+            "unauthorized AI agent runtimes with code interpreters!\n\n"
+            "Your sensitive data is now being exfiltrated through "
+            "gateway targets.\n\n"
             "Press ENTER to continue"
         )
 
@@ -373,12 +394,13 @@ class GameEngine:
 
                 # Show success message with ChatOps info
                 self.game_state.congratulations_message = (
-                    f"🛡️ SERVICE PROTECTED!\n\n"
-                    f"You protected the Bedrock service! Sensitive API calls "
-                    f"to the Bedrock service will now require ChatOps approval "
+                    f"🛡️ AGENTCORE PROTECTED!\n\n"
+                    f"You protected Bedrock AgentCore! High-risk operations like "
+                    f"CreateAgentRuntime, CreateCodeInterpreter, and "
+                    f"UpdateGatewayTarget now require ChatOps approval "
                     f"through Slack or Teams!\n\n"
                     f"The Cloud Permissions Firewall blocked unauthorized "
-                    f"inference jobs on your data.\n\n"
+                    f"AI agent creation and code execution.\n\n"
                     "Press ENTER to continue"
                 )
 
@@ -676,21 +698,26 @@ class GameEngine:
                 logger.warning("Continuing level entry without powerups")
 
             logger.info(f"🚪 Step 14: Creating service nodes for quest (if applicable)")
-            # Create service nodes for service protection quests in Sandbox (1) and Production (6)
+            # Create service nodes ONLY if there's a quest for this level
+            # (quest will only exist if the service is unprotected)
             try:
-                if current_level.level_number == 1:
-                    # Sandbox Bedrock service at x=5000 (challenging 40-second race!)
-                    service_node = create_service_node("bedrock", Vector2(5000, SERVICE_ICON_Y))
-                    self.service_nodes = [service_node]
-                    logger.info(f"✅ Created Bedrock service node for Sandbox level at x=5000")
-                elif current_level.level_number == 6:
-                    # Production Bedrock service at x=800
-                    service_node = create_service_node("bedrock", Vector2(800, SERVICE_ICON_Y))
-                    self.service_nodes = [service_node]
-                    logger.info(f"✅ Created Bedrock service node for Production level")
-                else:
-                    # No service nodes for other levels
-                    self.service_nodes = []
+                self.service_nodes = []
+                if self.quest_manager:
+                    quest = self.quest_manager.get_quest_for_level(current_level.level_number)
+                    if quest:
+                        # Quest exists - create service node!
+                        if current_level.level_number == 1:
+                            # Sandbox Bedrock AgentCore service at x=5000
+                            service_node = create_service_node("bedrock-agentcore", Vector2(5000, SERVICE_ICON_Y))
+                            self.service_nodes = [service_node]
+                            logger.info(f"✅ Created Bedrock AgentCore service node for Sandbox (quest active)")
+                        elif current_level.level_number == 6:
+                            # Production Bedrock AgentCore service at x=800
+                            service_node = create_service_node("bedrock-agentcore", Vector2(800, SERVICE_ICON_Y))
+                            self.service_nodes = [service_node]
+                            logger.info(f"✅ Created Bedrock AgentCore service node for Production (quest active)")
+                    else:
+                        logger.info(f"⏭️  No quest for level {current_level.level_number} - service already protected")
             except Exception as e:
                 logger.error(f"⚠️  Service node creation failed: {e}", exc_info=True)
                 self.service_nodes = []

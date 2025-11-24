@@ -794,6 +794,82 @@ class SonraiAPIClient:
         except requests.exceptions.RequestException:
             return False
 
+    def get_unprotected_services(self, account_id: str) -> List[str]:
+        """
+        Fetch list of unprotected services for a given AWS account.
+
+        Args:
+            account_id: AWS account ID to check
+
+        Returns:
+            List of service names that are NOT protected (e.g., ["bedrock-agentcore", "s3", "rds"])
+        """
+        try:
+            # Fetch real scope for the account
+            logger.info(f"Fetching unprotected services for account {account_id}...")
+            account_scopes = self._fetch_all_account_scopes()
+            scope = account_scopes.get(account_id)
+
+            if not scope:
+                logger.warning(f"No scope found for account {account_id}")
+                return []
+
+            # Query for protected services in this scope
+            query = """
+            query getProtectedServices($scope: String!) {
+                ProtectedServices(where: { scope: { value: $scope, op: EQ } }) {
+                    items {
+                        controlKey
+                        scope
+                        status
+                    }
+                }
+            }
+            """
+
+            variables = {"scope": scope}
+
+            response = requests.post(
+                self.api_url,
+                json={"query": query, "variables": variables},
+                headers=self._get_headers(),
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            # Extract protected service control keys
+            protected_services = set()
+            if data and "data" in data and data["data"] and "ProtectedServices" in data["data"]:
+                items = data["data"]["ProtectedServices"].get("items", [])
+                for item in items:
+                    control_key = item.get("controlKey")
+                    status = item.get("status")
+                    if control_key and status == "active":
+                        protected_services.add(control_key)
+                        logger.info(f"  ✅ {control_key} is already protected")
+
+            # List of all possible services we might want to protect
+            ALL_SERVICES = {
+                "bedrock",
+                "bedrock-agentcore",
+                "s3",
+                "rds",
+                "lambda",
+                "sagemaker",
+                "dynamodb"
+            }
+
+            # Return services that are NOT protected
+            unprotected = list(ALL_SERVICES - protected_services)
+            logger.info(f"📋 Unprotected services in account {account_id}: {unprotected}")
+            return unprotected
+
+        except Exception as e:
+            logger.error(f"Failed to fetch unprotected services: {e}")
+            # On error, assume all services are unprotected (safer to show quest)
+            return ["bedrock-agentcore", "s3", "rds", "lambda", "sagemaker", "dynamodb"]
+
     def protect_service(self, service_type: str, account_id: str, service_name: str = None) -> QuarantineResult:
         """
         Protect an AWS service using the Sonrai ProtectService API.
@@ -812,6 +888,7 @@ class SonraiAPIClient:
         # Service type to control key mapping
         SERVICE_CONTROL_KEYS = {
             "bedrock": "bedrock",
+            "bedrock-agentcore": "bedrock-agentcore",
             "s3": "s3",
             "rds": "rds",
             "lambda": "lambda",

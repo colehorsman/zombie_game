@@ -79,7 +79,7 @@ def create_service_node(service_type: str, position: Vector2) -> ServiceNode:
         ServiceNode instance with all sprite variants
     """
     # Generate sprites based on service type
-    if service_type == "bedrock":
+    if service_type in ("bedrock", "bedrock-agentcore"):
         sprite_base = generate_bedrock_sprite()
         sprite_protected = generate_bedrock_protected()
         sprite_unprotected = generate_bedrock_unprotected()
@@ -120,7 +120,7 @@ def create_bedrock_protection_quest(
     return ServiceProtectionQuest(
         quest_id=quest_id,
         level=level,
-        service_type="bedrock",
+        service_type="bedrock-agentcore",
         trigger_position=trigger_pos,
         service_position=service_pos,
         time_limit=60.0,  # 60 seconds
