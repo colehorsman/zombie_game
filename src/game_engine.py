@@ -343,9 +343,16 @@ class GameEngine:
             logger.info(f"✅ Creating JIT Access Quest with {len(permission_sets)} permission sets ({unprotected_count} unprotected)")
             
             # Calculate ground level for platformer mode
-            # In platformer mode, ground is at bottom of screen minus ground tiles
-            # Typical screen height is 720, ground tiles are ~40px, so ground_y ~= 680
-            ground_y = self.game_map.map_height - 40  # Bottom of screen minus ground height
+            # Use the same ground level as zombies - get from platform positions
+            # The last platforms in the list are the ground segments
+            ground_y = 400  # Default fallback
+            if hasattr(self.game_map, 'platform_positions') and self.game_map.platform_positions:
+                # Get the ground platform (last ones in the list are ground segments)
+                # Ground platforms have y position around 600-650
+                for platform_x, platform_y, platform_width in self.game_map.platform_positions:
+                    if platform_y > ground_y:
+                        ground_y = platform_y
+                logger.info(f"Using ground_y = {ground_y} from platform positions")
             
             self.auditor, self.admin_roles = create_jit_quest_entities(
                 permission_sets,
