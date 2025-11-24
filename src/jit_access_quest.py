@@ -128,13 +128,18 @@ def create_jit_quest_entities(permission_sets: list, level_width: int, ground_y:
     auditor_y = ground_y - 30  # Slightly above ground
     auditor = Auditor(auditor_x, auditor_y, patrol_width=600)
 
-    # Create admin role entities spread across the level
+    # Create admin role entities spread across the level at ground level
     admin_roles = []
     spacing = level_width // (len(permission_sets) + 1)
+    
+    # Admin role height is 50 pixels (defined in AdminRole class)
+    admin_role_height = 50
 
     for i, perm_set in enumerate(permission_sets):
         x = spacing * (i + 1)
-        y = ground_y - 25  # On the ground
+        # Place at ground level - ground_y is typically around 650-680 in platformer mode
+        # Position so the bottom of the character touches the ground
+        y = ground_y - admin_role_height
         admin_role = AdminRole(perm_set, x, y)
         admin_roles.append(admin_role)
         logger.info(f"Created AdminRole for {perm_set.name} at ({x}, {y}), hasJit={perm_set.has_jit}")

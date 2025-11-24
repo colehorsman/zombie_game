@@ -54,7 +54,50 @@ Internal audit has flagged standing admin access in production accounts. Players
 
 ---
 
-### 2. Improved Raygun Visual
+### 2. JIT Quest - Lasso/Net Interaction
+**Type**: Enhancement
+**Priority**: Medium
+**Target Branch**: `feature/jit-lasso-interaction`
+
+#### Description
+Replace the current "walk into admin role" interaction with a more thematic lasso/net tool for capturing elevated access and applying JIT protection.
+
+#### Current Behavior
+- Player walks into admin role character
+- JIT protection applied automatically on collision
+
+#### Desired Behavior
+- Player uses a lasso/net tool (new button/key)
+- Throw lasso at admin role from a distance
+- Visual animation of lasso capturing the role
+- JIT protection applied when captured
+- More engaging and thematic interaction
+
+#### Design Ideas
+- **Lasso Tool**: Press SPACE to throw lasso, aim with arrow keys
+- **Net Tool**: Press N to deploy net, captures roles in area
+- **Capture Animation**: Lasso wraps around role, pulls them down if floating
+- **Visual Feedback**: Sparkle effect when JIT applied
+- **Sound Effects**: Lasso whoosh, capture sound
+
+#### Technical Notes
+- Add new input handling for lasso/net
+- Create projectile-like lasso entity
+- Add collision detection between lasso and admin roles
+- Animation system for capture sequence
+- Update tutorial/hints to explain new mechanic
+
+#### Acceptance Criteria
+- [ ] Lasso/net tool can be activated with key press
+- [ ] Tool has visual representation (rope, net sprite)
+- [ ] Captures admin roles from a distance
+- [ ] Smooth animation when capturing
+- [ ] JIT protection applied on successful capture
+- [ ] Tutorial explains new mechanic
+
+---
+
+### 3. Improved Raygun Visual
 **Type**: Enhancement
 **Priority**: Medium
 **Target Branch**: `feature/improved-raygun`

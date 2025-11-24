@@ -932,35 +932,63 @@ class Renderer:
             # Get screen position
             screen_x, screen_y = game_map.world_to_screen(admin_role.position.x, admin_role.position.y)
 
-            # Draw body (similar to zombie but distinct color)
-            body_rect = pygame.Rect(
-                int(screen_x - admin_role.width // 2),
-                int(screen_y - admin_role.height // 2),
-                admin_role.width,
-                admin_role.height
+            # Draw character body (similar to player/zombie)
+            body_width = admin_role.width
+            body_height = admin_role.height
+            
+            # Draw legs
+            leg_width = body_width // 3
+            leg_height = body_height // 2
+            left_leg = pygame.Rect(
+                int(screen_x - body_width // 4),
+                int(screen_y + body_height // 4),
+                leg_width,
+                leg_height
+            )
+            right_leg = pygame.Rect(
+                int(screen_x - body_width // 4 + leg_width),
+                int(screen_y + body_height // 4),
+                leg_width,
+                leg_height
             )
             
             # Color based on JIT status
             if admin_role.has_jit:
                 body_color = (100, 200, 100)  # Green if protected
             else:
-                body_color = (200, 150, 50)  # Gold/yellow if unprotected
+                body_color = (180, 140, 60)  # Brown/tan if unprotected
             
-            pygame.draw.rect(self.screen, body_color, body_rect)
+            pygame.draw.rect(self.screen, body_color, left_leg)
+            pygame.draw.rect(self.screen, body_color, right_leg)
+            
+            # Draw torso
+            torso_rect = pygame.Rect(
+                int(screen_x - body_width // 2),
+                int(screen_y - body_height // 4),
+                body_width,
+                body_height // 2
+            )
+            pygame.draw.rect(self.screen, body_color, torso_rect)
+            
+            # Draw head
+            head_size = body_width // 2
+            head_x = int(screen_x)
+            head_y = int(screen_y - body_height // 2)
+            pygame.draw.circle(self.screen, (220, 180, 140), (head_x, head_y), head_size // 2)  # Skin tone
 
-            # Draw crown on top
-            crown_y = int(screen_y - admin_role.height // 2 - 10)
+            # Draw small crown on top of head
+            crown_y = int(screen_y - body_height // 2 - head_size // 2 - 2)
             crown_x = int(screen_x)
             
-            # Crown base (yellow/gold)
+            # Smaller crown (half the previous size)
             crown_points = [
-                (crown_x - 12, crown_y),
-                (crown_x - 8, crown_y - 8),
-                (crown_x - 4, crown_y - 2),
-                (crown_x, crown_y - 10),
-                (crown_x + 4, crown_y - 2),
-                (crown_x + 8, crown_y - 8),
-                (crown_x + 12, crown_y),
+                (crown_x - 6, crown_y),
+                (crown_x - 4, crown_y - 4),
+                (crown_x - 2, crown_y - 1),
+                (crown_x, crown_y - 5),
+                (crown_x + 2, crown_y - 1),
+                (crown_x + 4, crown_y - 4),
+                (crown_x + 6, crown_y),
             ]
             pygame.draw.polygon(self.screen, (255, 215, 0), crown_points)  # Gold
             pygame.draw.polygon(self.screen, (0, 0, 0), crown_points, 1)  # Black outline
