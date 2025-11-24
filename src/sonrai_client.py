@@ -870,6 +870,272 @@ class SonraiAPIClient:
             # On error, assume all services are unprotected (safer to show quest)
             return ["bedrock-agentcore", "s3", "rds", "lambda", "sagemaker", "dynamodb"]
 
+    def fetch_permission_sets(self, account_id: str) -> List[dict]:
+        """
+        Fetch permission sets for a specific AWS account, filtering for ADMIN and PRIVILEGED roles.
+
+        Args:
+            account_id: AWS account ID to fetch permission sets for
+
+        Returns:
+            List of permission set dictionaries with id, name, identityLabels, userCount, hasJit
+        """
+        try:
+            # Fetch real scope for the account
+            logger.info(f"Fetching permission sets for account {account_id}...")
+            account_scopes = self._fetch_all_account_scopes()
+            scope = account_scopes.get(account_id)
+
+            if not scope:
+                logger.warning(f"No scope found for account {account_id}")
+                return []
+
+            # Query for permission sets
+            query = """
+            query getPermissionSets($where: PermissionSetsFilter) {
+                PermissionSets(where: $where) {
+                    items {
+                        id
+                        name
+                        identityLabels
+                        userCount
+                        ssoUsers
+                    }
+                }
+            }
+            """
+
+            variables = {
+                "where": {
+                    "scope": {
+                        "value": scope,
+                        "op": "EQ"
+                    }
+                }
+            }
+
+            response = requests.post(
+                self.api_url,
+                json={"query": query, "variables": variables},
+                headers=self._get_headers(),
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            permission_sets = []
+            if data and "data" in data and data["data"] and "PermissionSets" in data["data"]:
+                items = data["data"]["PermissionSets"].get("items", [])
+                
+                # Filter for ADMIN or PRIVILEGED labels
+                for item in items:
+                    labels = item.get("identityLabels", [])
+                    if "ADMIN" in labels or "PRIVILEGED" in labels:
+                        permission_sets.append({
+                            "id": item.get("id", ""),
+                            "name": item.get("name", "Unknown"),
+                            "identityLabels": labels,
+                            "userCount": item.get("userCount", 0),
+                            "hasJit": False  # Will be updated by fetch_jit_configuration
+                        })
+                        logger.info(f"  Found admin/privileged permission set: {item.get('name')} (labels: {labels})")
+
+            logger.info(f"Found {len(permission_sets)} admin/privileged permission sets in account {account_id}")
+            return permission_sets
+
+        except Exception as e:
+            logger.error(f"Failed to fetch permission sets: {e}")
+            return []
+
+    def fetch_jit_configuration(self, account_id: str) -> dict:
+        """
+        Fetch JIT configuration for a specific AWS account to see which permission sets are protected.
+
+        Args:
+            account_id: AWS account ID to check JIT configuration for
+
+        Returns:
+            Dictionary with 'enrolledPermissionSets' list of permission set IDs that have JIT enabled
+        """
+        try:
+            # Fetch real scope for the account
+            logger.info(f"Fetching JIT configuration for account {account_id}...")
+            account_scopes = self._fetch_all_account_scopes()
+            scope = account_scopes.get(account_id)
+
+            if not scope:
+                logger.warning(f"No scope found for account {account_id}")
+                return {"enrolledPermissionSets": []}
+
+            # Query for JIT configuration
+            query = """
+            query getJitConfiguration($where: JitConfigurationFilter) {
+                JitConfiguration(where: $where) {
+                    count
+                    items {
+                        scope
+                        friendlyScope
+                        denyFirst
+                        permissionSets {
+                            id
+                            name
+                            isFullAccess
+                            isInherited
+                            status {
+                                status
+                                isPending
+                            }
+                        }
+                    }
+                }
+            }
+            """
+
+            variables = {
+                "where": {
+                    "scope": {
+                        "value": scope,
+                        "op": "EQ"
+                    }
+                }
+            }
+
+            response = requests.post(
+                self.api_url,
+                json={"query": query, "variables": variables},
+                headers=self._get_headers(),
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            enrolled_permission_sets = []
+            if data and "data" in data and data["data"] and "JitConfiguration" in data["data"]:
+                items = data["data"]["JitConfiguration"].get("items", [])
+                for item in items:
+                    permission_sets = item.get("permissionSets", [])
+                    for ps in permission_sets:
+                        ps_id = ps.get("id")
+                        ps_name = ps.get("name")
+                        if ps_id:
+                            enrolled_permission_sets.append(ps_id)
+                            logger.info(f"  ✅ {ps_name} ({ps_id}) has JIT enabled")
+
+            logger.info(f"Found {len(enrolled_permission_sets)} permission sets with JIT in account {account_id}")
+            return {"enrolledPermissionSets": enrolled_permission_sets}
+
+        except Exception as e:
+            logger.error(f"Failed to fetch JIT configuration: {e}")
+            return {"enrolledPermissionSets": []}
+
+    def apply_jit_protection(self, account_id: str, permission_set_id: str, permission_set_name: str = None) -> QuarantineResult:
+        """
+        Apply JIT protection to a specific permission set.
+
+        Args:
+            account_id: AWS account ID
+            permission_set_id: ID of the permission set to protect
+            permission_set_name: Optional name for logging
+
+        Returns:
+            QuarantineResult with success status and error message if any
+        """
+        try:
+            # Fetch real scope for the account
+            logger.info(f"Applying JIT protection to permission set {permission_set_name or permission_set_id}...")
+            account_scopes = self._fetch_all_account_scopes()
+            scope = account_scopes.get(account_id)
+
+            if not scope:
+                error_msg = f"No scope found for account {account_id}"
+                logger.error(error_msg)
+                return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+
+            logger.info(f"Using scope: {scope}")
+
+            # Call SetJitConfiguration mutation
+            mutation = """
+            mutation setJitConfiguration($input: SetJitConfigurationInput!) {
+                SetJitConfiguration(input: $input) {
+                    success
+                    addedJitConfigurationIds
+                    removedJitConfigurationIds
+                }
+            }
+            """
+
+            variables = {
+                "input": {
+                    "scope": scope,
+                    "isDenyFirst": True,
+                    "enrolledPermissionSets": [
+                        {
+                            "id": permission_set_id,
+                            "isFullAccess": False
+                        }
+                    ]
+                }
+            }
+
+            logger.info(f"Calling SetJitConfiguration API for {permission_set_name or permission_set_id}...")
+            logger.info(f"  scope: {scope}")
+            logger.info(f"  permissionSetId: {permission_set_id}")
+
+            response = requests.post(
+                self.api_url,
+                json={"query": mutation, "variables": variables},
+                headers=self._get_headers(),
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            logger.info(f"Received response from SetJitConfiguration: {data}")
+
+            # Check for GraphQL errors
+            if "errors" in data:
+                error_msg = data["errors"][0].get("message", "Unknown GraphQL error")
+                logger.error(f"SetJitConfiguration GraphQL error: {error_msg}")
+                return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+
+            # Extract result
+            if data and "data" in data and data["data"] and "SetJitConfiguration" in data["data"]:
+                result = data["data"]["SetJitConfiguration"]
+                success = result.get("success", False)
+                added_ids = result.get("addedJitConfigurationIds", [])
+
+                if success:
+                    logger.info(f"✅ SUCCESS! Applied JIT protection to {permission_set_name or permission_set_id}")
+                    logger.info(f"  Added permission sets: {added_ids}")
+                    return QuarantineResult(
+                        success=True,
+                        identity_id=permission_set_id,
+                        error_message=None
+                    )
+                else:
+                    logger.warning(f"SetJitConfiguration returned success=false")
+                    return QuarantineResult(
+                        success=False,
+                        identity_id="",
+                        error_message="SetJitConfiguration returned success=false"
+                    )
+            else:
+                logger.error("Invalid response structure from SetJitConfiguration")
+                return QuarantineResult(
+                    success=False,
+                    identity_id="",
+                    error_message="Invalid API response"
+                )
+
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Network error applying JIT protection: {str(e)}"
+            logger.error(error_msg)
+            return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+        except Exception as e:
+            error_msg = f"Unexpected error applying JIT protection: {str(e)}"
+            logger.error(error_msg)
+            return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+
     def protect_service(self, service_type: str, account_id: str, service_name: str = None) -> QuarantineResult:
         """
         Protect an AWS service using the Sonrai ProtectService API.

@@ -84,6 +84,9 @@ class GameState:
     service_hint_timer: float = 0.0  # Time to display hint
     services_protected: int = 0  # Count of protected services
 
+    # JIT Access Quest fields
+    jit_quest: Optional['JitQuestState'] = None  # JIT quest state (only in production accounts)
+
 
 @dataclass
 class QuarantineResult:
@@ -106,3 +109,28 @@ class ServiceProtectionQuest:
     status: QuestStatus  # NOT_STARTED, TRIGGERED, ACTIVE, COMPLETED
     hacker_spawned: bool = False  # Whether hacker has been spawned
     player_won: bool = False  # Race outcome
+
+
+@dataclass
+class PermissionSet:
+    """Represents an AWS permission set (admin/privileged role)."""
+    id: str  # Permission set ID
+    name: str  # Permission set name
+    identity_labels: list  # Labels like ["ADMIN"] or ["PRIVILEGED"]
+    user_count: int  # Number of users with this permission set
+    has_jit: bool = False  # Whether JIT protection is enabled
+    position: Optional[Vector2] = None  # Position in game world
+
+
+@dataclass
+class JitQuestState:
+    """State for the JIT Access Quest."""
+    active: bool = False  # Whether quest is active
+    auditor_position: Vector2 = field(default_factory=lambda: Vector2(0, 0))  # Auditor patrol position
+    admin_roles: list = field(default_factory=list)  # List of PermissionSet objects
+    protected_count: int = 0  # Number of roles with JIT protection
+    total_count: int = 0  # Total number of admin/privileged roles
+    quest_completed: bool = False  # Whether all roles are protected
+    quest_failed: bool = False  # Whether player left without completing
+    quest_message: Optional[str] = None  # Current quest message
+    quest_message_timer: float = 0.0  # Time to display message
