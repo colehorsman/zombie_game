@@ -5,6 +5,22 @@ from typing import List, Optional
 import pygame
 
 from models import Vector2, ServiceProtectionQuest, QuestStatus
+from bedrock_sprite import (
+    generate_bedrock_sprite,
+    generate_bedrock_protected,
+    generate_bedrock_unprotected
+)
+
+
+# Position constants for platformer levels
+# Ground level: (60 tiles × 16) - (8 ground tiles × 16) = 832
+PLATFORMER_GROUND_Y = 832
+
+# Service icon dimensions
+SERVICE_ICON_HEIGHT = 48
+
+# Service icon Y position (sits ON ground, not below)
+SERVICE_ICON_Y = PLATFORMER_GROUND_Y - SERVICE_ICON_HEIGHT  # 784
 
 
 @dataclass
@@ -49,6 +65,38 @@ class ServiceProtectionQuestManager:
             if quest.status in (QuestStatus.TRIGGERED, QuestStatus.ACTIVE):
                 return quest
         return None
+
+
+def create_service_node(service_type: str, position: Vector2) -> ServiceNode:
+    """
+    Create a ServiceNode with generated sprites.
+
+    Args:
+        service_type: Type of service ("bedrock", "s3", etc.)
+        position: Position of the service icon
+
+    Returns:
+        ServiceNode instance with all sprite variants
+    """
+    # Generate sprites based on service type
+    if service_type == "bedrock":
+        sprite_base = generate_bedrock_sprite()
+        sprite_protected = generate_bedrock_protected()
+        sprite_unprotected = generate_bedrock_unprotected()
+    else:
+        # For future service types, use bedrock as fallback
+        sprite_base = generate_bedrock_sprite()
+        sprite_protected = generate_bedrock_protected()
+        sprite_unprotected = generate_bedrock_unprotected()
+
+    return ServiceNode(
+        service_type=service_type,
+        position=position,
+        protected=False,  # Start unprotected
+        sprite_base=sprite_base,
+        sprite_protected=sprite_protected,
+        sprite_unprotected=sprite_unprotected
+    )
 
 
 def create_bedrock_protection_quest(
