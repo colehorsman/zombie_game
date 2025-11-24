@@ -346,17 +346,14 @@ class GameEngine:
         try:
             from models import QuestStatus
 
-            # TODO Phase 6: Call real Sonrai API here
-            # result = self.api_client.protect_service(
-            #     service_type=quest.service_type,
-            #     account_id=self.game_state.current_level_account_id,
-            #     service_name=f"{quest.service_type.capitalize()} Service"
-            # )
+            # Call REAL Sonrai API to protect the service!
+            result = self.api_client.protect_service(
+                service_type=quest.service_type,
+                account_id=self.game_state.current_level_account_id,
+                service_name=f"{quest.service_type.capitalize()} Service"
+            )
 
-            # For now, simulate success
-            result_success = True
-
-            if result_success:
+            if result.success:
                 # Success! Player won the race
                 service_node.protected = True
                 quest.status = QuestStatus.COMPLETED
@@ -378,8 +375,15 @@ class GameEngine:
 
                 logger.info(f"✅ PLAYER WON THE RACE! Service protected at x={service_node.position.x}")
             else:
-                # API error (will implement in Phase 6)
-                logger.error("Failed to protect service")
+                # API error - show error message but don't fail quest
+                error_msg = result.error_message or "Unknown error"
+                logger.error(f"Failed to protect service: {error_msg}")
+                self.game_state.quest_message = (
+                    f"⚠️ Protection Failed\n\n"
+                    f"Error: {error_msg}\n\n"
+                    "Try again!"
+                )
+                self.game_state.quest_message_timer = 3.0
 
         except Exception as e:
             logger.error(f"Exception protecting service: {e}")

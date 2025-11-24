@@ -793,3 +793,121 @@ class SonraiAPIClient:
             return response.status_code == 200
         except requests.exceptions.RequestException:
             return False
+
+    def protect_service(self, service_type: str, account_id: str, service_name: str = None) -> QuarantineResult:
+        """
+        Protect an AWS service using the Sonrai ProtectService API.
+
+        CRITICAL: This calls the REAL Sonrai API (NOT A MOCK!).
+        Always fetches real scopes from CloudHierarchyList - NEVER constructs manually!
+
+        Args:
+            service_type: Type of service ("bedrock", "s3", "rds", "lambda", "sagemaker", "dynamodb")
+            account_id: AWS account ID
+            service_name: Optional service name for logging
+
+        Returns:
+            QuarantineResult with success status and error message if any
+        """
+        # Service type to control key mapping
+        SERVICE_CONTROL_KEYS = {
+            "bedrock": "bedrock",
+            "s3": "s3",
+            "rds": "rds",
+            "lambda": "lambda",
+            "sagemaker": "sagemaker",
+            "dynamodb": "dynamodb"
+        }
+
+        try:
+            # 1. Get control key for service type
+            control_key = SERVICE_CONTROL_KEYS.get(service_type)
+            if not control_key:
+                error_msg = f"Unknown service type: {service_type}"
+                logger.error(error_msg)
+                return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+
+            # 2. Fetch REAL scope from CloudHierarchyList (CRITICAL!)
+            logger.info(f"Fetching real scope for account {account_id}...")
+            account_scopes = self._fetch_all_account_scopes()
+            scope = account_scopes.get(account_id)
+
+            if not scope:
+                error_msg = f"No scope found for account {account_id}"
+                logger.error(error_msg)
+                return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+
+            logger.info(f"Using scope: {scope}")
+
+            # 3. Call ProtectService mutation
+            mutation = """
+            mutation protectService($input: ProtectActionInput!) {
+                ProtectService(input: $input) {
+                    success
+                    serviceName
+                }
+            }
+            """
+
+            variables = {
+                "input": {
+                    "controlKey": control_key,
+                    "scope": scope,  # Real scope from CloudHierarchyList!
+                    "identities": [],
+                    "ssoActorIds": []
+                }
+            }
+
+            logger.info(f"Calling ProtectService API for {service_type} in account {account_id}...")
+
+            response = requests.post(
+                self.api_url,
+                json={"query": mutation, "variables": variables},
+                headers=self._get_headers(),
+                timeout=30
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            # Check for GraphQL errors
+            if "errors" in data:
+                error_msg = data["errors"][0].get("message", "Unknown GraphQL error")
+                logger.error(f"ProtectService GraphQL error: {error_msg}")
+                return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+
+            # Extract result
+            if data and "data" in data and data["data"] and "ProtectService" in data["data"]:
+                result = data["data"]["ProtectService"]
+                success = result.get("success", False)
+                service_name_result = result.get("serviceName", service_name or service_type)
+
+                if success:
+                    logger.info(f"✅ SUCCESS! Protected {service_type} service in account {account_id}")
+                    return QuarantineResult(
+                        success=True,
+                        identity_id=service_name_result,
+                        error_message=None
+                    )
+                else:
+                    logger.warning(f"ProtectService returned success=false for {service_type}")
+                    return QuarantineResult(
+                        success=False,
+                        identity_id="",
+                        error_message="ProtectService returned success=false"
+                    )
+            else:
+                logger.error("Invalid response structure from ProtectService")
+                return QuarantineResult(
+                    success=False,
+                    identity_id="",
+                    error_message="Invalid API response"
+                )
+
+        except requests.exceptions.RequestException as e:
+            error_msg = f"Network error protecting service: {str(e)}"
+            logger.error(error_msg)
+            return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+        except Exception as e:
+            error_msg = f"Unexpected error protecting service: {str(e)}"
+            logger.error(error_msg)
+            return QuarantineResult(success=False, identity_id="", error_message=error_msg)
