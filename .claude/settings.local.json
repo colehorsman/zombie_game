@@ -12,7 +12,9 @@
       "Bash(xargs basename:*)",
       "Bash(echo:*)",
       "Bash(mv:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(permissions to run unauthorized inference jobs on)",
+      "Bash(sensitive data.\"\n- \"Your cloud just trained the enemy.\"\n- More impactful and specific to security context\n\nThis creates a tense, fair race with meaningful consequences!\n\n🚀 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

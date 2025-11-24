@@ -6,7 +6,7 @@ from models import Vector2
 
 # Physics constants
 GRAVITY = 500.0  # Pixels per second squared
-HACKER_SPEED = 150.0  # Pixels per second (horizontal movement)
+HACKER_SPEED = 130.0  # Pixels per second (slightly slower than before for fair race)
 
 
 class Hacker:
@@ -69,7 +69,7 @@ class Hacker:
 
     def render(self, surface: pygame.Surface, camera_offset: Vector2) -> None:
         """
-        Render hacker character (black hoodie style).
+        Render hacker character (black hoodie silhouette style).
 
         Args:
             surface: Surface to draw on
@@ -79,23 +79,31 @@ class Hacker:
         screen_x = int(self.position.x - camera_offset.x)
         screen_y = int(self.position.y - camera_offset.y)
 
-        # Black body/hoodie (24x32)
+        # All-black silhouette body (24x32)
         body_rect = pygame.Rect(screen_x, screen_y, self.width, self.height)
-        pygame.draw.rect(surface, (20, 20, 20), body_rect)
+        pygame.draw.rect(surface, (0, 0, 0), body_rect)
 
-        # Dark gray hoodie overlay (slightly wider for depth)
-        hoodie_rect = pygame.Rect(screen_x - 2, screen_y, 28, 20)
-        pygame.draw.rect(surface, (40, 40, 40), hoodie_rect)
+        # Hoodie top (wider at top for hood shape)
+        hoodie_top = pygame.Rect(screen_x - 3, screen_y, 30, 12)
+        pygame.draw.rect(surface, (0, 0, 0), hoodie_top)
 
-        # Face shadow (hidden under hoodie)
-        face_rect = pygame.Rect(screen_x + 6, screen_y + 6, 12, 10)
-        pygame.draw.rect(surface, (10, 10, 10), face_rect)
+        # Hoodie shadow/depth (very dark gray for subtle depth)
+        hoodie_shadow = pygame.Rect(screen_x - 2, screen_y + 2, 28, 10)
+        pygame.draw.rect(surface, (15, 15, 15), hoodie_shadow)
 
-        # Small glowing red eyes (2x2 each) - menacing hacker
-        left_eye = pygame.Rect(screen_x + 8, screen_y + 10, 2, 2)
-        right_eye = pygame.Rect(screen_x + 14, screen_y + 10, 2, 2)
+        # Face area (completely black - mysterious)
+        face_rect = pygame.Rect(screen_x + 6, screen_y + 6, 12, 8)
+        pygame.draw.rect(surface, (0, 0, 0), face_rect)
+
+        # Small glowing red eyes (2x2 each) - only visible feature
+        left_eye = pygame.Rect(screen_x + 8, screen_y + 9, 2, 2)
+        right_eye = pygame.Rect(screen_x + 14, screen_y + 9, 2, 2)
         pygame.draw.rect(surface, (255, 0, 0), left_eye)
         pygame.draw.rect(surface, (255, 0, 0), right_eye)
+
+        # Optional: Add thin white outline for silhouette effect
+        pygame.draw.rect(surface, (40, 40, 40), body_rect, 1)
+        pygame.draw.rect(surface, (40, 40, 40), hoodie_top, 1)
 
     def get_bounds(self) -> pygame.Rect:
         """

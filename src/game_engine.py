@@ -230,10 +230,11 @@ class GameEngine:
         self.quest_manager = ServiceProtectionQuestManager()
 
         # Sandbox quest (Level 1) - Challenging 40-second race!
-        # Trigger: x=200, Service: x=5000, Hacker: x=7000
-        # Player runs 4800px @ 120px/s = 40 seconds
-        # Hacker falls 2s + runs 2000px @ 150px/s = 15 seconds
-        # Player has 40 seconds, plenty of time to beat hacker!
+        # Trigger: x=200, Service: x=5000
+        # Side-by-side race: Both start at x=200, both run to x=5000
+        # Player: 4800px @ 120px/s = 40 seconds
+        # Hacker: 4800px @ 130px/s = 37 seconds
+        # Very close race - player can win with skill!
         sandbox_quest = create_bedrock_protection_quest(
             quest_id="sandbox_bedrock",
             level=1,
@@ -328,12 +329,12 @@ class GameEngine:
         quest.player_won = False
         self.hacker = None
 
-        # Show game over message
+        # Show mission failed message
         self.game_state.congratulations_message = (
-            "💀 GAME OVER\n\n"
-            f"{reason}\n\n"
-            "The hacker compromised the Bedrock service and injected "
-            "malicious prompts into the AI system!\n\n"
+            "❌ Mission Failed: Bedrock Breach\n\n"
+            "The hacker reached Bedrock first and exploited AI permissions "
+            "to run unauthorized inference jobs on sensitive data.\n\n"
+            "Your cloud just trained the enemy.\n\n"
             "Press ENTER to continue"
         )
 
@@ -1339,8 +1340,8 @@ class GameEngine:
 
                             # Spawn hacker ON GROUND near player for side-by-side race!
                             # Both start from ~same position, both run toward service
-                            # Player: 4800px @ 120px/s = 40s, Hacker: 4800px @ 150px/s = 32s
-                            # Hacker wins by 8 seconds - close race!
+                            # Player: 4800px @ 120px/s = 40s, Hacker: 4800px @ 130px/s = 37s
+                            # Very close 3-second race - player can win!
                             spawn_x = self.player.position.x - 50  # Slightly behind player
                             spawn_y = 832 - 32  # On the ground (ground_y - hacker_height)
                             self.hacker = Hacker(
