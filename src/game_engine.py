@@ -342,7 +342,11 @@ class GameEngine:
             # Create quest entities
             logger.info(f"✅ Creating JIT Access Quest with {len(permission_sets)} permission sets ({unprotected_count} unprotected)")
             
-            ground_y = self.game_map.ground_y if hasattr(self.game_map, 'ground_y') else 400
+            # Calculate ground level for platformer mode
+            # In platformer mode, ground is at bottom of screen minus ground tiles
+            # Typical screen height is 720, ground tiles are ~40px, so ground_y ~= 680
+            ground_y = self.game_map.map_height - 40  # Bottom of screen minus ground height
+            
             self.auditor, self.admin_roles = create_jit_quest_entities(
                 permission_sets,
                 self.game_map.map_width,

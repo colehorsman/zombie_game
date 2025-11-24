@@ -932,55 +932,36 @@ class Renderer:
             # Get screen position
             screen_x, screen_y = game_map.world_to_screen(admin_role.position.x, admin_role.position.y)
 
-            # Draw character body (similar to player/zombie)
+            # Draw character similar to third party style but with gold suit
             body_width = admin_role.width
             body_height = admin_role.height
             
-            # Draw legs
-            leg_width = body_width // 3
-            leg_height = body_height // 2
-            left_leg = pygame.Rect(
-                int(screen_x - body_width // 4),
-                int(screen_y + body_height // 4),
-                leg_width,
-                leg_height
-            )
-            right_leg = pygame.Rect(
-                int(screen_x - body_width // 4 + leg_width),
-                int(screen_y + body_height // 4),
-                leg_width,
-                leg_height
-            )
-            
-            # Color based on JIT status
+            # Suit color based on JIT status
             if admin_role.has_jit:
-                body_color = (100, 200, 100)  # Green if protected
+                suit_color = (100, 200, 100)  # Green if protected
             else:
-                body_color = (180, 140, 60)  # Brown/tan if unprotected
+                suit_color = (218, 165, 32)  # Goldenrod - gold suit for unprotected
             
-            pygame.draw.rect(self.screen, body_color, left_leg)
-            pygame.draw.rect(self.screen, body_color, right_leg)
-            
-            # Draw torso
-            torso_rect = pygame.Rect(
+            # Draw body (rectangle like third party)
+            body_rect = pygame.Rect(
                 int(screen_x - body_width // 2),
-                int(screen_y - body_height // 4),
+                int(screen_y - body_height // 2),
                 body_width,
-                body_height // 2
+                body_height
             )
-            pygame.draw.rect(self.screen, body_color, torso_rect)
+            pygame.draw.rect(self.screen, suit_color, body_rect)
             
-            # Draw head
-            head_size = body_width // 2
+            # Draw head (circle on top like third party)
+            head_radius = body_width // 3
             head_x = int(screen_x)
-            head_y = int(screen_y - body_height // 2)
-            pygame.draw.circle(self.screen, (220, 180, 140), (head_x, head_y), head_size // 2)  # Skin tone
-
+            head_y = int(screen_y - body_height // 2 - head_radius)
+            pygame.draw.circle(self.screen, (220, 180, 140), (head_x, head_y), head_radius)  # Skin tone
+            
             # Draw small crown on top of head
-            crown_y = int(screen_y - body_height // 2 - head_size // 2 - 2)
+            crown_y = int(head_y - head_radius - 3)
             crown_x = int(screen_x)
             
-            # Smaller crown (half the previous size)
+            # Small crown
             crown_points = [
                 (crown_x - 6, crown_y),
                 (crown_x - 4, crown_y - 4),
