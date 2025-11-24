@@ -302,6 +302,15 @@ Before marking testing complete:
 - [ ] Test names are descriptive
 - [ ] Mocks are used appropriately
 
+## Critical: Always Check Actual Code First
+
+Before writing or fixing tests:
+1. **Read the actual source code** to understand the real API
+2. **Check constructor signatures** - don't assume parameter names
+3. **Verify method names and return types** exist
+4. **Look at existing usage** in the codebase for examples
+5. **Run tests after writing them** to verify they work
+
 ## Remember
 
 - **You are NOT implementing features** - you are testing them
@@ -309,3 +318,4 @@ Before marking testing complete:
 - **Write tests that will catch regressions** in the future
 - **Keep tests simple and maintainable**
 - **Test the contract, not the implementation**
+- **Always verify the actual code before writing tests** - don't guess APIs

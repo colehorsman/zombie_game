@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "sonrai": {
+      "url": "https://mcp.s.sonraisecurity.com/stage12902075",
+      "headers": {
+        "Authorization": "Bearer [CONFIGURED]"
+      },
+      "disabled": true,
+      "autoApprove": [],
+      "description": "Sonrai Security MCP Server - Server returns 'Jwt issuer is not configured' - requires server-side fix"
+    }
+  }
+}

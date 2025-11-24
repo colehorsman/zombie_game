@@ -1,16 +1,16 @@
 {
   "enabled": true,
   "name": "QA Review on src/ Changes",
-  "description": "When an agent execution completes and modifies files in src/, trigger a QA review to verify tests pass and check coverage",
+  "description": "When files in src/ are modified, trigger a QA review to verify tests pass and check coverage",
   "version": "1",
   "when": {
     "type": "fileEdited",
     "patterns": [
-      "/Users/cole.horsman/Documents/_development/zombie_game/src/*"
+      "src/**/*.py"
     ]
   },
   "then": {
     "type": "askAgent",
-    "prompt": "#qa-testing-agent Please review the code changes just made. Run pytest tests/ -v to verify all tests pass. Check if new tests are needed for the changes. Report any test failures or missing coverage."
+    "prompt": "#qa-testing-agent A file in src/ was just modified.\n\n**CRITICAL: Read the actual source code first before writing tests!**\n\nPlease:\n\n1. **Read the modified file** to understand the actual API (constructor signatures, method names, return types)\n2. Check if tests exist for the modified code (look in tests/test_<module>.py)\n3. Run: python3 -m pytest tests/ -v --tb=short\n4. If tests fail, fix them based on the ACTUAL code (don't guess APIs)\n5. If tests are missing, create new tests using the REAL API from the source\n6. Run tests again to verify they pass\n7. Report results: X passing, Y failing, coverage gaps\n\n**Remember**: Always check the actual code before writing tests. Don't assume parameter names or method signatures."
   }
 }
