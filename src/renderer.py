@@ -801,8 +801,8 @@ class Renderer:
         if quest_status != QuestStatus.ACTIVE:
             return
 
-        # Timer position (top center of screen)
-        timer_text = f"TIME: {int(time_remaining)}s"
+        # Timer position (top left, under zombie/3rd party counters)
+        timer_text = f"⏱  Race Timer: {int(time_remaining)}s"
 
         # Color based on urgency (red if < 10s, yellow if < 30s, white otherwise)
         if time_remaining < 10:
@@ -812,18 +812,11 @@ class Renderer:
         else:
             color = (255, 255, 255)  # White
 
-        timer_font = pygame.font.Font(None, 48)
-        timer_surface = timer_font.render(timer_text, True, color)
+        timer_surface = self.ui_font.render(timer_text, True, color)
 
-        # Position at top center
-        timer_x = (self.width - timer_surface.get_width()) // 2
-        timer_y = 20
-
-        # Black outline for readability
-        outline_offsets = [(-2, -2), (-2, 2), (2, -2), (2, 2)]
-        for dx, dy in outline_offsets:
-            outline_surface = timer_font.render(timer_text, True, (0, 0, 0))
-            self.screen.blit(outline_surface, (timer_x + dx, timer_y + dy))
+        # Position at top left, under 3rd party counter (y=80)
+        timer_x = 10
+        timer_y = 80
 
         # Draw the timer
         self.screen.blit(timer_surface, (timer_x, timer_y))

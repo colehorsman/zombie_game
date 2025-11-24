@@ -1346,6 +1346,8 @@ class GameEngine:
                             active_quest.hacker_spawned = True
 
                             logger.info(f"🎮 RACE STARTED! Hacker spawned at ({spawn_x}, {spawn_y})")
+                            logger.info(f"🎮 Hacker object created: {self.hacker is not None}")
+                            logger.info(f"🎮 Hacker position: {self.hacker.position if self.hacker else 'None'}")
                             continue
 
                     if self.game_state.status == GameStatus.PAUSED:
