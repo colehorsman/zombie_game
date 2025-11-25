@@ -181,14 +181,22 @@ class GameEngine:
         # Input state
         self.keys_pressed = set()
 
-        # Controller support (8-bit style)
+        # Controller support (8-bit style with hot-plug support)
         pygame.joystick.init()
         self.joystick = None
+        
+        # Initialize first available controller
         if pygame.joystick.get_count() > 0:
-            self.joystick = pygame.joystick.Joystick(0)
-            self.joystick.init()
-            logger.info(f"🎮 Controller detected: {self.joystick.get_name()}")
-        else:
+            # Try to find a recognized controller
+            for i in range(pygame.joystick.get_count()):
+                joy = pygame.joystick.Joystick(i)
+                joy.init()
+                logger.info(f"🎮 Found controller {i}: {joy.get_name()}")
+                if self.joystick is None:
+                    self.joystick = joy
+                    logger.info(f"🎮 Using controller: {joy.get_name()}")
+        
+        if self.joystick is None:
             logger.info("⌨️  No controller detected, using keyboard")
 
         # Scrolling (only for classic mode)
@@ -209,6 +217,16 @@ class GameEngine:
         # Pause menu (Zelda-style)
         self.pause_menu_options = ["Return to Game", "Return to Lobby", "Save Game", "Quit Game"]
         self.pause_menu_selected_index = 0
+        
+        # Controller button labels for 8BitDo SN30 Pro
+        self.controller_labels = {
+            "confirm": "A",
+            "back": "B", 
+            "pause": "Start",
+            "lobby": "Select",
+            "up": "D-Pad ↑",
+            "down": "D-Pad ↓"
+        }
 
         # Service Protection Quests
         self.quest_manager: Optional[ServiceProtectionQuestManager] = None
@@ -498,6 +516,7 @@ class GameEngine:
                 self.hacker = None
 
                 # Pause game to show success message
+                self.game_state.previous_status = self.game_state.status  # Save current status before pausing
                 self.game_state.status = GameStatus.PAUSED
 
                 # Show success message with ChatOps info
@@ -616,6 +635,7 @@ class GameEngine:
         self.game_state.jit_quest.quest_completed = True
         
         # Pause game to show success message
+        self.game_state.previous_status = self.game_state.status  # Save current status before pausing
         self.game_state.status = GameStatus.PAUSED
         
         # Show audit success message
@@ -757,9 +777,17 @@ class GameEngine:
                 for third_party in self.game_map.third_parties[:]:
                     if not third_party.is_blocking and not third_party.is_protected:
                         if projectile.get_bounds().colliderect(third_party.get_bounds()):
-                            self._block_third_party(third_party)
+                            # Remove projectile
                             if projectile in self.projectiles:
                                 self.projectiles.remove(projectile)
+                            
+                            # Apply damage (third parties have 10 health)
+                            eliminated = third_party.take_damage(projectile.damage)
+                            
+                            # Only block if health reaches 0
+                            if eliminated:
+                                self._block_third_party(third_party)
+                            
                             break
 
     def _enter_level(self, door) -> None:
@@ -805,10 +833,11 @@ class GameEngine:
             self.level_manager.current_level_index = self.level_manager.levels.index(current_level)
 
             logger.info(f"🚪 Step 4: Loading zombies for account {current_level.account_id}")
-            # Load zombies for this level's account
+            # Load zombies for this level's account, excluding already quarantined ones
             account_id = current_level.account_id
-            level_zombies = [z for z in self.all_zombies if z.account == account_id]
-            logger.info(f"Loaded {len(level_zombies)} zombies for level {current_level.level_number}")
+            level_zombies = [z for z in self.all_zombies 
+                           if z.account == account_id and z.identity_id not in self.quarantined_identities]
+            logger.info(f"Loaded {len(level_zombies)} zombies for level {current_level.level_number} (excluding {len([z for z in self.all_zombies if z.account == account_id])-len(level_zombies)} already quarantined)")
 
             logger.info(f"🚪 Step 5: Loading difficulty config for {current_level.environment_type}")
             # Initialize difficulty for this level's environment
@@ -944,11 +973,14 @@ class GameEngine:
             # Don't crash - just log and return to lobby
             self.game_state.error_message = f"Failed to enter level: {str(e)}"
 
-    def _return_to_lobby(self) -> None:
+    def _return_to_lobby(self, mark_completed: bool = False) -> None:
         """
         Transition from level back to lobby mode.
+        
+        Args:
+            mark_completed: If True, mark the current level as completed
         """
-        logger.info("🏛️  Returning to lobby...")
+        logger.info("🏛️  === RETURNING TO LOBBY - START ===")
         
         # Check if JIT quest was active but not completed
         if self.game_state.jit_quest and self.game_state.jit_quest.active:
@@ -972,11 +1004,13 @@ class GameEngine:
                     self.game_state.previous_status = GameStatus.LOBBY
                     self.game_state.status = GameStatus.PAUSED
         
-        # Mark current level as completed
-        completed_account_id = self.game_state.current_level_account_id
-        if completed_account_id:
-            self.completed_level_account_ids.add(completed_account_id)
-            self.game_state.completed_levels.add(completed_account_id)
+        # Mark current level as completed only if explicitly requested
+        if mark_completed:
+            completed_account_id = self.game_state.current_level_account_id
+            if completed_account_id:
+                self.completed_level_account_ids.add(completed_account_id)
+                self.game_state.completed_levels.add(completed_account_id)
+                logger.info(f"✅ Level {completed_account_id} marked as completed")
         
         # Reinitialize game map for lobby (main branch style)
         self.game_map = GameMap(
@@ -1000,15 +1034,30 @@ class GameEngine:
                                 logger.info(f"✅ Door to {door.destination_room_name} marked as completed")
                             break
         
-        # Spawn player at landing zone
-        self.player = Player(self.landing_zone, self.game_map.map_width, self.game_map.map_height, self.game_map)
+        # Spawn player at landing zone, offset to avoid immediate door re-entry
+        spawn_position = Vector2(self.landing_zone.x, self.landing_zone.y)
+        # Move player down and slightly left to avoid door collision
+        spawn_position.y += 100  # Move down 100 pixels from door
+        spawn_position.x -= 30   # Move slightly left
+        self.player = Player(spawn_position, self.game_map.map_width, self.game_map.map_height, self.game_map)
         
-        # Clear level-specific entities
-        self.zombies = []  # No zombies in lobby
+        # Clear level-specific entities and restore lobby zombies
         self.projectiles = []
         self.powerups = []
         self.boss = None
         self.boss_spawned = False
+        
+        # Restore lobby zombies (visible in lobby for decoration)
+        if self.use_map and self.all_zombies:
+            self.zombies = self.all_zombies  # Restore all zombies to lobby
+            # Make sure they're visible and scattered across rooms
+            for zombie in self.zombies:
+                zombie.is_hidden = False
+            # Re-scatter them across rooms (in case positions were modified)
+            self.game_map.scatter_zombies(self.zombies)
+            logger.info(f"🏛️  Restored {len(self.zombies)} zombies to lobby")
+        else:
+            self.zombies = []  # No zombies in classic mode
 
         # Clear service protection quest data
         self.service_nodes = []
@@ -1306,15 +1355,9 @@ class GameEngine:
         Args:
             zombie: The zombie that was hit
         """
-        # Check if production environment requires approvals
-        if self.difficulty and self.difficulty.uses_approval_system:
-            if not self.approval_manager or not self.approval_manager.has_enough_approvals():
-                # Not enough approvals - show warning message
-                approvals_remaining = self.approval_manager.get_approvals_remaining() if self.approval_manager else self.difficulty.approvals_needed
-                logger.warning(f"Cannot quarantine - need {approvals_remaining} more approval(s)")
-                # Don't mark zombie for quarantine
-                return
-
+        # NOTE: Approval system removed - zombies always quarantine when health reaches 0
+        # The approval mechanic was blocking gameplay in production environments
+        
         # IMMEDIATE FEEDBACK: Hide zombie right away (no lag)
         zombie.is_hidden = True
         zombie.mark_for_quarantine()
@@ -1340,6 +1383,7 @@ class GameEngine:
         """Show Zelda-style pause menu with options."""
         # Reset menu selection to first option
         self.pause_menu_selected_index = 0
+        logger.info(f"⏸️  Pause menu initialized - selection index: {self.pause_menu_selected_index}")
 
         # Build pause menu message
         pause_message = self._build_pause_menu_message()
@@ -1362,7 +1406,18 @@ class GameEngine:
                 # Unselected option
                 menu_message += f"  {option}\n"
 
-        menu_message += "\nUse ↑↓ to select, ENTER to confirm"
+        # Add controller/keyboard instructions
+        if self.joystick:
+            # Controller connected - show controller buttons
+            menu_message += f"\n{self.controller_labels['up']}/{self.controller_labels['down']} = Select"
+            menu_message += f"\n{self.controller_labels['confirm']} = Confirm"
+            menu_message += f"\n{self.controller_labels['back']} = Cancel"
+            menu_message += f"\n{self.controller_labels['lobby']} = Quick Lobby"
+        else:
+            # Keyboard only
+            menu_message += "\n↑↓ = Select, ENTER = Confirm, ESC = Cancel"
+            menu_message += "\nL = Quick Return to Lobby"
+        
         return menu_message
 
     def _navigate_pause_menu(self, direction: int) -> None:
@@ -1372,15 +1427,16 @@ class GameEngine:
         Args:
             direction: -1 for up, 1 for down
         """
+        old_index = self.pause_menu_selected_index
         self.pause_menu_selected_index = (self.pause_menu_selected_index + direction) % len(self.pause_menu_options)
         # Update the menu display
         self.game_state.congratulations_message = self._build_pause_menu_message()
-        logger.debug(f"Menu selection: {self.pause_menu_options[self.pause_menu_selected_index]}")
+        logger.info(f"Menu navigation: {old_index} → {self.pause_menu_selected_index} ({self.pause_menu_options[self.pause_menu_selected_index]})")
 
     def _execute_pause_menu_option(self) -> None:
         """Execute the currently selected pause menu option."""
         selected_option = self.pause_menu_options[self.pause_menu_selected_index]
-        logger.info(f"Executing menu option: {selected_option}")
+        logger.info(f"Executing menu option: {selected_option} (index: {self.pause_menu_selected_index})")
 
         if selected_option == "Return to Game":
             # Resume the game
@@ -1389,7 +1445,7 @@ class GameEngine:
             # Return to lobby (only if in a level)
             if self.game_state.previous_status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
                 self.game_state.congratulations_message = None
-                self.game_state.status = self.game_state.previous_status
+                # Don't restore status here - let _return_to_lobby() handle it
                 self._return_to_lobby()
             else:
                 # Already in lobby, just resume
@@ -1445,6 +1501,13 @@ class GameEngine:
                 scope_parts = zombie.scope.split("/")
                 if len(scope_parts) >= 2:
                     root_scope = f"{scope_parts[0]}/{scope_parts[1]}"
+
+            # Debug logging for Bug #2 investigation
+            logger.info(f"🔍 Quarantining zombie: {zombie.identity_name}")
+            logger.info(f"  Identity ID: {zombie.identity_id}")
+            logger.info(f"  Account: {zombie.account}")
+            logger.info(f"  Full scope: {zombie.scope}")
+            logger.info(f"  Root scope: {root_scope}")
 
             result = self.api_client.quarantine_identity(
                 identity_id=zombie.identity_id,
@@ -1535,6 +1598,25 @@ class GameEngine:
             if event.type == pygame.QUIT:
                 self.running = False
 
+            # Handle controller hot-plugging
+            elif event.type == pygame.JOYDEVICEADDED:
+                # Controller connected - reinitialize
+                if self.joystick is None:
+                    self.joystick = pygame.joystick.Joystick(event.device_index)
+                    self.joystick.init()
+                    logger.info(f"🎮 Controller connected: {self.joystick.get_name()}")
+            
+            elif event.type == pygame.JOYDEVICEREMOVED:
+                # Controller disconnected
+                if self.joystick and self.joystick.get_instance_id() == event.instance_id:
+                    logger.info(f"🎮 Controller disconnected")
+                    self.joystick = None
+                    # Check if another controller is available
+                    if pygame.joystick.get_count() > 0:
+                        self.joystick = pygame.joystick.Joystick(0)
+                        self.joystick.init()
+                        logger.info(f"🎮 Switched to controller: {self.joystick.get_name()}")
+
             elif event.type == pygame.KEYDOWN:
                 self.keys_pressed.add(event.key)
 
@@ -1592,9 +1674,8 @@ class GameEngine:
                     if self.game_state.status == GameStatus.PLAYING and self.level_manager:
                         # Mark current level as complete and return to lobby
                         current_level = self.level_manager.levels[self.level_manager.current_level_index]
-                        self.completed_level_account_ids.add(current_level.account_id)
                         logger.info(f"🔓 CHEAT: Skipping level {current_level.account_name}")
-                        self._return_to_lobby()
+                        self._return_to_lobby(mark_completed=True)
                     self.cheat_buffer = []
 
                 # Check if Konami code matches
@@ -1675,6 +1756,8 @@ class GameEngine:
             # Controller button events
             elif event.type == pygame.JOYBUTTONDOWN:
                 if self.joystick:
+                    # Log button press for debugging
+                    logger.info(f"🎮 Controller button pressed: {event.button}")
                     # Handle pause menu navigation with controller
                     if self.game_state.status == GameStatus.PAUSED:
                         if self.game_state.congratulations_message and "PAUSED" in self.game_state.congratulations_message:
@@ -1711,7 +1794,12 @@ class GameEngine:
                         elif self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
                             # Toggle pause menu
                             self._show_pause_menu()
-                    # Star/Home button (10) - Return to lobby (only in levels)
+                    # Select button (6) - Return to lobby (only in levels)
+                    elif event.button == 6:
+                        if self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
+                            logger.info("🔙 Select button pressed - returning to lobby")
+                            self._return_to_lobby()
+                    # Star/Home button (10) - Return to lobby (only in levels) 
                     elif event.button == 10:
                         if self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
                             logger.info("⭐ Star button pressed - returning to lobby")
@@ -2110,7 +2198,7 @@ class GameEngine:
             if self.boss and self.boss.is_defeated:
                 # Boss defeated - return to lobby
                 logger.info("🎉 Boss defeated! Returning to lobby...")
-                self._return_to_lobby()
+                self._return_to_lobby(mark_completed=True)
                 logger.info("Victory! Boss defeated!")
             return
 
