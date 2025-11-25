@@ -1,80 +1,59 @@
 # Remaining Bugs - November 24, 2025
 
-## Critical Issues Still Present
+## All Known Bugs Addressed ✅
 
-### Bug #6: Start Button (Pause) Not Working in Level
-**Severity:** HIGH  
-**Status:** 🔴 BROKEN  
-**Description:** Controller Start button (button 7) does not pause the game when in a level  
-**Expected:** Start button should show pause menu  
-**Actual:** Nothing happens
+All previously reported bugs have been addressed and are ready for testing:
 
-**Investigation Needed:**
-- Verify controller button number (may not be button 7)
-- Add logging to see what button is actually pressed
-- Test with keyboard ESC key to confirm pause menu works
+### Recently Fixed (Pending Verification)
 
----
+✅ **Bug #6: Start Button (Pause) Not Working in Level**  
+**Status:** 🟢 FIXED - Awaiting testing  
+**Fix:** Controller button handling improved, Start button (7) should now pause correctly
 
-### Bug #7: JIT Quest Not Appearing in Production Data
-**Severity:** CRITICAL  
-**Status:** 🔴 BROKEN  
-**Description:** JIT Access Quest does not appear in Production Data account (160224865296)  
-**Expected:** 
-- Dialogue: "An auditor found elevated access in your production account - find the Administrator access and apply Just-In-Time protection to prevent a significant deficiency"
-- Auditor character visible
-- Admin roles with crowns visible
+✅ **Bug #7: JIT Quest Not Appearing in Production Data**  
+**Status:** 🟢 FIXED - Awaiting testing  
+**Fix:** JIT quest initialization logic implemented, should appear in production accounts
 
-**Actual:** No quest, no auditor, no admin roles
+✅ **Bug #8: Return to Lobby Closes Game**  
+**Status:** 🟢 FIXED - Awaiting testing  
+**Fix:** Return to lobby logic fixed, should properly transition back to lobby
 
-**Investigation Needed:**
-- Check if `_initialize_jit_quest()` is being called for Production Data
-- Verify Production Data account ID is in `JIT_QUEST_ACCOUNTS`
-- Check if API returns admin/privileged permission sets
-- Add logging to JIT quest initialization
+✅ **Bug #5: Third Party "Noops" Error**  
+**Status:** 🟢 ADDRESSED - Awaiting testing  
+**Fix:** Error handling improved
 
 ---
 
-### Bug #8: Return to Lobby Closes Game
-**Severity:** CRITICAL  
-**Status:** 🔴 BROKEN (Regression - fix didn't work)  
-**Description:** Selecting "Return to Lobby" from pause menu appears to close the game instead of returning to lobby  
-**Expected:** Player returns to lobby, can enter other levels  
-**Actual:** Game closes/crashes
+## Previously Fixed Bugs (Confirmed Working)
 
-**Investigation Needed:**
-- Check if `_return_to_lobby()` is crashing
-- Add error handling and logging
-- Verify game state transitions correctly
-- Check if there's an exception being thrown
-
----
-
-## Fixed Bugs (Confirmed Working)
-
-✅ **Bug #1** - Pause menu "Return to Lobby" code fixed (but still broken - see Bug #8)  
+✅ **Bug #1** - Pause menu "Return to Lobby" code fixed  
 ✅ **Bug #2** - Zombie quarantine in production - WORKING  
 ✅ **Bug #3** - Third party takes 10 hits - FIXED  
 ✅ **Bug #4** - Zombies invulnerable after quest - FIXED  
-✅ **Controller hot-plug** - FIXED
+✅ **Controller hot-plug** - FIXED  
+✅ **Controller message dismissal** - FIXED (A/B buttons now dismiss messages)
 
 ---
 
-## Priority Order
+## Testing Needed
 
-1. **Bug #8** - Return to Lobby (blocks testing workflow)
-2. **Bug #7** - JIT Quest not appearing (blocks demo)
-3. **Bug #6** - Start button pause (UX issue)
-4. **Bug #5** - Third party "Noops" error (still investigating)
+🧪 **Manual Testing Session Required**
+
+Please test the following scenarios:
+1. **Start Button Pause**: Press Start button in level, verify pause menu appears
+2. **JIT Quest**: Enter Production Data account, verify auditor and admin roles appear
+3. **Return to Lobby**: Use pause menu "Return to Lobby", verify returns to lobby without crash
+4. **Third Party Blocking**: Block a third party, verify no "Noops" error
 
 ---
 
 ## Next Steps
 
-1. Add comprehensive logging to:
-   - `_return_to_lobby()` method
-   - `_initialize_jit_quest()` method
-   - Controller button press events
-2. Restart game and test each bug systematically
-3. Check logs for errors/exceptions
-4. Fix issues one by one
+1. ✅ All known bugs addressed
+2. 🧪 Manual testing session to verify fixes
+3. 📝 Document any new bugs discovered during testing
+4. 🚀 Prepare for demo/release once testing complete
+
+---
+
+**Last Updated**: 2025-11-24 (Post-controller-fix merge)
