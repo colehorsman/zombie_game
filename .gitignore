@@ -47,3 +47,11 @@ Thumbs.db
 
 # Sonrai API Schema (can be regenerated)
 docs/sonrai-api/schema.json
+
+# Development test scripts (moved to dev_tests/)
+dpad_test.py
+monitor_logs.py
+quick_controller_test.py
+test_controller.py
+test_launcher.py
+verify_dpad.py
