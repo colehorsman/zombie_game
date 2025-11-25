@@ -422,7 +422,7 @@ class GameEngine:
                     f"You have {active_quest.time_limit:.0f} SECONDS to protect "
                     "Bedrock AgentCore before a hacker creates unauthorized "
                     "AI agent runtimes and code interpreters!\n\n"
-                    "Press B button to begin!"
+                    "Press B/SPACE/ENTER to begin!"
                 )
                 self.game_state.quest_message_timer = 999.0  # Show until dismissed
                 logger.info(f"🎮 Quest triggered at x={self.player.position.x}")
@@ -475,7 +475,16 @@ class GameEngine:
         quest.player_won = False
         self.hacker = None
 
+        # BUG FIX: Ensure all zombies are in correct state before pausing
+        # Reset any quarantine flags that might have been set incorrectly
+        for zombie in self.zombies:
+            if zombie.is_quarantining and zombie in self.zombies:
+                # If zombie is still in the list but marked as quarantining, reset it
+                zombie.is_quarantining = False
+                logger.warning(f"Reset is_quarantining flag on {zombie.identity_name}")
+
         # Pause game to show failure message
+        self.game_state.previous_status = self.game_state.status  # BUG FIX: Save previous status
         self.game_state.status = GameStatus.PAUSED
 
         # Show mission failed message
@@ -489,6 +498,7 @@ class GameEngine:
         )
 
         logger.info(f"❌ QUEST FAILED: {reason}")
+        logger.info(f"🐛 DEBUG: {len(self.zombies)} zombies in list, {len([z for z in self.zombies if not z.is_quarantining])} not quarantining")
 
     def _try_protect_service(self, quest, service_node: ServiceNode) -> None:
         """
@@ -518,6 +528,16 @@ class GameEngine:
                 # Stop hacker
                 self.hacker = None
 
+                # BUG FIX: Ensure all zombies are in correct state before pausing
+                # Reset any quarantine/hidden flags that might have been set incorrectly
+                # This prevents zombies from becoming unshootable after quest success
+                for zombie in self.zombies:
+                    if zombie.is_quarantining or zombie.is_hidden:
+                        # If zombie is still in the list but marked as quarantining/hidden, reset it
+                        zombie.is_quarantining = False
+                        zombie.is_hidden = False
+                        logger.warning(f"Reset quarantine/hidden flags on {zombie.identity_name}")
+
                 # Pause game to show success message
                 self.game_state.previous_status = self.game_state.status  # Save current status before pausing
                 self.game_state.status = GameStatus.PAUSED
@@ -536,6 +556,7 @@ class GameEngine:
 
                 logger.info(f"✅ PLAYER WON THE RACE! Service protected at x={service_node.position.x}")
                 logger.info(f"🎉 Showing success message to player")
+                logger.info(f"🐛 DEBUG: {len(self.zombies)} zombies in list, {len([z for z in self.zombies if not z.is_quarantining])} not quarantining")
             else:
                 # API error - show error message but don't fail quest
                 error_msg = result.error_message or "Unknown error"
@@ -874,6 +895,13 @@ class GameEngine:
                     mode="platformer"  # PLATFORMER MODE for levels!
                 )
                 logger.info(f"✅ GameMap reinitialized as PLATFORMER level successfully")
+
+                # BUG FIX: Recreate spatial grid for platformer level dimensions
+                # The original grid was created with lobby dimensions, but platformer levels
+                # can be much wider (up to 27,200px for 512 zombies). Without this fix,
+                # zombies beyond the original grid width won't be added to collision cells.
+                self.spatial_grid = SpatialGrid(self.game_map.map_width, self.game_map.map_height)
+                logger.info(f"✅ Spatial grid recreated for level: {self.game_map.map_width}x{self.game_map.map_height}")
             except Exception as e:
                 logger.error(f"❌ CRASH during GameMap init: {e}", exc_info=True)
                 raise
@@ -1029,7 +1057,11 @@ class GameEngine:
             self.account_data,
             self.third_party_data
         )
-        
+
+        # Recreate spatial grid for lobby dimensions (matches _enter_level fix)
+        self.spatial_grid = SpatialGrid(self.game_map.map_width, self.game_map.map_height)
+        logger.info(f"✅ Spatial grid recreated for lobby: {self.game_map.map_width}x{self.game_map.map_height}")
+
         # Mark doors as completed based on completed levels
         if self.game_map and hasattr(self.game_map, 'doors') and self.level_manager:
             for door in self.game_map.doors:
@@ -1302,11 +1334,34 @@ class GameEngine:
             else:
                 visible_zombies = self.zombies
 
+            # DEBUG: ALWAYS log when projectiles exist (even if no visible zombies)
+            if len(self.projectiles) > 0:
+                logger.info(f"🔍 COLLISION CHECK: {len(self.projectiles)} projectiles vs {len(visible_zombies)} visible zombies (total: {len(self.zombies)} zombies)")
+                
+                # Log filtering details
+                if self.use_map and len(self.zombies) > 0 and len(visible_zombies) == 0:
+                    logger.warning(f"⚠️  ALL ZOMBIES FILTERED OUT! Total zombies: {len(self.zombies)}, but 0 visible")
+                    # Check why zombies are filtered
+                    hidden_count = sum(1 for z in self.zombies if z.is_hidden)
+                    offscreen_count = sum(1 for z in self.zombies if not z.is_hidden and not self.game_map.is_on_screen(z.position.x, z.position.y, z.width, z.height))
+                    logger.warning(f"   Hidden: {hidden_count}, Off-screen: {offscreen_count}")
+                
+                # Log first projectile and zombie positions if both exist
+                if self.projectiles and visible_zombies:
+                    p = self.projectiles[0]
+                    z = visible_zombies[0]
+                    logger.info(f"  Projectile[0]: pos=({p.position.x:.1f}, {p.position.y:.1f}), bounds={p.get_bounds()}")
+                    logger.info(f"  Zombie[0]: pos=({z.position.x:.1f}, {z.position.y:.1f}), bounds={z.get_bounds()}, is_quarantining={z.is_quarantining}, is_hidden={z.is_hidden}")
+
             collisions = check_collisions_with_spatial_grid(
                 self.projectiles,
                 visible_zombies,
                 self.spatial_grid
             )
+            
+            # DEBUG: Log collision results
+            if len(self.projectiles) > 0:
+                logger.info(f"🎯 COLLISION RESULT: {len(collisions)} collisions detected")
         else:
             collisions = []
 
@@ -1698,10 +1753,34 @@ class GameEngine:
                         self._spawn_boss()
                         self.konami_input = []  # Reset
 
-                # Handle message dismissal (ENTER key no longer starts quest)
-                if event.key == pygame.K_RETURN:
-                    if self.game_state.status == GameStatus.PAUSED:
+                # Handle message dismissal and quest trigger (ENTER or SPACE key)
+                if event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                    # Check for quest dialog dismissal and hacker spawn
+                    if self.quest_manager and self.game_state.quest_message:
+                        from models import QuestStatus
+                        active_quest = self.quest_manager.get_quest_for_level(self.game_state.current_level)
+                        if active_quest and active_quest.status == QuestStatus.TRIGGERED:
+                            # Dismiss quest dialog
+                            self.game_state.quest_message = None
+
+                            # Spawn hacker ON GROUND near player for side-by-side race!
+                            spawn_x = self.player.position.x - 50  # Slightly behind player
+                            spawn_y = 832 - 32  # On the ground (ground_y - hacker_height)
+                            self.hacker = Hacker(
+                                spawn_position=Vector2(spawn_x, spawn_y),
+                                target_position=active_quest.service_position
+                            )
+
+                            # Start the race!
+                            active_quest.status = QuestStatus.ACTIVE
+                            active_quest.hacker_spawned = True
+
+                            logger.info(f"⌨️  RACE STARTED! Hacker spawned at ({spawn_x}, {spawn_y})")
+                            continue
+                    # If there's a pause message showing, dismiss it
+                    elif self.game_state.status == GameStatus.PAUSED:
                         self.dismiss_message()
+                        continue
 
                 # PLATFORMER CONTROLS: Jump with UP or W (only in level mode, not lobby)
                 if event.key in (pygame.K_UP, pygame.K_w):
@@ -1710,7 +1789,11 @@ class GameEngine:
                     # In LOBBY mode, UP/W is handled by continuous movement for top-down navigation
 
                 # Handle firing (works in lobby, playing, and boss battle)
+                # But not when quest dialog is showing (handled above)
                 if event.key == pygame.K_SPACE:
+                    # Skip if quest dialog is showing (already handled above)
+                    if self.quest_manager and self.game_state.quest_message:
+                        continue
                     if self.game_state.status in (GameStatus.LOBBY, GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
                         projectile = self.player.fire_projectile()
                         self.projectiles.append(projectile)
