@@ -286,7 +286,7 @@ python src/main.py
 ### Universal Controls
 - **Enter**: Dismiss messages and continue
 - **ESC**: Pause/quit game
-- **Cheat Codes**: Type letter sequences (see [CHEAT_CODES.md](CHEAT_CODES.md))
+- **Cheat Codes**: Type letter sequences (see [docs/CHEAT_CODES.md](docs/CHEAT_CODES.md))
 
 The player character will automatically stop when you release the movement keys.
 
@@ -363,7 +363,7 @@ Perfect for QA sessions and feature testing!
 
 ```
 sonrai-zombie-blaster/
-├── src/
+├── src/                     # Source code
 │   ├── main.py              # Entry point
 │   ├── game_engine.py       # Core game loop
 │   ├── sonrai_client.py     # API integration
@@ -373,16 +373,28 @@ sonrai-zombie-blaster/
 │   ├── zombie.py            # Zombie entities
 │   ├── projectile.py        # Projectiles
 │   └── collision.py         # Collision detection
-├── tests/                   # Test files
+├── tests/                   # Test suite
+├── docs/                    # Documentation
+│   ├── sonrai-api/          # API integration docs
+│   ├── bug-reports/         # Bug tracking
+│   ├── qa-reports/          # QA test reports
+│   ├── testing-guides/      # Testing documentation
+│   ├── CHEAT_CODES.md       # Admin cheat codes
+│   ├── GLOSSARY.md          # Game terminology
+│   └── POWERUPS.md          # Power-up reference
+├── dev_tests/               # Development test scripts
+├── assets/                  # Game assets
 ├── .env                     # Configuration (not in git)
 ├── .env.example             # Example configuration
 ├── requirements.txt         # Python dependencies
-└── README.md               # This file
+├── QUICKSTART.md            # Quick start guide
+├── BACKLOG.md               # Feature backlog
+└── README.md                # This file
 ```
 
 ## License
 
-[Your License Here]
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Credits
 
@@ -557,17 +569,24 @@ zombie_game/
 │   └── aws_accounts.csv    # Account metadata (7 levels)
 │
 ├── docs/                    # Documentation
-│   └── sonrai-api/         # API integration docs
-│       ├── README.md       # API overview
-│       ├── queries/        # GraphQL queries & mutations
-│       └── INTEGRATION_GUIDE.md
+│   ├── sonrai-api/         # API integration docs
+│   │   ├── README.md       # API overview
+│   │   ├── queries/        # GraphQL queries & mutations
+│   │   └── INTEGRATION_GUIDE.md
+│   ├── bug-reports/        # Bug tracking
+│   ├── qa-reports/         # QA test reports
+│   ├── testing-guides/     # Testing documentation
+│   ├── CHEAT_CODES.md      # Admin cheat codes
+│   ├── GLOSSARY.md         # Game terminology
+│   └── POWERUPS.md         # Power-up reference
 │
-├── .env                     # Configuration (API credentials)
+├── dev_tests/              # Development test scripts
+├── .env                    # Configuration (API credentials)
 ├── .env.example            # Configuration template
 ├── requirements.txt        # Python dependencies
-├── README.md               # This file
-├── GLOSSARY.md             # Game development term definitions
-└── CHEAT_CODES.md          # Developer cheat codes
+├── QUICKSTART.md           # Quick start guide
+├── BACKLOG.md              # Feature backlog
+└── README.md               # This file
 ```
 
 ### Development Status & Roadmap
@@ -714,9 +733,24 @@ MAX_ZOMBIES=1000             # Max zombies per account
 - Minimal external dependencies (3 total: pygame, python-dotenv, requests)
 - All dependencies pinned in `requirements.txt`
 
+### Documentation
+
+**Game Documentation**
+- **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide for new players
+- **[docs/CHEAT_CODES.md](docs/CHEAT_CODES.md)** - Admin cheat codes for testing
+- **[docs/GLOSSARY.md](docs/GLOSSARY.md)** - Game development terminology
+- **[docs/POWERUPS.md](docs/POWERUPS.md)** - Power-up types and effects
+- **[BACKLOG.md](BACKLOG.md)** - Feature backlog and roadmap
+
+**Technical Documentation**
+- **[docs/sonrai-api/](docs/sonrai-api/)** - Sonrai API integration guides
+- **[docs/testing-guides/](docs/testing-guides/)** - Testing documentation
+- **[docs/qa-reports/](docs/qa-reports/)** - QA test reports
+- **[docs/bug-reports/](docs/bug-reports/)** - Bug tracking and fixes
+
 ### Glossary
 
-For detailed definitions of game development terms used in this project, see **[GLOSSARY.md](GLOSSARY.md)**.
+For detailed definitions of game development terms used in this project, see **[docs/GLOSSARY.md](docs/GLOSSARY.md)**.
 
 Quick examples:
 - **Sprite**: 2D game character/object (player, zombie, projectile)
