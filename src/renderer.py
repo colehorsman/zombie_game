@@ -866,7 +866,7 @@ class Renderer:
 
     def render_auditor(self, auditor, game_map: GameMap) -> None:
         """
-        Render the auditor character with suit appearance.
+        Render the auditor character as a man in black suit (undertaker style).
 
         Args:
             auditor: Auditor entity
@@ -882,38 +882,79 @@ class Renderer:
         # Get screen position
         screen_x, screen_y = game_map.world_to_screen(auditor.position.x, auditor.position.y)
 
-        # Draw auditor body (gray suit)
-        body_rect = pygame.Rect(
-            int(screen_x - auditor.width // 2),
-            int(screen_y - auditor.height // 2),
-            auditor.width,
-            auditor.height
-        )
-        pygame.draw.rect(self.screen, (80, 80, 80), body_rect)  # Dark gray suit
+        # Character dimensions (human proportions)
+        body_width = 24
+        body_height = 32
+        head_size = 12
+        leg_width = 8
+        leg_height = 16
+        arm_width = 6
+        arm_height = 20
 
-        # Draw head (lighter gray)
-        head_size = auditor.width // 2
-        head_x = int(screen_x)
-        head_y = int(screen_y - auditor.height // 2 - head_size // 2)
-        pygame.draw.circle(self.screen, (120, 120, 120), (head_x, head_y), head_size // 2)
+        # Base position (feet on ground)
+        base_y = int(screen_y + auditor.height // 2)
+        center_x = int(screen_x)
 
-        # Draw clipboard (white rectangle)
-        clipboard_width = 12
-        clipboard_height = 16
-        clipboard_x = int(screen_x + auditor.width // 4)
-        clipboard_y = int(screen_y)
-        pygame.draw.rect(
-            self.screen,
-            (240, 240, 240),
-            (clipboard_x, clipboard_y, clipboard_width, clipboard_height)
-        )
-        # Clipboard border
-        pygame.draw.rect(
-            self.screen,
-            (0, 0, 0),
-            (clipboard_x, clipboard_y, clipboard_width, clipboard_height),
-            1
-        )
+        # Draw legs (black pants)
+        left_leg_x = center_x - leg_width - 2
+        right_leg_x = center_x + 2
+        leg_y = base_y - leg_height
+        pygame.draw.rect(self.screen, (20, 20, 20), (left_leg_x, leg_y, leg_width, leg_height))
+        pygame.draw.rect(self.screen, (20, 20, 20), (right_leg_x, leg_y, leg_width, leg_height))
+
+        # Draw body (black suit jacket)
+        body_x = center_x - body_width // 2
+        body_y = base_y - leg_height - body_height
+        pygame.draw.rect(self.screen, (30, 30, 30), (body_x, body_y, body_width, body_height))
+
+        # Draw white shirt collar
+        collar_height = 6
+        pygame.draw.rect(self.screen, (240, 240, 240), (body_x + 6, body_y, body_width - 12, collar_height))
+
+        # Draw black tie
+        tie_width = 4
+        tie_height = 16
+        tie_x = center_x - tie_width // 2
+        tie_y = body_y + collar_height
+        pygame.draw.rect(self.screen, (10, 10, 10), (tie_x, tie_y, tie_width, tie_height))
+
+        # Draw arms (black suit sleeves)
+        left_arm_x = body_x - arm_width
+        right_arm_x = body_x + body_width
+        arm_y = body_y + 4
+        pygame.draw.rect(self.screen, (30, 30, 30), (left_arm_x, arm_y, arm_width, arm_height))
+        pygame.draw.rect(self.screen, (30, 30, 30), (right_arm_x, arm_y, arm_width, arm_height))
+
+        # Draw hands (pale skin)
+        hand_size = 6
+        pygame.draw.circle(self.screen, (220, 180, 140), (left_arm_x + arm_width // 2, arm_y + arm_height), hand_size // 2)
+        pygame.draw.circle(self.screen, (220, 180, 140), (right_arm_x + arm_width // 2, arm_y + arm_height), hand_size // 2)
+
+        # Draw head (pale skin)
+        head_x = center_x
+        head_y = body_y - head_size // 2
+        pygame.draw.circle(self.screen, (220, 180, 140), (head_x, head_y), head_size // 2)
+
+        # Draw sunglasses (black rectangles)
+        glasses_width = 10
+        glasses_height = 4
+        glasses_y = head_y - 2
+        pygame.draw.rect(self.screen, (10, 10, 10), (head_x - glasses_width - 1, glasses_y, glasses_width, glasses_height))
+        pygame.draw.rect(self.screen, (10, 10, 10), (head_x + 1, glasses_y, glasses_width, glasses_height))
+
+        # Draw clipboard in hand
+        clipboard_width = 10
+        clipboard_height = 14
+        clipboard_x = left_arm_x - clipboard_width // 2
+        clipboard_y = arm_y + arm_height - 8
+        # Clipboard backing
+        pygame.draw.rect(self.screen, (139, 90, 43), (clipboard_x, clipboard_y, clipboard_width, clipboard_height))
+        # Paper on clipboard
+        pygame.draw.rect(self.screen, (240, 240, 240), (clipboard_x + 1, clipboard_y + 2, clipboard_width - 2, clipboard_height - 4))
+        # Clipboard lines (audit checklist)
+        for i in range(3):
+            line_y = clipboard_y + 4 + i * 3
+            pygame.draw.line(self.screen, (100, 100, 100), (clipboard_x + 2, line_y), (clipboard_x + clipboard_width - 2, line_y), 1)
 
     def render_admin_roles(self, admin_roles: List, game_map: GameMap, pulse_time: float = 0.0) -> None:
         """
