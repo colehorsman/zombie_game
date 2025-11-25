@@ -110,6 +110,18 @@ def initialize_pygame(width: int, height: int, fullscreen: bool = False) -> tupl
     """
     try:
         pygame.init()
+        
+        # Initialize controller detection EARLY (before any other initialization)
+        pygame.joystick.init()
+        controller_count = pygame.joystick.get_count()
+        if controller_count > 0:
+            logger.info(f"🎮 Detected {controller_count} controller(s)")
+            for i in range(controller_count):
+                joy = pygame.joystick.Joystick(i)
+                joy.init()
+                logger.info(f"   Controller {i}: {joy.get_name()}")
+        else:
+            logger.info("⌨️  No controllers detected, keyboard input available")
 
         # Create display surface (fullscreen or windowed)
         if fullscreen:

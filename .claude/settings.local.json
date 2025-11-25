@@ -5,7 +5,10 @@
       "Bash(then tail -100 /tmp/zombie_game.log)",
       "Bash(git push:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python3 -m pytest:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

@@ -284,7 +284,8 @@ class TestScreenRecordingWorkflow:
         
         # Verify returned to lobby
         assert game_engine.game_state.status == GameStatus.LOBBY
-        assert len(game_engine.zombies) == 0  # No zombies in lobby
+        # Lobby now has zombies (main branch style - zombies visible in lobby)
+        assert len(game_engine.zombies) > 0  # Zombies restored to lobby
         assert game_engine.game_state.current_level_account_id is None
         
         print("✅ Test 7 PASSED: Successfully returned to lobby from pause menu")
@@ -303,7 +304,8 @@ class TestScreenRecordingWorkflow:
         
         # Verify returned to lobby
         assert game_engine.game_state.status == GameStatus.LOBBY
-        assert len(game_engine.zombies) == 0
+        # Lobby now has zombies (main branch style - zombies visible in lobby)
+        assert len(game_engine.zombies) > 0  # Zombies restored to lobby
         
         print("✅ Test 8 PASSED: L key returns to lobby")
     
@@ -481,8 +483,8 @@ class TestScreenRecordingWorkflow:
         )
         game_engine._enter_level(sandbox_door)
         
-        # Return to lobby (marks level as complete)
-        game_engine._return_to_lobby()
+        # Return to lobby with mark_completed=True to mark level as complete
+        game_engine._return_to_lobby(mark_completed=True)
         
         # Verify Sandbox account marked as completed
         assert "577945324761" in game_engine.completed_level_account_ids
