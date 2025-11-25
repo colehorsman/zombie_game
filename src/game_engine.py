@@ -419,7 +419,7 @@ class GameEngine:
                     f"You have {active_quest.time_limit:.0f} SECONDS to protect "
                     "Bedrock AgentCore before a hacker creates unauthorized "
                     "AI agent runtimes and code interpreters!\n\n"
-                    "Press ENTER to begin the race!"
+                    "Press A/B/Start or ENTER to begin!"
                 )
                 self.game_state.quest_message_timer = 999.0  # Show until dismissed
                 logger.info(f"🎮 Quest triggered at x={self.player.position.x}")
@@ -482,7 +482,7 @@ class GameEngine:
             "unauthorized AI agent runtimes with code interpreters!\n\n"
             "Your sensitive data is now being exfiltrated through "
             "gateway targets.\n\n"
-            "Press ENTER to continue"
+            "Press A/B/Start or ENTER to continue"
         )
 
         logger.info(f"❌ QUEST FAILED: {reason}")
@@ -528,7 +528,7 @@ class GameEngine:
                     f"through Slack or Teams!\n\n"
                     f"The Cloud Permissions Firewall blocked unauthorized "
                     f"AI agent creation and code execution.\n\n"
-                    "Press ENTER to continue"
+                    "Press A/B/Start or ENTER to continue"
                 )
 
                 logger.info(f"✅ PLAYER WON THE RACE! Service protected at x={service_node.position.x}")
@@ -645,7 +645,7 @@ class GameEngine:
             "Just-In-Time approval for access!\n\n"
             "Standing admin access has been eliminated,\n"
             "preventing a significant audit finding.\n\n"
-            "Press ENTER to continue"
+            "Press A/B/Start or ENTER to continue"
         )
         
         logger.info(f"✅ JIT QUEST COMPLETED! All {self.game_state.jit_quest.total_count} roles protected")
@@ -741,7 +741,7 @@ class GameEngine:
                                         if prev_level.account_id in self.completed_level_account_ids:
                                             level_unlocked = True
                                         else:
-                                            locked_reason = f"🔒 Level Locked\n\nComplete {prev_level.account_name} to unlock\n{level.account_name}\n\nPress ESC to continue"
+                                            locked_reason = f"🔒 Level Locked\n\nComplete {prev_level.account_name} to unlock\n{level.account_name}\n\nPress A/B/Start or ENTER to continue"
                                     else:
                                         level_unlocked = True
                                 break
@@ -998,7 +998,7 @@ class GameEngine:
                         "standing access without JIT protection.\n\n"
                         "This is a SIGNIFICANT DEFICIENCY in your\n"
                         "internal audit findings.\n\n"
-                        "Press ENTER to continue"
+                        "Press A/B/Start or ENTER to continue"
                     )
                     # Pause to show message
                     self.game_state.previous_status = GameStatus.LOBBY
@@ -1778,14 +1778,20 @@ class GameEngine:
                                 self.dismiss_message()
                                 continue
 
-                    # A button (0) - Fire (works in all modes)
+                    # A button (0) - Fire (works in all modes) OR dismiss messages
                     if event.button == 0:
-                        if self.game_state.status in (GameStatus.LOBBY, GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
+                        # If there's a message showing, dismiss it
+                        if self.game_state.status == GameStatus.PAUSED and self.game_state.congratulations_message:
+                            self.dismiss_message()
+                        elif self.game_state.status in (GameStatus.LOBBY, GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
                             projectile = self.player.fire_projectile()
                             self.projectiles.append(projectile)
-                    # B button (1) - Jump (only in level mode)
+                    # B button (1) - Jump (only in level mode) OR dismiss messages
                     elif event.button == 1:
-                        if self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
+                        # If there's a message showing, dismiss it
+                        if self.game_state.status == GameStatus.PAUSED and self.game_state.congratulations_message:
+                            self.dismiss_message()
+                        elif self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
                             self.player.jump()
                     # Start button (7) - Pause menu / Dismiss messages
                     elif event.button == 7:
