@@ -1,147 +1,170 @@
-# Feature Backlog
+# Product Backlog - Sonrai Zombie Blaster
 
-## 🚀 Planned Features
-
-### 1. JIT Access Quest - Internal Audit Challenge
-**Type**: Feature
-**Priority**: High
-**Target Branch**: `feature/jit-access-quest`
-
-#### Description
-Internal audit has flagged standing admin access in production accounts. Players must apply Sonrai JIT (Just-In-Time) access to admin roles to prevent a significant audit deficiency.
-
-#### Requirements
-- **Trigger**: Side quest in Production Data and Org accounts only
-- **Characters**:
-  - **Auditor**: Similar appearance to 3rd party characters, patrols the level
-  - **Admin Role**: Creative character design representing standing admin access (needs unique look)
-- **Mechanics**:
-  - Find and interact with admin role characters
-  - Apply JIT protection via Sonrai API
-  - Already-protected roles show purple shield (like Sonrai 3rd party)
-- **Visual Indicators**:
-  - Unprotected admin roles: Warning indicator
-  - Protected admin roles: Purple shield overlay
-  - Auditor: Clipboard/checklist visual theme
-- **API Integration**:
-  - Query permission sets from Sonrai API
-  - Apply JIT protection to admin roles
-  - Display already-enrolled JIT roles with shields
-- **Success Message**: "Audit Deficiency Prevented! Admin access now requires JIT approval."
-- **Failure Message**: "Audit Failed! Standing admin access remains a critical finding."
-
-#### Technical Notes
-- Similar architecture to Service Protection Quest
-- Check JIT enrollment status via API before creating quest
-- Only show quest if admin roles are unprotected
-- Reference screenshot shows available permission sets (need to review)
-
-#### Acceptance Criteria
-- [x] Quest only appears in Production Data and Org accounts
-- [x] Auditor character spawns and patrols level
-- [x] Admin role characters have unique visual design (gold crown)
-- [x] Already-protected roles show purple shields
-- [x] JIT protection API call works correctly
-- [x] Success/failure dialogues display properly
-- [x] Quest resets when returning to lobby
-
-#### Implementation Status
-✅ **COMPLETED** - All phases implemented and tested
-- Phase 1: API integration (fetch_permission_sets, fetch_jit_configuration, apply_jit_protection)
-- Phase 2: Data models (PermissionSet, JitQuestState, Auditor, AdminRole)
-- Phase 3: Game logic (quest initialization, player interaction, success/failure handling)
-- Phase 4: Rendering (auditor with suit, admin roles with crowns, purple shields)
+**Last Updated**: 2025-11-24
+**Product Owner**: Cole Horsman
+**Status**: Active Development
 
 ---
 
-### 2. JIT Quest - Lasso/Net Interaction
-**Type**: Enhancement
-**Priority**: Medium
-**Target Branch**: `feature/jit-lasso-interaction`
+## Legend
 
-#### Description
-Replace the current "walk into admin role" interaction with a more thematic lasso/net tool for capturing elevated access and applying JIT protection.
+| Priority | Label | Description |
+|----------|-------|-------------|
+| 🔴 P0 | Critical | Blocking issues, must fix immediately |
+| 🟠 P1 | High | Important for next release |
+| 🟡 P2 | Medium | Should have, schedule when possible |
+| 🟢 P3 | Low | Nice to have, future consideration |
 
-#### Current Behavior
-- Player walks into admin role character
-- JIT protection applied automatically on collision
-
-#### Desired Behavior
-- Player uses a lasso/net tool (new button/key)
-- Throw lasso at admin role from a distance
-- Visual animation of lasso capturing the role
-- JIT protection applied when captured
-- More engaging and thematic interaction
-
-#### Design Ideas
-- **Lasso Tool**: Press SPACE to throw lasso, aim with arrow keys
-- **Net Tool**: Press N to deploy net, captures roles in area
-- **Capture Animation**: Lasso wraps around role, pulls them down if floating
-- **Visual Feedback**: Sparkle effect when JIT applied
-- **Sound Effects**: Lasso whoosh, capture sound
-
-#### Technical Notes
-- Add new input handling for lasso/net
-- Create projectile-like lasso entity
-- Add collision detection between lasso and admin roles
-- Animation system for capture sequence
-- Update tutorial/hints to explain new mechanic
-
-#### Acceptance Criteria
-- [ ] Lasso/net tool can be activated with key press
-- [ ] Tool has visual representation (rope, net sprite)
-- [ ] Captures admin roles from a distance
-- [ ] Smooth animation when capturing
-- [ ] JIT protection applied on successful capture
-- [ ] Tutorial explains new mechanic
+| Status | Label |
+|--------|-------|
+| ✅ | Done |
+| 🚧 | In Progress |
+| 📋 | Ready for Dev |
+| 🔍 | Needs Investigation |
+| ⏸️ | On Hold |
 
 ---
 
-### 3. Improved Raygun Visual
-**Type**: Enhancement
-**Priority**: Medium
-**Target Branch**: `feature/improved-raygun`
+## ✅ Recently Completed
 
-#### Description
-The current raygun weapon looks like just a circle in the character's hand. It needs to be more defined and recognizable as a weapon.
+| ID | Item | Status |
+|----|------|--------|
+| BUG-001 | Projectiles passing through zombies after quest completion | ✅ Fixed (spatial grid recreation) |
+| BUG-002 | Door interaction cooldown causing re-entry | ✅ Fixed |
+| BUG-003 | Lobby spawn position incorrect | ✅ Fixed |
+| BUG-004 | Controller A/B buttons not dismissing messages | ✅ Fixed |
+| FEAT-001 | JIT Access Quest (Production accounts) | ✅ Implemented |
+| FEAT-002 | Service Protection Quest (Hacker challenge) | ✅ Implemented |
+| FEAT-003 | Health/Damage system (3 HP zombies, 10 HP 3rd parties) | ✅ Implemented |
+| FEAT-004 | Spatial grid collision optimization | ✅ Implemented |
 
-#### Requirements
-- **Current State**: Circle shape in player's hand
-- **Desired State**: Detailed retro-style raygun with:
-  - Barrel/nozzle extending forward
-  - Grip/handle visible
-  - Classic sci-fi raygun aesthetic
-  - 8-bit/16-bit sprite style
-  - Matches game's retro aesthetic
+---
 
-#### Design Ideas
-- Mega Man-style arm cannon
-- Classic sci-fi raygun (Buck Rogers style)
-- Laser pistol with visible energy chamber
-- Retro-futuristic design with antenna/coils
+## 🐛 Bugs
 
-#### Technical Notes
-- Update player rendering in `src/player.py`
-- Add directional sprites (left-facing, right-facing)
-- Ensure raygun is visible in both idle and firing states
-- Maintain performance (simple sprite, not complex)
+| ID | Priority | Description | Status | Notes |
+|----|----------|-------------|--------|-------|
+| BUG-005 | 🟠 P1 | Save/Load error: 'Level' object has no attribute 'is_completed' | 📋 Ready | Add attribute to Level class |
+| BUG-006 | 🟡 P2 | Third party "Noops" error on block | 🔍 Investigate | Error handling needed |
 
-#### Acceptance Criteria
-- [ ] Raygun is clearly recognizable as a weapon
-- [ ] Maintains retro aesthetic
-- [ ] Visible in all player states (idle, moving, jumping, firing)
-- [ ] Performance remains stable
-- [ ] Looks good in both lobby and platformer modes
+---
+
+## 🚀 Features - Current Sprint
+
+### Epic: Visual Polish & UX
+
+| ID | Priority | User Story | Status | Acceptance Criteria |
+|----|----------|------------|--------|---------------------|
+| FEAT-005 | 🟠 P1 | As a player, I want the raygun to look like a real weapon | 📋 Ready | Retro sci-fi style, visible in all states, 8-bit aesthetic |
+| FEAT-006 | 🟡 P2 | As a player, I want a clean Zelda-style pause menu | 📋 Ready | Bulleted format, keyboard navigation, semi-transparent overlay |
+| FEAT-007 | 🟡 P2 | As a player, I want the hacker to look more threatening | 📋 Ready | Laptop accessory, typing animation, matrix-style effects |
+
+### Epic: Gameplay Enhancements
+
+| ID | Priority | User Story | Status | Acceptance Criteria |
+|----|----------|------------|--------|---------------------|
+| FEAT-008 | 🟡 P2 | As a player, I want a lasso tool to capture admin roles (JIT quest) | 📋 Ready | Ranged interaction, visual animation, replaces walk-into mechanic |
+| FEAT-009 | 🟢 P3 | As a player, I want damage numbers to appear when hitting enemies | 📋 Ready | Rise 30px, fade over 1s, max 20 active |
+| FEAT-010 | 🟢 P3 | As a player, I want protected entities to show purple shields | 📋 Ready | Pulsing animation, 50% opacity, tooltip on proximity |
+
+---
+
+## 📋 Features - Backlog
+
+### Epic: Multi-Level System Enhancements
+
+| ID | Priority | User Story | Status |
+|----|----------|------------|--------|
+| FEAT-011 | 🟢 P3 | Level completion screen with stats | 📋 Ready |
+| FEAT-012 | 🟢 P3 | Final victory screen after all levels | 📋 Ready |
+| FEAT-013 | 🟢 P3 | Cross-level scoring persistence | 📋 Ready |
+
+### Epic: Boss Battles
+
+| ID | Priority | User Story | Status |
+|----|----------|------------|--------|
+| FEAT-014 | 🟢 P3 | Boss entity (3x size, 150 HP) from high-risk identities | 📋 Ready |
+| FEAT-015 | 🟢 P3 | Boss health bar (top of screen) | 📋 Ready |
+| FEAT-016 | 🟢 P3 | Mini-zombie spawning at 75%, 50%, 25% boss health | 📋 Ready |
+
+### Epic: Audio & Music
+
+| ID | Priority | User Story | Status |
+|----|----------|------------|--------|
+| FEAT-017 | 🟢 P3 | 8-bit background music | ⏸️ On Hold |
+| FEAT-018 | 🟢 P3 | Sound effects (laser, hit, victory) | ⏸️ On Hold |
+
+### Epic: Future Quests
+
+| ID | Priority | User Story | Status |
+|----|----------|------------|--------|
+| FEAT-019 | 🟢 P3 | S3 protection quest (Dev level) | ⏸️ Future |
+| FEAT-020 | 🟢 P3 | RDS protection quest (Staging level) | ⏸️ Future |
+| FEAT-021 | 🟢 P3 | Quest difficulty scaling by level | ⏸️ Future |
+
+---
+
+## 🧪 QA & Testing
+
+| ID | Priority | Description | Status |
+|----|----------|-------------|--------|
+| QA-001 | 🟠 P1 | Verify all bug fixes from Nov 24 session | 📋 Ready |
+| QA-002 | 🟡 P2 | Property tests for damage/health system | 📋 Ready |
+| QA-003 | 🟡 P2 | Cross-level functionality verification | 📋 Ready |
+| QA-004 | 🟡 P2 | Integration test suite (test_integration.py) | 📋 Ready |
+
+---
+
+## 🔧 Technical Debt
+
+| ID | Priority | Description | Status |
+|----|----------|-------------|--------|
+| TECH-001 | 🟡 P2 | Standardize API error handling patterns | 📋 Ready |
+| TECH-002 | 🟢 P3 | Update failing unit tests (outdated API signatures) | 📋 Ready |
+| TECH-003 | 🟢 P3 | Documentation agent for auto-generating docs | ⏸️ Future |
+
+---
+
+## 📊 Sprint Planning
+
+### Current Sprint Focus
+1. **Bug fixes verified** - QA-001
+2. **Visual polish** - FEAT-005 (raygun), FEAT-006 (pause menu)
+3. **Save/load fix** - BUG-005
+
+### Definition of Done
+- [ ] Feature implemented and working
+- [ ] No regressions in existing functionality
+- [ ] 60 FPS maintained
+- [ ] Manual testing passed
+
+---
+
+## 📈 Velocity & Progress
+
+| Metric | Value |
+|--------|-------|
+| Core Game | ✅ 100% Complete |
+| Quests | ✅ 2/2 Implemented |
+| Visual Polish | 🟡 60% |
+| QA Coverage | 🟡 70% |
+| Documentation | 🟡 80% |
+
+---
+
+## 🗺️ Roadmap
+
+```
+Current     → Visual Polish, Bug Fixes
+Next Sprint → Damage Numbers, Purple Shields, Pause Menu
+Future      → Boss Battles, Audio, Additional Quests
+```
 
 ---
 
 ## 📝 Notes
 
-- Features should be developed on separate branches
-- Each feature should include comprehensive testing
-- Documentation should be updated when features are merged
-- Consider user feedback during implementation
-
----
-
-**Last Updated**: 2025-11-23
+- All Sonrai API integrations require `.env` configuration
+- Game targets 60 FPS across all features
+- Maintain retro 8-bit aesthetic in all visual updates
+- Test with real Sonrai API data before release
