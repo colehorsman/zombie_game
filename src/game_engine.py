@@ -98,15 +98,15 @@ class GameEngine:
                     zombie.is_hidden = False
                 logger.info(f"🏛️  Distributed {len(self.zombies)} zombies across lobby rooms")
 
-            # LOBBY: Spawn player near entrance (bottom-left area, close to Sandbox door)
-            # Sandbox room is typically the first/largest room in top-left
-            # Spawn player in bottom-left quadrant for easy access
+            # LOBBY: Spawn player in center hallway, away from all doors
+            # Use center of map as safe spawn point - this is in the hallway area
+            # between rooms, not near any door entrances
             self.landing_zone = Vector2(
-                self.game_map.map_width // 4,  # Left quarter of map
-                self.game_map.map_height * 3 // 4  # Bottom quarter of map
+                self.game_map.map_width // 2,   # Center horizontally
+                self.game_map.map_height // 2   # Center vertically
             )
             player_start_pos = self.landing_zone
-            logger.info(f"🏛️  Spawning player at LOBBY landing zone ({player_start_pos.x}, {player_start_pos.y})")
+            logger.info(f"🏛️  Spawning player at LOBBY center hallway ({player_start_pos.x}, {player_start_pos.y})")
             self.player = Player(player_start_pos, self.game_map.map_width, self.game_map.map_height, self.game_map)
 
             # Spatial grid for entire map
@@ -173,6 +173,9 @@ class GameEngine:
             'UNLOCK': [pygame.K_u, pygame.K_n, pygame.K_l, pygame.K_o, pygame.K_c, pygame.K_k],  # "UNLOCK"
             'SKIP': [pygame.K_s, pygame.K_k, pygame.K_i, pygame.K_p],  # "SKIP"
         }
+        
+        # Door interaction cooldown (prevents immediate re-entry after returning to lobby)
+        self.door_interaction_cooldown = 0.0  # Seconds remaining before doors can be entered
 
         # Timing
         self.start_time = time.time()
@@ -419,7 +422,7 @@ class GameEngine:
                     f"You have {active_quest.time_limit:.0f} SECONDS to protect "
                     "Bedrock AgentCore before a hacker creates unauthorized "
                     "AI agent runtimes and code interpreters!\n\n"
-                    "Press A/B/Start or ENTER to begin!"
+                    "Press B button to begin!"
                 )
                 self.game_state.quest_message_timer = 999.0  # Show until dismissed
                 logger.info(f"🎮 Quest triggered at x={self.player.position.x}")
@@ -693,6 +696,12 @@ class GameEngine:
         Args:
             delta_time: Time elapsed since last frame in seconds
         """
+        # Update door interaction cooldown
+        if self.door_interaction_cooldown > 0:
+            self.door_interaction_cooldown -= delta_time
+            if self.door_interaction_cooldown <= 0:
+                logger.info("🚪 Door interaction cooldown expired - doors can now be entered")
+        
         # Update camera to follow player
         if self.use_map and self.game_map:
             self.game_map.update_camera(self.player.position.x, self.player.position.y)
@@ -709,8 +718,8 @@ class GameEngine:
             for third_party in self.game_map.third_parties:
                 third_party.update(delta_time, self.game_map)
         
-        # Check for door collisions
-        if self.game_map and hasattr(self.game_map, 'doors'):
+        # Check for door collisions (only if cooldown expired)
+        if self.game_map and hasattr(self.game_map, 'doors') and self.door_interaction_cooldown <= 0:
             player_bounds = self.player.get_bounds()
             logger.debug(f"Checking {len(self.game_map.doors)} doors for collision with player at ({self.player.position.x}, {self.player.position.y})")
             for door in self.game_map.doors:
@@ -1034,12 +1043,12 @@ class GameEngine:
                                 logger.info(f"✅ Door to {door.destination_room_name} marked as completed")
                             break
         
-        # Spawn player at a safe lobby entrance position
-        # Use the landing zone as the base, which is in the bottom-left entrance area
-        # Don't offset - the landing zone is already positioned safely away from doors
+        # Spawn player in center hallway, away from all doors
+        # Use the landing zone (center of map) as safe spawn point
+        # This ensures player doesn't immediately re-enter a level door
         spawn_position = Vector2(self.landing_zone.x, self.landing_zone.y)
         self.player = Player(spawn_position, self.game_map.map_width, self.game_map.map_height, self.game_map)
-        logger.info(f"🏛️  Player spawned at lobby entrance: ({spawn_position.x}, {spawn_position.y})")
+        logger.info(f"🏛️  Player spawned at lobby center hallway: ({spawn_position.x}, {spawn_position.y})")
         
         # Clear level-specific entities and restore lobby zombies
         self.projectiles = []
@@ -1081,6 +1090,10 @@ class GameEngine:
         self.game_state.zombies_remaining = 0
         self.game_state.total_zombies = 0
         self.game_state.current_level_account_id = None
+        
+        # Set door interaction cooldown to prevent immediate re-entry
+        self.door_interaction_cooldown = 1.0  # 1 second cooldown
+        logger.info("🚪 Door interaction cooldown set to 1.0 seconds")
         
         logger.info("✅ Returned to lobby")
 
@@ -1685,36 +1698,8 @@ class GameEngine:
                         self._spawn_boss()
                         self.konami_input = []  # Reset
 
-                # Handle message dismissal
+                # Handle message dismissal (ENTER key no longer starts quest)
                 if event.key == pygame.K_RETURN:
-                    # Check for quest dialog dismissal and hacker spawn
-                    if self.quest_manager and self.game_state.quest_message:
-                        from models import QuestStatus
-                        active_quest = self.quest_manager.get_quest_for_level(self.game_state.current_level)
-                        if active_quest and active_quest.status == QuestStatus.TRIGGERED:
-                            # Dismiss quest dialog
-                            self.game_state.quest_message = None
-
-                            # Spawn hacker ON GROUND near player for side-by-side race!
-                            # Both start from ~same position, both run toward service
-                            # Player: 4800px @ 120px/s = 40s, Hacker: 4800px @ 130px/s = 37s
-                            # Very close 3-second race - player can win!
-                            spawn_x = self.player.position.x - 50  # Slightly behind player
-                            spawn_y = 832 - 32  # On the ground (ground_y - hacker_height)
-                            self.hacker = Hacker(
-                                spawn_position=Vector2(spawn_x, spawn_y),
-                                target_position=active_quest.service_position
-                            )
-
-                            # Start the race!
-                            active_quest.status = QuestStatus.ACTIVE
-                            active_quest.hacker_spawned = True
-
-                            logger.info(f"🎮 RACE STARTED! Hacker spawned at ({spawn_x}, {spawn_y})")
-                            logger.info(f"🎮 Hacker object created: {self.hacker is not None}")
-                            logger.info(f"🎮 Hacker position: {self.hacker.position if self.hacker else 'None'}")
-                            continue
-
                     if self.game_state.status == GameStatus.PAUSED:
                         self.dismiss_message()
 
@@ -1786,10 +1771,32 @@ class GameEngine:
                         elif self.game_state.status in (GameStatus.LOBBY, GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
                             projectile = self.player.fire_projectile()
                             self.projectiles.append(projectile)
-                    # B button (1) - Jump (only in level mode) OR dismiss messages
+                    # B button (1) - Jump (only in level mode) OR dismiss messages OR start quest
                     elif event.button == 1:
+                        # Check for quest dialog dismissal and hacker spawn
+                        if self.quest_manager and self.game_state.quest_message:
+                            from models import QuestStatus
+                            active_quest = self.quest_manager.get_quest_for_level(self.game_state.current_level)
+                            if active_quest and active_quest.status == QuestStatus.TRIGGERED:
+                                # Dismiss quest dialog
+                                self.game_state.quest_message = None
+
+                                # Spawn hacker ON GROUND near player for side-by-side race!
+                                spawn_x = self.player.position.x - 50  # Slightly behind player
+                                spawn_y = 832 - 32  # On the ground (ground_y - hacker_height)
+                                self.hacker = Hacker(
+                                    spawn_position=Vector2(spawn_x, spawn_y),
+                                    target_position=active_quest.service_position
+                                )
+
+                                # Start the race!
+                                active_quest.status = QuestStatus.ACTIVE
+                                active_quest.hacker_spawned = True
+
+                                logger.info(f"🎮 RACE STARTED! Hacker spawned at ({spawn_x}, {spawn_y})")
+                                continue
                         # If there's a message showing, dismiss it
-                        if self.game_state.status == GameStatus.PAUSED and self.game_state.congratulations_message:
+                        elif self.game_state.status == GameStatus.PAUSED and self.game_state.congratulations_message:
                             self.dismiss_message()
                         elif self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
                             self.player.jump()
