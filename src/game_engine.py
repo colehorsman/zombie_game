@@ -1034,12 +1034,12 @@ class GameEngine:
                                 logger.info(f"✅ Door to {door.destination_room_name} marked as completed")
                             break
         
-        # Spawn player at landing zone, offset to avoid immediate door re-entry
+        # Spawn player at a safe lobby entrance position
+        # Use the landing zone as the base, which is in the bottom-left entrance area
+        # Don't offset - the landing zone is already positioned safely away from doors
         spawn_position = Vector2(self.landing_zone.x, self.landing_zone.y)
-        # Move player down and slightly left to avoid door collision
-        spawn_position.y += 100  # Move down 100 pixels from door
-        spawn_position.x -= 30   # Move slightly left
         self.player = Player(spawn_position, self.game_map.map_width, self.game_map.map_height, self.game_map)
+        logger.info(f"🏛️  Player spawned at lobby entrance: ({spawn_position.x}, {spawn_position.y})")
         
         # Clear level-specific entities and restore lobby zombies
         self.projectiles = []
