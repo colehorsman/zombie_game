@@ -967,6 +967,7 @@ class WannaCryBoss:
         glow_width = self.width + (self.effect_radius * 2)
         glow_height = self.height + (self.effect_radius * 2)
         glow = pygame.Surface((glow_width, glow_height), pygame.SRCALPHA)
+        glow.fill((0, 0, 0, 0))  # Fill with fully transparent
 
         center_x, center_y = glow_width // 2, glow_height // 2
 
