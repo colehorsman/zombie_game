@@ -793,101 +793,168 @@ class WannaCryBoss:
         self.glow_sprite = self._create_watery_glow()
 
     def _create_wade_sprites(self) -> List[pygame.Surface]:
-        """Create animated water blob sprites (Wade from Elemental style)."""
+        """Create animated water blob sprites (Wade/Valery water character style)."""
         frames = []
 
         # Create 3 frames for wobble animation
         for frame_idx in range(3):
             sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
 
-            # Water colors - cyan/blue palette
-            water_cyan = (0, 206, 209)      # Dark turquoise
-            water_blue = (30, 144, 255)     # Dodger blue
-            water_light = (224, 255, 255)   # Light cyan
-            water_dark = (0, 0, 139)        # Dark blue
-            tear_color = (135, 206, 235)    # Sky blue
+            # Water colors - rich cyan/blue palette with depth
+            water_base = (25, 180, 200)      # Rich cyan
+            water_dark = (15, 120, 140)      # Deep cyan
+            water_bright = (100, 230, 255)   # Bright cyan
+            water_highlight = (180, 245, 255) # Very light cyan
+            water_shadow = (10, 80, 100)     # Dark shadow
+            outline_color = (5, 140, 160)    # Darker outline
 
             center_x, center_y = self.width // 2, self.height // 2
 
-            # Wobble effect - slight variations per frame
-            if frame_idx == 0:
-                compress = 0  # Normal
-            elif frame_idx == 1:
-                compress = -3  # Slightly compressed (wider)
-            else:
-                compress = 3  # Slightly stretched (taller)
+            # Wobble offset for animation
+            wobble = [0, -2, 2][frame_idx]
 
-            # Main water blob body - teardrop shape
-            # Draw as multiple overlapping ellipses for organic water look
-            blob_width = 35
-            blob_height = 45 + compress
-
-            # Base blob (main body)
-            pygame.draw.ellipse(sprite, water_blue,
-                              (center_x - blob_width//2, center_y - blob_height//2 + 5,
-                               blob_width, blob_height))
-
-            # Top point (teardrop tip)
-            tip_points = [
-                (center_x, center_y - blob_height//2 - 10 - compress),  # Top point
-                (center_x - 8, center_y - blob_height//2 + 5),  # Left
-                (center_x + 8, center_y - blob_height//2 + 5),  # Right
+            # === MAIN BODY (Organic blob shape) ===
+            # Lower body - flowing blob shape with curves
+            body_points = [
+                (center_x, center_y + 30 + wobble),           # Bottom center
+                (center_x - 20, center_y + 25 + wobble//2),   # Bottom left curve
+                (center_x - 25, center_y + 10),               # Mid left bulge
+                (center_x - 22, center_y - 5),                # Upper left
+                (center_x - 15, center_y - 15),               # Shoulder left
+                (center_x, center_y - 18),                    # Neck
+                (center_x + 15, center_y - 15),               # Shoulder right
+                (center_x + 22, center_y - 5),                # Upper right
+                (center_x + 25, center_y + 10),               # Mid right bulge
+                (center_x + 20, center_y + 25 + wobble//2),   # Bottom right curve
             ]
-            pygame.draw.polygon(sprite, water_blue, tip_points)
+            pygame.draw.polygon(sprite, water_dark, body_points)
+            pygame.draw.polygon(sprite, water_base, body_points)
 
-            # Water highlight (wet reflection)
-            highlight_surface = pygame.Surface((15, 25), pygame.SRCALPHA)
-            pygame.draw.ellipse(highlight_surface, (*water_light, 180),
-                              (0, 0, 15, 25))
-            sprite.blit(highlight_surface, (center_x - 12, center_y - 15))
+            # Body outline for definition
+            pygame.draw.lines(sprite, outline_color, True, body_points, 2)
 
-            # Wave ripples across body (3 horizontal waves)
-            for i in range(3):
-                wave_y = center_y - 15 + (i * 12)
-                pygame.draw.line(sprite, (*water_cyan, 120),
-                               (center_x - 15, wave_y),
-                               (center_x + 15, wave_y), 2)
+            # === WAVY WATER HAIR (Multiple flowing blobs) ===
+            # Left hair blob
+            hair_left = [
+                (center_x - 15, center_y - 18),
+                (center_x - 25, center_y - 22),
+                (center_x - 28, center_y - 30),
+                (center_x - 22, center_y - 38),
+                (center_x - 12, center_y - 35),
+            ]
+            pygame.draw.polygon(sprite, water_base, hair_left)
+            pygame.draw.lines(sprite, water_bright, False, hair_left, 2)
 
-            # Sad face - eyes
+            # Right hair blob
+            hair_right = [
+                (center_x + 15, center_y - 18),
+                (center_x + 25, center_y - 22),
+                (center_x + 28, center_y - 30),
+                (center_x + 22, center_y - 38),
+                (center_x + 12, center_y - 35),
+            ]
+            pygame.draw.polygon(sprite, water_base, hair_right)
+            pygame.draw.lines(sprite, water_bright, False, hair_right, 2)
+
+            # Center hair blob (tallest)
+            hair_center = [
+                (center_x - 8, center_y - 35),
+                (center_x - 5, center_y - 45),
+                (center_x, center_y - 48 - wobble),
+                (center_x + 5, center_y - 45),
+                (center_x + 8, center_y - 35),
+            ]
+            pygame.draw.polygon(sprite, water_bright, hair_center)
+
+            # === INTERNAL WATER FLOW PATTERNS ===
+            # Flowing curves inside body to show water movement
+            flow_curves = [
+                # Left flow
+                [(center_x - 18, center_y - 8), (center_x - 15, center_y),
+                 (center_x - 12, center_y + 8), (center_x - 8, center_y + 15)],
+                # Right flow
+                [(center_x + 18, center_y - 8), (center_x + 15, center_y),
+                 (center_x + 12, center_y + 8), (center_x + 8, center_y + 15)],
+                # Center swirl
+                [(center_x - 5, center_y + 5), (center_x, center_y + 10),
+                 (center_x + 5, center_y + 15)],
+            ]
+            for curve in flow_curves:
+                pygame.draw.lines(sprite, (*water_highlight, 100), False, curve, 2)
+
+            # === WATER DROPLETS AROUND CHARACTER ===
+            droplet_positions = [
+                (center_x - 30, center_y - 10), (center_x + 30, center_y - 5),
+                (center_x - 25, center_y + 18), (center_x + 28, center_y + 20),
+                (center_x - 15, center_y - 40), (center_x + 18, center_y - 38),
+            ]
+            for dx, dy in droplet_positions:
+                pygame.draw.circle(sprite, water_bright, (dx, dy), 3)
+                pygame.draw.circle(sprite, water_highlight, (dx - 1, dy - 1), 1)
+
+            # === FACE ===
+            # Large expressive eyes
             eye_y = center_y - 8
-            # Left eye (large, sad)
-            pygame.draw.circle(sprite, water_dark, (center_x - 10, eye_y), 5)
-            pygame.draw.circle(sprite, (0, 0, 0), (center_x - 10, eye_y), 4)
-            # Shine spot (makes eyes look watery)
-            pygame.draw.circle(sprite, water_light, (center_x - 8, eye_y - 2), 2)
+            # Left eye - large with multiple layers
+            pygame.draw.circle(sprite, (255, 255, 255), (center_x - 10, eye_y), 7)
+            pygame.draw.circle(sprite, (100, 150, 200), (center_x - 10, eye_y), 5)
+            pygame.draw.circle(sprite, (20, 40, 80), (center_x - 10, eye_y + 1), 3)
+            # Eye shine (bright highlight)
+            pygame.draw.circle(sprite, water_highlight, (center_x - 12, eye_y - 2), 2)
+            pygame.draw.circle(sprite, (255, 255, 255), (center_x - 7, eye_y - 1), 1)
 
             # Right eye
-            pygame.draw.circle(sprite, water_dark, (center_x + 10, eye_y), 5)
-            pygame.draw.circle(sprite, (0, 0, 0), (center_x + 10, eye_y), 4)
-            pygame.draw.circle(sprite, water_light, (center_x + 12, eye_y - 2), 2)
+            pygame.draw.circle(sprite, (255, 255, 255), (center_x + 10, eye_y), 7)
+            pygame.draw.circle(sprite, (100, 150, 200), (center_x + 10, eye_y), 5)
+            pygame.draw.circle(sprite, (20, 40, 80), (center_x + 10, eye_y + 1), 3)
+            pygame.draw.circle(sprite, water_highlight, (center_x + 12, eye_y - 2), 2)
+            pygame.draw.circle(sprite, (255, 255, 255), (center_x + 13, eye_y - 1), 1)
 
-            # Tear streams from eyes
-            tear_width = 3
-            tear_length = 30
-            # Left tear stream
-            pygame.draw.line(sprite, (*tear_color, 200),
-                           (center_x - 10, eye_y + 3),
-                           (center_x - 10, eye_y + tear_length), tear_width)
-            # Right tear stream
-            pygame.draw.line(sprite, (*tear_color, 200),
-                           (center_x + 10, eye_y + 3),
-                           (center_x + 10, eye_y + tear_length), tear_width)
-
-            # Wobbly frowning mouth
-            mouth_y = center_y + 8
-            mouth_points = [
-                (center_x - 8, mouth_y),
-                (center_x - 4, mouth_y + 3),
-                (center_x, mouth_y + 4),
-                (center_x + 4, mouth_y + 3),
-                (center_x + 8, mouth_y)
+            # Tear streams (flowing down from eyes)
+            tear_stream_left = [
+                (center_x - 10, eye_y + 5),
+                (center_x - 11, eye_y + 15),
+                (center_x - 10, eye_y + 25),
             ]
-            pygame.draw.lines(sprite, water_dark, False, mouth_points, 3)
+            pygame.draw.lines(sprite, (*water_bright, 180), False, tear_stream_left, 3)
 
-            # Add transparency to sprite (watery effect)
-            alpha_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-            alpha_surface.fill((255, 255, 255, 200))  # 78% opaque
-            sprite.blit(alpha_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+            tear_stream_right = [
+                (center_x + 10, eye_y + 5),
+                (center_x + 11, eye_y + 15),
+                (center_x + 10, eye_y + 25),
+            ]
+            pygame.draw.lines(sprite, (*water_bright, 180), False, tear_stream_right, 3)
+
+            # Sad mouth (downturned curve)
+            mouth_y = center_y + 5
+            mouth_curve = [
+                (center_x - 10, mouth_y),
+                (center_x - 5, mouth_y + 3),
+                (center_x, mouth_y + 4),
+                (center_x + 5, mouth_y + 3),
+                (center_x + 10, mouth_y),
+            ]
+            pygame.draw.lines(sprite, water_shadow, False, mouth_curve, 3)
+
+            # === HIGHLIGHTS AND DEPTH ===
+            # Large highlight on left side for wet shiny look
+            highlight_points = [
+                (center_x - 15, center_y - 5),
+                (center_x - 10, center_y - 10),
+                (center_x - 8, center_y),
+                (center_x - 12, center_y + 8),
+            ]
+            for i, point in enumerate(highlight_points):
+                alpha = 60 - (i * 10)
+                pygame.draw.circle(sprite, (*water_highlight, alpha), point, 8 - i)
+
+            # Shadow on right side for depth
+            shadow_points = [
+                (center_x + 18, center_y + 5),
+                (center_x + 15, center_y + 15),
+            ]
+            for point in shadow_points:
+                pygame.draw.circle(sprite, (*water_shadow, 40), point, 6)
 
             frames.append(sprite)
 
