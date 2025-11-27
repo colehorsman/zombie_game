@@ -2354,19 +2354,36 @@ class GameEngine:
 
         else:
             # Other cyber bosses (Heartbleed, WannaCry, etc.)
-            # Calculate level dimensions
+            # Calculate level dimensions and boss spawn position
             if self.use_map and self.game_map:
-                level_width = self.game_map.map_width
+                # Spawn boss to the right of player's current position
+                boss_x = self.player.position.x + 400  # 400px to the right of player
                 tiles_high = self.game_map.map_height // 16
                 ground_height = 8
                 ground_y = (tiles_high - ground_height) * 16
+                boss_y = ground_y - 100
             else:
-                level_width = self.screen_width
+                # Classic mode - spawn in center of screen
+                boss_x = self.screen_width // 2
                 ground_y = self.screen_height // 2
+                boss_y = ground_y - 100
 
-            # Create cyber boss using factory
-            self.boss = create_cyber_boss(self.boss_type, level_width, ground_y)
-            logger.info(f"🎮 {self.boss_type.value} boss spawned!")
+            # Create cyber boss at calculated position
+            from cyber_boss import Vector2
+            if self.boss_type == BossType.HEARTBLEED:
+                boss = HeartbleedBoss(Vector2(boss_x, boss_y))
+                boss.ground_y = ground_y
+                self.boss = boss
+            elif self.boss_type == BossType.WANNACRY:
+                boss = WannaCryBoss(Vector2(boss_x, boss_y))
+                boss.ground_y = ground_y
+                self.boss = boss
+            else:
+                # Fallback to factory for other types
+                level_width = self.screen_width
+                self.boss = create_cyber_boss(self.boss_type, level_width, ground_y)
+
+            logger.info(f"🎮 {self.boss_type.value} boss spawned at ({boss_x}, {boss_y})!")
 
         # Boss is active, battle begins
         self.game_state.status = GameStatus.BOSS_BATTLE
