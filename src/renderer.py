@@ -689,13 +689,13 @@ class Renderer:
         # Step 1: Render bleeding particles (data leak effect) - behind boss
         self._render_bleeding_particles(boss, screen_x, screen_y)
 
-        # Step 2: Render pulsing red glow effect
-        pulse = math.sin(boss.glow_pulse_timer * 3) * 0.3 + 0.7  # Pulse between 0.7 and 1.0
-        glow_sprite = boss.glow_sprite.copy()
-        glow_sprite.set_alpha(int(255 * pulse * 0.6))  # Pulse the glow intensity
-        glow_x = screen_x - boss.effect_radius
-        glow_y = screen_y - boss.effect_radius
-        self.screen.blit(glow_sprite, (glow_x, glow_y))
+        # Step 2: Render pulsing red glow effect - TEMPORARILY DISABLED FOR DEBUG
+        # pulse = math.sin(boss.glow_pulse_timer * 3) * 0.3 + 0.7  # Pulse between 0.7 and 1.0
+        # glow_sprite = boss.glow_sprite.copy()
+        # glow_sprite.set_alpha(int(255 * pulse * 0.6))  # Pulse the glow intensity
+        # glow_x = screen_x - boss.effect_radius
+        # glow_y = screen_y - boss.effect_radius
+        # self.screen.blit(glow_sprite, (glow_x, glow_y))
 
         # Step 3: Render card flip teleport effect
         if boss.is_teleporting:
@@ -711,9 +711,9 @@ class Renderer:
             else:
                 self.screen.blit(queen_sprite, (screen_x, screen_y))
 
-            # Step 5: Render golden crown above head
-            crown_x = screen_x + (boss.width // 2) - 15  # Center crown above head
-            crown_y = screen_y - 20  # Above head
+            # Step 5: Render golden crown on top of hair (Princess Peach style)
+            crown_x = screen_x + (boss.width // 2) - 15  # Center crown
+            crown_y = screen_y - 12  # Higher on head like Princess Peach
             self.screen.blit(boss.crown_sprite, (crown_x, crown_y))
 
     def _render_bleeding_particles(self, boss: 'HeartbleedBoss', screen_x: int, screen_y: int) -> None:

@@ -446,78 +446,191 @@ class HeartbleedBoss:
         self.crown_sprite = self._create_crown()
 
     def _create_red_queen_sprite(self) -> pygame.Surface:
-        """Create 8-bit Red Queen sprite with playing card aesthetic (60x80)."""
+        """Create 8-bit Red Queen sprite with dress and bleeding heart (60x80)."""
         sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        sprite.fill((0, 0, 0, 0))  # Fill with fully transparent
 
-        # Color palette - classic playing card red, white, black
-        card_red = (220, 20, 20)
-        card_white = (255, 255, 255)
+        # Color palette - Red Queen colors
+        dress_red = (200, 20, 30)
+        dress_dark = (140, 10, 20)
+        skin_tone = (255, 220, 200)
         card_black = (20, 20, 20)
-        royal_gold = (255, 215, 0)
+        hair_black = (10, 10, 10)
 
-        # Queen's dress (large heart-shaped body)
-        center_x, center_y = self.width // 2, self.height // 2
+        center_x = self.width // 2
+        center_y = self.height // 2
 
-        # Dress base - red heart shape
-        # Top curves of heart
-        pygame.draw.circle(sprite, card_red, (center_x - 10, center_y - 5), 12)
-        pygame.draw.circle(sprite, card_red, (center_x + 10, center_y - 5), 12)
-        # Bottom triangle of heart
-        heart_points = [
-            (center_x - 20, center_y),
-            (center_x + 20, center_y),
-            (center_x, center_y + 30)
+        # === DRESS (shorter, bell-shaped, slimmer) ===
+        # Dress upper body (trapezoid shape)
+        dress_top = center_y - 10
+        dress_upper_points = [
+            (center_x - 8, dress_top),       # Left shoulder (slimmer)
+            (center_x + 8, dress_top),       # Right shoulder (slimmer)
+            (center_x + 12, center_y + 8),   # Right waist (slimmer)
+            (center_x - 12, center_y + 8)    # Left waist (slimmer)
         ]
-        pygame.draw.polygon(sprite, card_red, heart_points)
+        pygame.draw.polygon(sprite, dress_red, dress_upper_points)
+        pygame.draw.lines(sprite, dress_dark, True, dress_upper_points, 2)
 
-        # White trim on dress
-        pygame.draw.circle(sprite, card_white, (center_x - 10, center_y - 5), 12, 2)
-        pygame.draw.circle(sprite, card_white, (center_x + 10, center_y - 5), 12, 2)
+        # Dress skirt (shorter, slimmer bell shape)
+        dress_skirt_points = [
+            (center_x - 12, center_y + 8),   # Left waist
+            (center_x + 12, center_y + 8),   # Right waist
+            (center_x + 18, center_y + 22),  # Right hem (slimmer)
+            (center_x - 18, center_y + 22)   # Left hem (slimmer)
+        ]
+        pygame.draw.polygon(sprite, dress_red, dress_skirt_points)
+        pygame.draw.lines(sprite, dress_dark, True, dress_skirt_points, 2)
 
-        # Queen's head (above dress) - white circle with black outline
-        head_y = center_y - 25
-        pygame.draw.circle(sprite, card_white, (center_x, head_y), 10)
-        pygame.draw.circle(sprite, card_black, (center_x, head_y), 10, 2)
+        # === BLACK HEART ON CHEST (Heartbleed symbol, lowered) ===
+        heart_center_y = center_y + 2
+        # Heart top lobes
+        pygame.draw.circle(sprite, card_black, (center_x - 4, heart_center_y - 2), 5)
+        pygame.draw.circle(sprite, card_black, (center_x + 4, heart_center_y - 2), 5)
+        # Heart bottom point
+        heart_bottom = [
+            (center_x - 8, heart_center_y),
+            (center_x + 8, heart_center_y),
+            (center_x, heart_center_y + 10)
+        ]
+        pygame.draw.polygon(sprite, card_black, heart_bottom)
 
-        # Angry eyes (Queen's rage)
+        # Bleeding drips from heart (red data leak)
+        for drip_x in [center_x - 2, center_x + 2]:
+            pygame.draw.circle(sprite, dress_red, (drip_x, heart_center_y + 12), 2)
+            pygame.draw.circle(sprite, dress_red, (drip_x, heart_center_y + 15), 1)
+
+        # === LEGS WITH FISHNET STOCKINGS ===
+        # Left leg
+        left_leg_x = center_x - 10
+        pygame.draw.line(sprite, skin_tone, (left_leg_x, center_y + 22),
+                        (left_leg_x, center_y + 38), 5)
+        # Fishnet pattern on left leg (diamond pattern)
+        for leg_y in range(center_y + 24, center_y + 38, 4):
+            pygame.draw.line(sprite, card_black, (left_leg_x - 2, leg_y),
+                           (left_leg_x + 2, leg_y + 2), 1)
+            pygame.draw.line(sprite, card_black, (left_leg_x + 2, leg_y),
+                           (left_leg_x - 2, leg_y + 2), 1)
+
+        # Right leg
+        right_leg_x = center_x + 10
+        pygame.draw.line(sprite, skin_tone, (right_leg_x, center_y + 22),
+                        (right_leg_x, center_y + 38), 5)
+        # Fishnet pattern on right leg
+        for leg_y in range(center_y + 24, center_y + 38, 4):
+            pygame.draw.line(sprite, card_black, (right_leg_x - 2, leg_y),
+                           (right_leg_x + 2, leg_y + 2), 1)
+            pygame.draw.line(sprite, card_black, (right_leg_x + 2, leg_y),
+                           (right_leg_x - 2, leg_y + 2), 1)
+
+        # === HEAD (above dress) ===
+        head_y = dress_top - 13
+
+        # === NECK (connecting head to body) ===
+        neck_top = head_y + 8
+        neck_bottom = dress_top
+        pygame.draw.line(sprite, skin_tone, (center_x, neck_top), (center_x, neck_bottom), 6)
+
+        # === BLACK HAIR FIRST (drawn behind face - Harley Quinn flowing style) ===
+        # Hair volume on top of head (fuller, more dramatic)
+        pygame.draw.ellipse(sprite, hair_black, (center_x - 12, head_y - 15, 24, 14))
+
+        # Left flowing pigtail (voluminous, elegant)
+        left_hair_outer = [
+            (center_x - 9, head_y - 6),    # Start at head
+            (center_x - 11, head_y - 3),   # Flow out
+            (center_x - 16, head_y + 2),   # Wide curve
+            (center_x - 18, head_y + 8),   # Continue flowing
+            (center_x - 17, head_y + 15),  # Flow down gracefully
+            (center_x - 14, head_y + 18),  # Taper
+            (center_x - 10, head_y + 16),  # Inner curve
+            (center_x - 8, head_y + 10),   # Back toward face
+            (center_x - 7, head_y + 3),    # Up along face
+        ]
+        pygame.draw.polygon(sprite, hair_black, left_hair_outer)
+
+        # Right flowing pigtail (voluminous, elegant)
+        right_hair_outer = [
+            (center_x + 9, head_y - 6),    # Start at head
+            (center_x + 11, head_y - 3),   # Flow out
+            (center_x + 16, head_y + 2),   # Wide curve
+            (center_x + 18, head_y + 8),   # Continue flowing
+            (center_x + 17, head_y + 15),  # Flow down gracefully
+            (center_x + 14, head_y + 18),  # Taper
+            (center_x + 10, head_y + 16),  # Inner curve
+            (center_x + 8, head_y + 10),   # Back toward face
+            (center_x + 7, head_y + 3),    # Up along face
+        ]
+        pygame.draw.polygon(sprite, hair_black, right_hair_outer)
+
+        # Add highlights to hair for shine/flow effect
+        # Left hair highlight
+        left_highlight = [
+            (center_x - 10, head_y),
+            (center_x - 13, head_y + 5),
+            (center_x - 12, head_y + 10),
+        ]
+        pygame.draw.lines(sprite, (40, 40, 40), False, left_highlight, 2)
+
+        # Right hair highlight
+        right_highlight = [
+            (center_x + 10, head_y),
+            (center_x + 13, head_y + 5),
+            (center_x + 12, head_y + 10),
+        ]
+        pygame.draw.lines(sprite, (40, 40, 40), False, right_highlight, 2)
+
+        # === FACE (drawn on top of hair) ===
+        # Face shape (slightly oval for feminine look)
+        pygame.draw.ellipse(sprite, skin_tone, (center_x - 9, head_y - 10, 18, 20))
+        pygame.draw.ellipse(sprite, card_black, (center_x - 9, head_y - 10, 18, 20), 2)
+
+        # Cheekbones (subtle highlight circles)
+        cheek_y = head_y + 2
+        pygame.draw.circle(sprite, (255, 180, 180), (center_x - 6, cheek_y), 3, 1)  # Left cheek
+        pygame.draw.circle(sprite, (255, 180, 180), (center_x + 6, cheek_y), 3, 1)  # Right cheek
+
+        # Feminine eyes with eyelashes
         eye_y = head_y - 2
+        # Left eye
         pygame.draw.circle(sprite, card_black, (center_x - 4, eye_y), 2)
+        pygame.draw.circle(sprite, (255, 255, 255), (center_x - 5, eye_y - 1), 1)  # Eye shine
+        # Right eye
         pygame.draw.circle(sprite, card_black, (center_x + 4, eye_y), 2)
+        pygame.draw.circle(sprite, (255, 255, 255), (center_x + 5, eye_y - 1), 1)  # Eye shine
 
-        # Frowning mouth (OFF WITH THEIR HEADS!)
-        mouth_points = [
-            (center_x - 4, head_y + 4),
-            (center_x, head_y + 2),
-            (center_x + 4, head_y + 4)
+        # Elegant eyebrows (curved, thinner)
+        pygame.draw.arc(sprite, card_black, (center_x - 8, eye_y - 5, 6, 3), 0, 3.14, 2)
+        pygame.draw.arc(sprite, card_black, (center_x + 2, eye_y - 5, 6, 3), 0, 3.14, 2)
+
+        # Small feminine nose
+        pygame.draw.line(sprite, card_black, (center_x, eye_y + 2), (center_x, eye_y + 4), 1)
+
+        # Red lips (fuller, more feminine)
+        # Upper lip (slight M-shape)
+        upper_lip = [
+            (center_x - 3, head_y + 6),
+            (center_x - 1, head_y + 5),
+            (center_x, head_y + 6),
+            (center_x + 1, head_y + 5),
+            (center_x + 3, head_y + 6)
         ]
-        pygame.draw.lines(sprite, card_black, False, mouth_points, 2)
+        pygame.draw.lines(sprite, dress_red, False, upper_lip, 2)
+        # Lower lip (curved)
+        lower_lip = [
+            (center_x - 3, head_y + 6),
+            (center_x, head_y + 8),
+            (center_x + 3, head_y + 6)
+        ]
+        pygame.draw.lines(sprite, dress_red, False, lower_lip, 2)
 
-        # Arms holding heart scepter
+        # === ARMS ===
         # Left arm
-        pygame.draw.line(sprite, card_red, (center_x - 15, center_y + 5),
-                        (center_x - 25, center_y + 10), 3)
+        pygame.draw.line(sprite, skin_tone, (center_x - 10, dress_top + 5),
+                        (center_x - 20, center_y + 5), 4)
         # Right arm
-        pygame.draw.line(sprite, card_red, (center_x + 15, center_y + 5),
-                        (center_x + 25, center_y + 10), 3)
-
-        # Heart scepter (bleeding heart icon)
-        scepter_x = center_x + 28
-        scepter_y = center_y + 8
-        # Small heart on scepter
-        pygame.draw.circle(sprite, card_red, (scepter_x - 2, scepter_y), 3)
-        pygame.draw.circle(sprite, card_red, (scepter_x + 2, scepter_y), 3)
-        heart_tip = [
-            (scepter_x - 4, scepter_y + 1),
-            (scepter_x + 4, scepter_y + 1),
-            (scepter_x, scepter_y + 6)
-        ]
-        pygame.draw.polygon(sprite, card_red, heart_tip)
-
-        # "Q" emblem on dress (for Queen)
-        q_color = royal_gold
-        font = pygame.font.Font(None, 20)
-        q_text = font.render("Q", True, q_color)
-        sprite.blit(q_text, (center_x - 5, center_y + 5))
+        pygame.draw.line(sprite, skin_tone, (center_x + 10, dress_top + 5),
+                        (center_x + 20, center_y + 5), 4)
 
         return sprite
 
@@ -552,6 +665,7 @@ class HeartbleedBoss:
         glow_width = self.width + (self.effect_radius * 2)
         glow_height = self.height + (self.effect_radius * 2)
         glow = pygame.Surface((glow_width, glow_height), pygame.SRCALPHA)
+        glow.fill((0, 0, 0, 0))  # Fill with fully transparent
 
         center_x, center_y = glow_width // 2, glow_height // 2
 
