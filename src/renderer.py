@@ -551,16 +551,37 @@ class Renderer:
                 else:
                     self.screen.blit(boss.sprite, (int(boss.position.x), int(boss.position.y)))
 
-    def render_boss_health_bar(self, boss: Boss, game_map: Optional[GameMap] = None) -> None:
+    def render_boss_health_bar(self, boss, game_map: Optional[GameMap] = None) -> None:
         """
         Render boss health bar at top of screen.
+        Supports both regular Boss and ScatteredSpiderBoss.
 
         Args:
-            boss: Boss to render health bar for
+            boss: Boss or ScatteredSpiderBoss to render health bar for
             game_map: Game map (for coordinate conversion, not used here)
         """
-        if not boss or boss.is_defeated:
+        # Import here to avoid circular dependency
+        from cyber_boss import ScatteredSpiderBoss
+
+        if not boss:
             return
+
+        # Check if boss is defeated
+        if hasattr(boss, 'is_defeated') and boss.is_defeated:
+            return
+
+        # Get health values (different for swarm vs regular boss)
+        if isinstance(boss, ScatteredSpiderBoss):
+            current_health = boss.get_total_health_remaining()
+            max_health = boss.get_max_health()
+            boss_name = boss.name
+            # Add spider count
+            alive_spiders = len(boss.get_all_spiders())
+            boss_name = f"{boss_name} ({alive_spiders}/5)"
+        else:
+            current_health = boss.health
+            max_health = boss.max_health
+            boss_name = boss.name
 
         # Health bar at top center of screen
         bar_width = 400
@@ -570,9 +591,9 @@ class Renderer:
 
         # Background (dark gray)
         pygame.draw.rect(self.screen, (64, 64, 64), (bar_x, bar_y, bar_width, bar_height))
-        
+
         # Health fill (red gradient)
-        health_percent = boss.health / boss.max_health
+        health_percent = current_health / max_health if max_health > 0 else 0
         health_width = int(bar_width * health_percent)
         if health_width > 0:
             # Red gradient
@@ -580,16 +601,199 @@ class Renderer:
                 r = int(255 - (i / health_width) * 75)  # 255 to 180
                 color = (r, 0, 0)
                 pygame.draw.rect(self.screen, color, (bar_x + i, bar_y, 1, bar_height))
-        
+
         # Gold border
         pygame.draw.rect(self.screen, (255, 215, 0), (bar_x, bar_y, bar_width, bar_height), 2)
 
         # Boss name above health bar
         name_font = pygame.font.Font(None, 24)
-        name_text = name_font.render(boss.name, True, (255, 215, 0))
+        name_text = name_font.render(boss_name, True, (255, 215, 0))
         name_x = (self.width - name_text.get_width()) // 2
         name_y = bar_y - 25
         self.screen.blit(name_text, (name_x, name_y))
+
+    def render_scattered_spider(self, boss: 'ScatteredSpiderBoss', game_map: Optional[GameMap] = None) -> None:
+        """
+        Render Scattered Spider boss (5 individual spiders with glow effects).
+
+        Args:
+            boss: ScatteredSpiderBoss instance
+            game_map: Game map for coordinate conversion
+        """
+        # Import here to avoid circular dependency
+        from cyber_boss import ScatteredSpiderBoss
+
+        if not boss or boss.is_defeated:
+            return
+
+        # Render each spider with glow effect
+        for spider in boss.get_all_spiders():
+            if spider.is_defeated:
+                continue
+
+            if game_map:
+                # Map mode
+                if game_map.is_on_screen(spider.position.x, spider.position.y, spider.width, spider.height):
+                    screen_x, screen_y = game_map.world_to_screen(spider.position.x, spider.position.y)
+
+                    # Step 1: Render glow effect (background, adds perceived size)
+                    glow_x = screen_x - spider.effect_radius
+                    glow_y = screen_y - spider.effect_radius
+                    self.screen.blit(spider.glow_sprite, (glow_x, glow_y))
+
+                    # Step 2: Render spider sprite on top
+                    if spider.is_flashing:
+                        flash_sprite = spider.sprite.copy()
+                        flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                        self.screen.blit(flash_sprite, (screen_x, screen_y))
+                    else:
+                        self.screen.blit(spider.sprite, (screen_x, screen_y))
+            else:
+                # Classic mode
+                if -100 < spider.position.x < self.width + 100:
+                    # Step 1: Render glow
+                    glow_x = int(spider.position.x) - spider.effect_radius
+                    glow_y = int(spider.position.y) - spider.effect_radius
+                    self.screen.blit(spider.glow_sprite, (glow_x, glow_y))
+
+                    # Step 2: Render spider
+                    if spider.is_flashing:
+                        flash_sprite = spider.sprite.copy()
+                        flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                        self.screen.blit(flash_sprite, (int(spider.position.x), int(spider.position.y)))
+                    else:
+                        self.screen.blit(spider.sprite, (int(spider.position.x), int(spider.position.y)))
+
+    def render_boss_dialogue(self, dialogue_content: dict) -> None:
+        """
+        Render educational boss introduction dialogue (Game Boy style).
+
+        Args:
+            dialogue_content: Dictionary with title, description, how_attacked,
+                            victims, prevention, mechanic
+        """
+        # Dialogue box dimensions (90% screen width, 75% screen height)
+        box_width = int(self.width * 0.9)
+        box_height = int(self.height * 0.75)
+        box_x = (self.width - box_width) // 2
+        box_y = (self.height - box_height) // 2
+
+        # Create dialogue surface with rounded corners effect
+        dialogue_surface = pygame.Surface((box_width, box_height))
+        dialogue_surface.fill((255, 255, 255))  # White background
+
+        # Black border (3px thick)
+        pygame.draw.rect(dialogue_surface, (0, 0, 0), (0, 0, box_width, box_height), 3)
+
+        # Fonts
+        title_font = pygame.font.Font(None, 32)
+        header_font = pygame.font.Font(None, 24)
+        body_font = pygame.font.Font(None, 20)
+        small_font = pygame.font.Font(None, 18)
+
+        # Current Y position for text rendering
+        y_pos = 20
+
+        # Title (centered)
+        title_text = title_font.render(dialogue_content.get("title", "BOSS BATTLE"), True, (0, 0, 0))
+        title_x = (box_width - title_text.get_width()) // 2
+        dialogue_surface.blit(title_text, (title_x, y_pos))
+        y_pos += 50
+
+        # Description (wrapped)
+        description = dialogue_content.get("description", "")
+        y_pos = self._render_wrapped_text(dialogue_surface, description, body_font, 30, y_pos, box_width - 60, (0, 0, 0))
+        y_pos += 30
+
+        # "HOW THEY ATTACKED:" section
+        header = header_font.render("HOW THEY ATTACKED:", True, (0, 0, 0))
+        dialogue_surface.blit(header, (30, y_pos))
+        y_pos += 35
+
+        for attack in dialogue_content.get("how_attacked", []):
+            bullet = body_font.render(f"• {attack}", True, (0, 0, 0))
+            y_pos = self._render_wrapped_text(dialogue_surface, f"• {attack}", body_font, 40, y_pos, box_width - 70, (0, 0, 0))
+            y_pos += 5
+
+        y_pos += 20
+
+        # "VICTIMS:" section
+        if dialogue_content.get("victims"):
+            victims_header = header_font.render("VICTIMS:", True, (0, 0, 0))
+            dialogue_surface.blit(victims_header, (30, y_pos))
+            y_pos += 30
+            victims_text = dialogue_content.get("victims", "")
+            y_pos = self._render_wrapped_text(dialogue_surface, victims_text, small_font, 40, y_pos, box_width - 70, (80, 80, 80))
+            y_pos += 25
+
+        # "HOW IT COULD HAVE BEEN PREVENTED:" section
+        prevention_header = header_font.render("HOW IT COULD HAVE BEEN PREVENTED:", True, (0, 0, 0))
+        dialogue_surface.blit(prevention_header, (30, y_pos))
+        y_pos += 35
+
+        for prev in dialogue_content.get("prevention", []):
+            y_pos = self._render_wrapped_text(dialogue_surface, f"✓ {prev}", body_font, 40, y_pos, box_width - 70, (0, 100, 0))
+            y_pos += 5
+
+        y_pos += 20
+
+        # "BOSS MECHANIC:" section
+        mechanic_header = header_font.render("BOSS MECHANIC:", True, (200, 0, 0))
+        dialogue_surface.blit(mechanic_header, (30, y_pos))
+        y_pos += 30
+        mechanic = dialogue_content.get("mechanic", "")
+        y_pos = self._render_wrapped_text(dialogue_surface, mechanic, body_font, 40, y_pos, box_width - 70, (200, 0, 0))
+
+        # Footer: "Press ENTER to begin battle..."
+        footer_y = box_height - 40
+        footer_text = body_font.render("Press ENTER to begin battle...", True, (0, 0, 0))
+        footer_x = (box_width - footer_text.get_width()) // 2
+        dialogue_surface.blit(footer_text, (footer_x, footer_y))
+
+        # Blit dialogue box to main screen
+        self.screen.blit(dialogue_surface, (box_x, box_y))
+
+    def _render_wrapped_text(self, surface: pygame.Surface, text: str, font: pygame.font.Font,
+                            x: int, y: int, max_width: int, color: tuple) -> int:
+        """
+        Render text with word wrapping.
+
+        Args:
+            surface: Surface to render on
+            text: Text to render
+            font: Font to use
+            x: X position
+            y: Starting Y position
+            max_width: Maximum width before wrapping
+            color: Text color
+
+        Returns:
+            New Y position after rendering
+        """
+        words = text.split(' ')
+        lines = []
+        current_line = []
+
+        for word in words:
+            test_line = ' '.join(current_line + [word])
+            test_surface = font.render(test_line, True, color)
+            if test_surface.get_width() <= max_width:
+                current_line.append(word)
+            else:
+                if current_line:
+                    lines.append(' '.join(current_line))
+                current_line = [word]
+
+        if current_line:
+            lines.append(' '.join(current_line))
+
+        # Render each line
+        for line in lines:
+            text_surface = font.render(line, True, color)
+            surface.blit(text_surface, (x, y))
+            y += font.get_height() + 3
+
+        return y
 
     def render_projectiles(self, projectiles: List[Projectile], game_map: Optional[GameMap] = None) -> None:
         """
