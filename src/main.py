@@ -483,11 +483,13 @@ def main():
         boss = game_engine.get_boss()
         if boss:
             # Import cyber boss types for type checking
-            from cyber_boss import ScatteredSpiderBoss
+            from cyber_boss import ScatteredSpiderBoss, HeartbleedBoss
 
             # Render appropriate boss type
             if isinstance(boss, ScatteredSpiderBoss):
                 renderer.render_scattered_spider(boss, game_map)
+            elif isinstance(boss, HeartbleedBoss):
+                renderer.render_heartbleed_boss(boss, game_map)
             else:
                 renderer.render_boss(boss, game_map)
 

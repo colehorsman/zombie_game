@@ -664,6 +664,114 @@ class Renderer:
                     else:
                         self.screen.blit(spider.sprite, (int(spider.position.x), int(spider.position.y)))
 
+    def render_heartbleed_boss(self, boss: 'HeartbleedBoss', game_map: Optional[GameMap] = None) -> None:
+        """
+        Render Heartbleed Red Queen boss with bleeding effects and crown.
+
+        Args:
+            boss: HeartbleedBoss instance
+            game_map: Game map for coordinate conversion
+        """
+        # Import here to avoid circular dependency
+        from cyber_boss import HeartbleedBoss
+
+        if not boss or boss.is_defeated:
+            return
+
+        # Determine screen position
+        if game_map:
+            if not game_map.is_on_screen(boss.position.x, boss.position.y, boss.width, boss.height):
+                return
+            screen_x, screen_y = game_map.world_to_screen(boss.position.x, boss.position.y)
+        else:
+            screen_x, screen_y = int(boss.position.x), int(boss.position.y)
+
+        # Step 1: Render bleeding particles (data leak effect) - behind boss
+        self._render_bleeding_particles(boss, screen_x, screen_y)
+
+        # Step 2: Render pulsing red glow effect
+        pulse = math.sin(boss.glow_pulse_timer * 3) * 0.3 + 0.7  # Pulse between 0.7 and 1.0
+        glow_sprite = boss.glow_sprite.copy()
+        glow_sprite.set_alpha(int(255 * pulse * 0.6))  # Pulse the glow intensity
+        glow_x = screen_x - boss.effect_radius
+        glow_y = screen_y - boss.effect_radius
+        self.screen.blit(glow_sprite, (glow_x, glow_y))
+
+        # Step 3: Render card flip teleport effect
+        if boss.is_teleporting:
+            self._render_card_flip_effect(boss, screen_x, screen_y)
+        else:
+            # Step 4: Render the Red Queen sprite
+            queen_sprite = boss.sprite
+            if boss.is_flashing:
+                # White flash when damaged
+                flash_sprite = queen_sprite.copy()
+                flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                self.screen.blit(flash_sprite, (screen_x, screen_y))
+            else:
+                self.screen.blit(queen_sprite, (screen_x, screen_y))
+
+            # Step 5: Render golden crown above head
+            crown_x = screen_x + (boss.width // 2) - 15  # Center crown above head
+            crown_y = screen_y - 20  # Above head
+            self.screen.blit(boss.crown_sprite, (crown_x, crown_y))
+
+    def _render_bleeding_particles(self, boss: 'HeartbleedBoss', screen_x: int, screen_y: int) -> None:
+        """Render the bleeding data particles."""
+        for particle in boss.bleeding_particles:
+            # Calculate particle screen position (relative to boss)
+            particle_x = int(particle['x'] - boss.position.x + screen_x)
+            particle_y = int(particle['y'] - boss.position.y + screen_y)
+
+            # Draw bleeding particle (red droplet)
+            particle_color = (220, 20, 20, particle['alpha'])
+            particle_surface = pygame.Surface((6, 8), pygame.SRCALPHA)
+
+            # Draw teardrop/blood drop shape
+            # Top circle
+            pygame.draw.circle(particle_surface, particle_color, (3, 2), 2)
+            # Bottom point
+            pygame.draw.polygon(particle_surface, particle_color, [
+                (1, 3),
+                (5, 3),
+                (3, 7)
+            ])
+
+            self.screen.blit(particle_surface, (particle_x - 3, particle_y - 4))
+
+    def _render_card_flip_effect(self, boss: 'HeartbleedBoss', screen_x: int, screen_y: int) -> None:
+        """Render playing card flip animation during teleport."""
+        # Card flip effect - squish the sprite horizontally
+        flip_progress = boss.teleport_animation_timer / 0.5  # 0.0 to 1.0
+
+        # Create flip effect by scaling sprite width
+        if flip_progress > 0.5:
+            # First half - shrink to 0
+            scale_x = (1.0 - flip_progress) * 2
+        else:
+            # Second half - expand from 0
+            scale_x = flip_progress * 2
+
+        scale_x = max(0.05, scale_x)  # Never fully invisible
+
+        # Scale the sprite
+        flipped_width = max(1, int(boss.width * scale_x))
+        flipped_sprite = pygame.transform.scale(boss.sprite, (flipped_width, boss.height))
+
+        # Draw centered
+        flip_x = screen_x + (boss.width - flipped_width) // 2
+        self.screen.blit(flipped_sprite, (flip_x, screen_y))
+
+        # Add sparkle effect during flip
+        if 0.3 < flip_progress < 0.7:
+            sparkle_color = (255, 215, 0, 200)  # Gold sparkle
+            for i in range(5):
+                offset_x = (i - 2) * 8
+                offset_y = (i % 2) * 15 - 7
+                pygame.draw.circle(self.screen, sparkle_color,
+                                 (screen_x + boss.width // 2 + offset_x,
+                                  screen_y + boss.height // 2 + offset_y), 3)
+
     def render_boss_dialogue(self, dialogue_content: dict) -> None:
         """
         Render educational boss introduction dialogue (Game Boy style).

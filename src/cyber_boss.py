@@ -379,6 +379,346 @@ class ScatteredSpiderBoss:
         return 150  # 5 spiders * 30 HP each
 
 
+class HeartbleedBoss:
+    """
+    Heartbleed Boss - The Red Queen.
+
+    Themed after the 2014 Heartbleed vulnerability (CVE-2014-0160),
+    the most devastating OpenSSL bug that leaked sensitive data from
+    memory, depicted as the Queen of Hearts bleeding secrets.
+    """
+
+    def __init__(self, position: Vector2):
+        """
+        Initialize the Heartbleed Red Queen boss.
+
+        Args:
+            position: Starting position for the boss
+        """
+        self.position = position
+        self.velocity = Vector2(0, 0)
+        self.name = "HEARTBLEED - THE RED QUEEN"
+
+        # Boss dimensions (hybrid size: 60x80 base + effects = ~120x140 total)
+        self.width = 60
+        self.height = 80
+        self.effect_radius = 30  # Glow/aura adds perceived size
+
+        # Health
+        self.health = 150
+        self.max_health = 150
+        self.is_defeated = False
+
+        # Movement - regal, slower paced
+        self.move_speed = 50.0
+        self.facing_right = True
+
+        # Physics
+        self.gravity = 1200.0
+        self.max_fall_speed = 600.0
+        self.on_ground = False
+        self.ground_y = 0
+
+        # Attack mechanics
+        self.attack_timer = 0.0
+        self.attack_cooldown = 2.5  # Throws hearts every 2.5 seconds
+        self.heart_projectiles = []  # List of bleeding heart projectiles
+
+        # Special mechanic: "Card Flip" teleport
+        self.teleport_timer = 0.0
+        self.teleport_cooldown = 8.0  # Teleports every 8 seconds
+        self.is_teleporting = False
+        self.teleport_animation_timer = 0.0
+
+        # Visual effects
+        self.bleeding_particles = []  # Red data leak particles
+        self.particle_spawn_timer = 0.0
+        self.glow_pulse_timer = 0.0
+        self.is_flashing = False
+        self.flash_timer = 0.0
+
+        # Health-based phase changes
+        self.current_phase = 1  # Phase 1: 100-150 HP, Phase 2: 50-99 HP, Phase 3: 1-49 HP
+
+        # Create visuals
+        self.sprite = self._create_red_queen_sprite()
+        self.glow_sprite = self._create_glow_effect()
+        self.crown_sprite = self._create_crown()
+
+    def _create_red_queen_sprite(self) -> pygame.Surface:
+        """Create 8-bit Red Queen sprite with playing card aesthetic (60x80)."""
+        sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+
+        # Color palette - classic playing card red, white, black
+        card_red = (220, 20, 20)
+        card_white = (255, 255, 255)
+        card_black = (20, 20, 20)
+        royal_gold = (255, 215, 0)
+
+        # Queen's dress (large heart-shaped body)
+        center_x, center_y = self.width // 2, self.height // 2
+
+        # Dress base - red heart shape
+        # Top curves of heart
+        pygame.draw.circle(sprite, card_red, (center_x - 10, center_y - 5), 12)
+        pygame.draw.circle(sprite, card_red, (center_x + 10, center_y - 5), 12)
+        # Bottom triangle of heart
+        heart_points = [
+            (center_x - 20, center_y),
+            (center_x + 20, center_y),
+            (center_x, center_y + 30)
+        ]
+        pygame.draw.polygon(sprite, card_red, heart_points)
+
+        # White trim on dress
+        pygame.draw.circle(sprite, card_white, (center_x - 10, center_y - 5), 12, 2)
+        pygame.draw.circle(sprite, card_white, (center_x + 10, center_y - 5), 12, 2)
+
+        # Queen's head (above dress) - white circle with black outline
+        head_y = center_y - 25
+        pygame.draw.circle(sprite, card_white, (center_x, head_y), 10)
+        pygame.draw.circle(sprite, card_black, (center_x, head_y), 10, 2)
+
+        # Angry eyes (Queen's rage)
+        eye_y = head_y - 2
+        pygame.draw.circle(sprite, card_black, (center_x - 4, eye_y), 2)
+        pygame.draw.circle(sprite, card_black, (center_x + 4, eye_y), 2)
+
+        # Frowning mouth (OFF WITH THEIR HEADS!)
+        mouth_points = [
+            (center_x - 4, head_y + 4),
+            (center_x, head_y + 2),
+            (center_x + 4, head_y + 4)
+        ]
+        pygame.draw.lines(sprite, card_black, False, mouth_points, 2)
+
+        # Arms holding heart scepter
+        # Left arm
+        pygame.draw.line(sprite, card_red, (center_x - 15, center_y + 5),
+                        (center_x - 25, center_y + 10), 3)
+        # Right arm
+        pygame.draw.line(sprite, card_red, (center_x + 15, center_y + 5),
+                        (center_x + 25, center_y + 10), 3)
+
+        # Heart scepter (bleeding heart icon)
+        scepter_x = center_x + 28
+        scepter_y = center_y + 8
+        # Small heart on scepter
+        pygame.draw.circle(sprite, card_red, (scepter_x - 2, scepter_y), 3)
+        pygame.draw.circle(sprite, card_red, (scepter_x + 2, scepter_y), 3)
+        heart_tip = [
+            (scepter_x - 4, scepter_y + 1),
+            (scepter_x + 4, scepter_y + 1),
+            (scepter_x, scepter_y + 6)
+        ]
+        pygame.draw.polygon(sprite, card_red, heart_tip)
+
+        # "Q" emblem on dress (for Queen)
+        q_color = royal_gold
+        font = pygame.font.Font(None, 20)
+        q_text = font.render("Q", True, q_color)
+        sprite.blit(q_text, (center_x - 5, center_y + 5))
+
+        return sprite
+
+    def _create_crown(self) -> pygame.Surface:
+        """Create a golden crown sprite that sits above the queen."""
+        crown = pygame.Surface((30, 15), pygame.SRCALPHA)
+        royal_gold = (255, 215, 0)
+        gold_dark = (200, 170, 0)
+
+        # Crown base
+        pygame.draw.rect(crown, royal_gold, (2, 10, 26, 5))
+
+        # Crown spikes (5 points)
+        for i in range(5):
+            x = 4 + i * 6
+            points = [
+                (x, 10),
+                (x + 3, 0),
+                (x + 6, 10)
+            ]
+            pygame.draw.polygon(crown, royal_gold, points)
+            pygame.draw.polygon(crown, gold_dark, points, 1)
+
+        # Jewels on crown (red hearts)
+        for i in [7, 15, 23]:
+            pygame.draw.circle(crown, (220, 20, 20), (i, 12), 2)
+
+        return crown
+
+    def _create_glow_effect(self) -> pygame.Surface:
+        """Create pulsing red glow effect for the Red Queen."""
+        glow_width = self.width + (self.effect_radius * 2)
+        glow_height = self.height + (self.effect_radius * 2)
+        glow = pygame.Surface((glow_width, glow_height), pygame.SRCALPHA)
+
+        center_x, center_y = glow_width // 2, glow_height // 2
+
+        # Red glow rings (representing data leak/bleeding)
+        glow_colors = [
+            (220, 20, 20, 15),   # Outermost - faint red
+            (220, 20, 20, 25),
+            (220, 20, 20, 35),
+            (220, 20, 20, 45),   # Innermost - stronger red
+        ]
+
+        for i, color in enumerate(glow_colors):
+            radius = self.effect_radius - (i * 7)
+            pygame.draw.circle(glow, color, (center_x, center_y), radius)
+
+        return glow
+
+    def take_damage(self, damage: int) -> bool:
+        """
+        Take damage and check if defeated.
+
+        Args:
+            damage: Amount of damage to take
+
+        Returns:
+            True if boss is defeated, False otherwise
+        """
+        if self.is_defeated:
+            return True
+
+        self.health -= damage
+        self.is_flashing = True
+        self.flash_timer = 0.2  # Flash for 0.2 seconds
+
+        # Spawn bleeding particles when hit
+        for _ in range(5):
+            self._spawn_bleeding_particle()
+
+        # Check phase transitions
+        if self.health <= 50 and self.current_phase == 1:
+            self.current_phase = 2
+            self.attack_cooldown = 2.0  # Faster attacks in phase 2
+            logger.info("💔 Heartbleed Phase 2: Queen's Rage!")
+        elif self.health <= 25 and self.current_phase == 2:
+            self.current_phase = 3
+            self.attack_cooldown = 1.5  # Even faster in phase 3
+            self.teleport_cooldown = 5.0  # More frequent teleports
+            logger.info("💔 Heartbleed Phase 3: Desperate Bleed!")
+
+        if self.health <= 0:
+            self.health = 0
+            self.is_defeated = True
+            logger.info("👑 The Red Queen has fallen!")
+            return True
+
+        return False
+
+    def _spawn_bleeding_particle(self):
+        """Spawn a red particle representing leaked data."""
+        particle = {
+            'x': self.position.x + self.width // 2,
+            'y': self.position.y + self.height // 2,
+            'vx': (pygame.time.get_ticks() % 100 - 50) / 10.0,
+            'vy': -50.0 - (pygame.time.get_ticks() % 50),
+            'lifetime': 1.0,
+            'alpha': 255
+        }
+        self.bleeding_particles.append(particle)
+
+    def update(self, delta_time: float, player_position: Vector2, game_map=None) -> None:
+        """Update boss logic."""
+        if self.is_defeated:
+            return
+
+        # Update flash effect
+        if self.is_flashing:
+            self.flash_timer -= delta_time
+            if self.flash_timer <= 0:
+                self.is_flashing = False
+
+        # Update glow pulse
+        self.glow_pulse_timer += delta_time
+
+        # Update bleeding particles
+        for particle in self.bleeding_particles[:]:
+            particle['lifetime'] -= delta_time
+            particle['x'] += particle['vx'] * delta_time
+            particle['y'] += particle['vy'] * delta_time
+            particle['vy'] += 200.0 * delta_time  # Gravity on particles
+            particle['alpha'] = int(255 * (particle['lifetime'] / 1.0))
+
+            if particle['lifetime'] <= 0:
+                self.bleeding_particles.remove(particle)
+
+        # Spawn bleeding particles periodically (data leak visual)
+        self.particle_spawn_timer += delta_time
+        if self.particle_spawn_timer >= 0.3:
+            self._spawn_bleeding_particle()
+            self.particle_spawn_timer = 0.0
+
+        # Teleport mechanic (card flip)
+        if not self.is_teleporting:
+            self.teleport_timer += delta_time
+            if self.teleport_timer >= self.teleport_cooldown:
+                self._initiate_teleport(player_position, game_map)
+
+        # Update teleport animation
+        if self.is_teleporting:
+            self.teleport_animation_timer -= delta_time
+            if self.teleport_animation_timer <= 0:
+                self.is_teleporting = False
+
+        # Movement AI - move toward player
+        if not self.is_teleporting:
+            dx = player_position.x - self.position.x
+            if abs(dx) > 50:  # Move if not too close
+                direction = 1 if dx > 0 else -1
+                self.velocity.x = direction * self.move_speed
+                self.facing_right = (direction > 0)
+            else:
+                self.velocity.x = 0
+
+        # Apply gravity
+        if not self.on_ground:
+            self.velocity.y += self.gravity * delta_time
+            self.velocity.y = min(self.velocity.y, self.max_fall_speed)
+
+        # Update position
+        self.position.x += self.velocity.x * delta_time
+        self.position.y += self.velocity.y * delta_time
+
+        # Ground collision
+        if game_map:
+            # Platform mode ground detection
+            self.on_ground = False
+            if self.position.y + self.height >= self.ground_y:
+                self.position.y = self.ground_y - self.height
+                self.velocity.y = 0
+                self.on_ground = True
+
+        # Attack - throw bleeding hearts
+        self.attack_timer += delta_time
+        if self.attack_timer >= self.attack_cooldown:
+            self._throw_bleeding_heart(player_position)
+            self.attack_timer = 0.0
+
+    def _initiate_teleport(self, player_position: Vector2, game_map=None):
+        """Initiate card flip teleport."""
+        self.is_teleporting = True
+        self.teleport_animation_timer = 0.5  # 0.5 second animation
+        self.teleport_timer = 0.0
+
+        # Teleport to random position near player (but not too close)
+        offset_x = 200 if pygame.time.get_ticks() % 2 == 0 else -200
+        self.position.x = player_position.x + offset_x
+        logger.info("👑 The Red Queen teleports! (Card Flip)")
+
+    def _throw_bleeding_heart(self, player_position: Vector2):
+        """Throw a bleeding heart projectile at the player."""
+        # TODO: Add heart projectile to game's projectile system
+        logger.info("💔 Red Queen throws a bleeding heart!")
+
+    def get_bounds(self) -> pygame.Rect:
+        """Get bounding box for collision detection."""
+        return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
+
+
 def create_cyber_boss(boss_type: BossType, level_width: int, ground_y: int):
     """
     Factory function to create the appropriate boss for a level.
@@ -415,8 +755,12 @@ def create_cyber_boss(boss_type: BossType, level_width: int, ground_y: int):
         logger.warning("Sandworm boss not yet implemented")
         return None
     elif boss_type == BossType.HEARTBLEED:
-        logger.warning("Heartbleed boss not yet implemented")
-        return None
+        # Create Heartbleed Red Queen boss
+        x = level_width // 2  # Center of level
+        y = ground_y - 100  # Start slightly above ground
+        boss = HeartbleedBoss(Vector2(x, y))
+        boss.ground_y = ground_y
+        return boss
     elif boss_type == BossType.WANNACRY:
         logger.warning("WannaCry boss not yet implemented")
         return None
@@ -454,6 +798,29 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
                 "Cloud Permissions Firewall to limit lateral movement"
             ],
             "mechanic": "Defeat all 5 spiders to win!\nEach spider represents a different attack vector."
+        }
+
+    elif boss_type == BossType.HEARTBLEED:
+        return {
+            "title": "👑💔 THE RED QUEEN APPROACHES! 💔👑",
+            "description": "Heartbleed (CVE-2014-0160) was a catastrophic OpenSSL vulnerability discovered in 2014\nthat leaked SENSITIVE DATA directly from server memory - like a bleeding heart.",
+            "how_attacked": [
+                "Exploited OpenSSL heartbeat extension flaw",
+                "Leaked 64KB of memory per heartbeat request",
+                "Stole encryption keys, passwords, and session tokens",
+                "Affected 17% of all secure web servers worldwide",
+                "Could be exploited without leaving traces in logs"
+            ],
+            "victims": "Yahoo, Amazon, Google, NSA, Canadian Revenue Agency, hospitals worldwide",
+            "prevention": [
+                "Immediate OpenSSL patching (1.0.1g or later)",
+                "Revoke and reissue ALL SSL/TLS certificates",
+                "Force password resets for all users",
+                "Memory-safe cryptographic libraries",
+                "Regular security audits of open source dependencies",
+                "Secret rotation and key management best practices"
+            ],
+            "mechanic": "The Red Queen has 3 phases based on health!\nWatch for bleeding particles and card-flip teleports.\nOFF WITH YOUR HEAD!"
         }
 
     # TODO: Add dialogues for other bosses
