@@ -798,7 +798,9 @@ class WannaCryBoss:
 
         # Create 3 frames for wobble animation
         for frame_idx in range(3):
+            # Create fully transparent surface
             sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            sprite.fill((0, 0, 0, 0))  # Fill with fully transparent
 
             # Water colors - rich cyan/blue palette with depth
             water_base = (25, 180, 200)      # Rich cyan
@@ -827,7 +829,7 @@ class WannaCryBoss:
                 (center_x + 25, center_y + 10),               # Mid right bulge
                 (center_x + 20, center_y + 25 + wobble//2),   # Bottom right curve
             ]
-            pygame.draw.polygon(sprite, water_dark, body_points)
+            # Only draw with water_base - remove the dark layer behind
             pygame.draw.polygon(sprite, water_base, body_points)
 
             # Body outline for definition
