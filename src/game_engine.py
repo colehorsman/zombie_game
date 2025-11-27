@@ -2340,57 +2340,32 @@ class GameEngine:
         if self.boss_type == BossType.SCATTERED_SPIDER:
             # Scattered Spider: 5 spiders in a formation
             if self.use_map and self.game_map:
-                player_x = self.player.position.x
-
-                # Get ground level
+                level_width = self.game_map.map_width
                 tiles_high = self.game_map.map_height // 16
                 ground_height = 8
                 ground_y = (tiles_high - ground_height) * 16
-
-                # Create 5 spawn positions in a V formation ahead of player
-                spawn_positions = [
-                    Vector2(player_x + 300, ground_y - 100),  # Center front
-                    Vector2(player_x + 200, ground_y - 120),  # Left front
-                    Vector2(player_x + 400, ground_y - 120),  # Right front
-                    Vector2(player_x + 150, ground_y - 80),   # Left back
-                    Vector2(player_x + 450, ground_y - 80),   # Right back
-                ]
             else:
-                # Classic mode - spawn in center
-                center_x = self.screen_width // 2
-                center_y = self.screen_height // 2
-                spawn_positions = [
-                    Vector2(center_x, center_y),
-                    Vector2(center_x - 100, center_y - 50),
-                    Vector2(center_x + 100, center_y - 50),
-                    Vector2(center_x - 150, center_y),
-                    Vector2(center_x + 150, center_y),
-                ]
+                level_width = self.screen_width
+                ground_y = self.screen_height // 2
 
-            # Create Scattered Spider boss
-            self.boss = create_cyber_boss(self.boss_type, spawn_positions, game_map=self.game_map)
+            # Create Scattered Spider boss (factory creates spawn positions internally)
+            self.boss = create_cyber_boss(self.boss_type, level_width, ground_y)
             logger.info(f"🕷️  Scattered Spider boss spawned with 5 mini-spiders!")
 
         else:
-            # Other cyber bosses (to be implemented)
-            # For now, calculate a single spawn position
+            # Other cyber bosses (Heartbleed, WannaCry, etc.)
+            # Calculate level dimensions
             if self.use_map and self.game_map:
-                player_x = self.player.position.x
-                boss_x = player_x + 300
-
+                level_width = self.game_map.map_width
                 tiles_high = self.game_map.map_height // 16
                 ground_height = 8
                 ground_y = (tiles_high - ground_height) * 16
-                boss_y = ground_y - 100
-
-                boss_pos = Vector2(boss_x, boss_y)
             else:
-                boss_x = self.screen_width // 2
-                boss_y = self.screen_height // 2
-                boss_pos = Vector2(boss_x, boss_y)
+                level_width = self.screen_width
+                ground_y = self.screen_height // 2
 
-            # Create other cyber boss (placeholder - will be implemented for each boss type)
-            self.boss = create_cyber_boss(self.boss_type, boss_pos, game_map=self.game_map)
+            # Create cyber boss using factory
+            self.boss = create_cyber_boss(self.boss_type, level_width, ground_y)
             logger.info(f"🎮 {self.boss_type.value} boss spawned!")
 
         # Boss is active, battle begins
