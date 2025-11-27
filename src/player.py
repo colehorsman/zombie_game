@@ -162,24 +162,31 @@ class Player:
         pygame.draw.rect(sprite, BLACK, (26, 20, 5, 8), 1)
 
         # Arm cannon/raygun (integrated with arm - Mega Man style)
-        # Cannon base (cylindrical shape)
-        cannon_base = pygame.Rect(29, 22, 6, 6)
+        # Cannon base (cylindrical shape) - enlarged for visibility
+        cannon_base = pygame.Rect(28, 21, 8, 8)
         pygame.draw.rect(sprite, GUN_METAL, cannon_base)
         pygame.draw.rect(sprite, BLACK, cannon_base, 1)
 
-        # Cannon highlights (top edge)
-        pygame.draw.line(sprite, (150, 150, 150), (29, 22), (34, 22), 2)
+        # Cannon highlights (top edge - metallic shine)
+        pygame.draw.line(sprite, (180, 180, 180), (28, 21), (35, 21), 1)
+        pygame.draw.line(sprite, (140, 140, 140), (28, 22), (35, 22), 1)
 
-        # Cannon barrel (extending forward)
-        barrel = pygame.Rect(34, 23, 4, 4)
+        # Cannon barrel (extending forward) - longer and more prominent
+        barrel = pygame.Rect(35, 22, 6, 6)
         pygame.draw.rect(sprite, DARK_METAL, barrel)
         pygame.draw.rect(sprite, BLACK, barrel, 1)
+        # Barrel ridges for detail
+        pygame.draw.line(sprite, (80, 80, 80), (36, 22), (36, 27), 1)
+        pygame.draw.line(sprite, (80, 80, 80), (38, 22), (38, 27), 1)
 
-        # Energy core (glowing cyan center - classic raygun look)
-        pygame.draw.circle(sprite, (100, 200, 255), (32, 25), 2)  # Cyan glow
+        # Energy core (glowing cyan center - classic raygun look) - brighter
+        pygame.draw.circle(sprite, (0, 255, 255), (32, 25), 3)    # Bright cyan core
+        pygame.draw.circle(sprite, (150, 255, 255), (32, 25), 2)  # Inner glow
+        pygame.draw.circle(sprite, (255, 255, 255), (32, 25), 1)  # White hot center
 
-        # Muzzle opening (dark)
-        pygame.draw.rect(sprite, (40, 40, 60), (36, 24, 2, 2))
+        # Muzzle opening (orange glow - ready to fire)
+        pygame.draw.rect(sprite, (255, 150, 50), (39, 23, 2, 4))  # Orange glow
+        pygame.draw.rect(sprite, (255, 200, 100), (40, 24, 1, 2)) # Bright center
 
         # Legs/pants - black pants
         # Left leg

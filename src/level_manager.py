@@ -23,7 +23,7 @@ class Level:
     time_taken: float = 0.0
     score_earned: int = 0
     boss_defeated: bool = False
-    completed: bool = False
+    is_completed: bool = False  # Renamed from 'completed' for consistency with Door.is_completed
 
 
 class LevelManager:
@@ -124,7 +124,7 @@ class LevelManager:
         """
         if self.current_level_index < len(self.levels) - 1:
             # Mark current level as completed
-            self.levels[self.current_level_index].completed = True
+            self.levels[self.current_level_index].is_completed = True
 
             # Advance to next level
             self.current_level_index += 1
@@ -163,7 +163,7 @@ class LevelManager:
         total_time = sum(level.time_taken for level in self.levels)
         total_score = sum(level.score_earned for level in self.levels)
         bosses_defeated = sum(1 for level in self.levels if level.boss_defeated)
-        levels_completed = sum(1 for level in self.levels if level.completed)
+        levels_completed = sum(1 for level in self.levels if level.is_completed)
 
         return {
             "total_zombies_eliminated": total_zombies,
@@ -188,7 +188,7 @@ class LevelManager:
         current.time_taken = time
         current.score_earned = score
         current.boss_defeated = boss_defeated
-        current.completed = True
+        current.is_completed = True
 
         logger.info(f"Level {current.level_number} ({current.environment_type}) completed!")
         logger.info(f"  Zombies: {zombies}, Time: {time:.1f}s, Score: {score}, Boss: {boss_defeated}")
@@ -201,7 +201,7 @@ class LevelManager:
             level.time_taken = 0.0
             level.score_earned = 0
             level.boss_defeated = False
-            level.completed = False
+            level.is_completed = False
         logger.info("Progress reset to level 1")
 
     def get_level_description(self, level: Optional[Level] = None) -> str:

@@ -1,163 +1,85 @@
-# Sonrai Zombie Blaster (v2 - Hybrid Mode)
+# Sonrai Zombie Blaster
 
-> **Branch: v2** - The ultimate hybrid experience combining top-down lobby exploration with Mario-style platformer levels!
-> Looking for other versions? Check out `v1` for original top-down only or `levels` for platformer only.
+**An 8-bit cloud identity cleanup game powered by the Sonrai Cloud Permissions Firewall**
 
-A retro-style video game that visualizes and gamifies the process of identifying and remediating unused AWS identities through the Sonrai API. Blast zombies representing real unused identities and watch your cloud security posture improve!
+What if least privilege wasn't a spreadsheet or a backlog item…
+but a zombie shooter?
 
-## About This Version
+**Sonrai Zombie Blaster** is a retro 8-bit style game that connects to a *real* Sonrai Security tenant and uses the **Cloud Permissions Firewall** to clean up your cloud:
 
-This is **v2 - the hybrid dual-mode version** combining the best of both worlds:
+- Every **zombie** = a real unused AWS identity from your Sonrai org
+- Every **shot** = a real quarantine request via GraphQL
+- Every **side quest** = real service protections and Just-In-Time (JIT) access flows
 
-### Lobby Mode (Top-Down)
-- Explore a central hub with doors to each AWS account
-- Top-down navigation with fog-of-war mechanics
-- Third-party entities patrol hallways around production rooms
-- Walk through doors to enter account-specific platformer levels
+As far as we're aware, this is one of the **first 8-bit cybersecurity video games that drives live cloud remediation through real APIs**, not mocks or fake data.
 
-### Level Mode (Platformer)
-- Mario-style side-scrolling gameplay inside each AWS account
-- Jump between randomized floating platforms
-- Gravity-based physics for player and zombies
-- Dynamic level width scaling (512 zombies = 27,200px wide!)
-- Power-ups scattered on ~15% of platforms
-- No fog-of-war - see all zombies from the start
+---
 
-### Progression System
-- 🔒 Levels unlock linearly after completing previous levels
-- 🏖️ Sandbox account always unlocked (great for learning)
-- ✅ Complete a level by quarantining all zombies and returning to lobby
-- 🔓 **Cheat codes** for testing: `UNLOCK` (all levels) and `SKIP` (current level)
+## TL;DR
 
-## Choosing Your Version
-
-This repository maintains **two long-term branches** to support different use cases:
-
-### `main` branch (v2 - Hybrid Mode) - **Recommended**
-The full-featured experience with dual-mode gameplay (lobby + platformer). This is the most polished and feature-rich version with:
-- Complete progression system with 7 levels
-- Boss battles, power-ups, and difficulty scaling
-- Save/load system for persistent progress
-- Best for: Playing the complete game experience
-
-**Get started**: `git clone <repo> && cd zombie_game` (defaults to main)
-
-### `v1` branch (Original Top-Down) - **For Builders**
-A simpler, more focused codebase with only top-down gameplay. Maintained long-term for developers who want:
-- Easier codebase to understand and modify (~3,000 fewer lines)
-- Single game mode (top-down only, no platformer complexity)
-- Simpler architecture (no dual-engine, no mode transitions)
-- Better starting point for building custom features or forks
-
-**Get started**: `git clone <repo> && git checkout v1`
-
-### Which Should You Choose?
-
-**Choose `main` (v2) if you want to**:
-- Play the complete game with all features
-- Experience the full hybrid gameplay
-- Build upon the most advanced version
-
-**Choose `v1` if you want to**:
-- Learn from a simpler codebase
-- Build custom features without dual-mode complexity
-- Fork the project for a different direction
-- Understand core concepts before tackling v2
-
-Both branches are fully functional, documented, and maintained. Pick the one that fits your goals!
-
-## Key Features
-
-- 🎮 **Dual-mode gameplay**: Lobby exploration + platformer action
-- 🔫 Mega Man-style character with ray gun
-- 🧟 Each zombie represents a real unused AWS identity from Sonrai
-- 🔒 Eliminating zombies triggers real quarantine actions via Sonrai API
-- 🛡️ **Service Protection Quests**: Race against AI hackers to protect AWS services
-  - Dynamic quest system checks Sonrai API for unprotected services
-  - Bedrock AgentCore quest protects 8 high-risk AI permissions
-  - Real-time race with black-hoodie hacker character
-  - Success: Service protected via Sonrai ProtectService API
-  - Failure: Dramatic consequences explaining the security breach
-- 💜 Protected entities with purple shields (Sonrai + exempted identities)
-- 💥 Damage system with health points (zombies: 3 HP, third parties: 10 HP)
-- 📈 Score tracking with damage multiplier (increases every 10 eliminations)
-- 📊 Real-time progress tracking and statistics
-- 🎯 Third-party access visualization and blocking in lobby
-- 💬 Retro Game Boy-style congratulations messages
-- 🎪 Randomized platform layouts for varied gameplay
-- 🎁 Power-up collectibles in platformer levels
-- 🔓 Admin cheat codes for testing (see [CHEAT_CODES.md](CHEAT_CODES.md))
-
-## Screenshots
-
-*Coming soon! Screenshots of gameplay, protected entities with purple shields, damage system, and more.*
-
-<!-- Placeholder for screenshots - to be added -->
-<!--
-![Main Gameplay](assets/screenshots/gameplay.png)
-*Main gameplay showing player shooting zombies with UI elements*
-
-![Congratulations Message](assets/screenshots/congratulations.png)
-*Retro Game Boy-style congratulations message when eliminating a zombie*
-
-![Protected Entities](assets/screenshots/protected_entities.png)
-*Purple shields indicating protected Sonrai and exempted entities*
-
-![Damage System](assets/screenshots/damage_system.png)
-*Health bars and damage numbers in action*
--->
-
-## Requirements
-
-### System Requirements
-- **OS**: macOS, Linux, or Windows
-- **Python**: 3.11 or higher
-- **Display**: 800x600 minimum resolution
-
-### Sonrai Requirements
-- Active Sonrai Security account
-- API access token (see Configuration section)
-- Organization ID
-- GraphQL API URL
-
-### Python Dependencies
-- pygame 2.5+
-- python-dotenv
-- requests
-
-## Installation Runbook
-
-Follow these steps to set up the game on your machine:
-
-### Step 1: Extract the Project
-
-If you received a zip file:
 ```bash
-unzip zombie_game.zip
-cd zombie_game
+# Clone, setup, play
+git clone <repository-url> && cd zombie_game
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env  # Add your Sonrai API credentials
+python3 src/main.py
 ```
 
-If you're cloning from git:
+**Controls:** WASD/Arrows to move, Space to shoot, Enter to dismiss messages, walk into doors to enter levels.
+
+---
+
+## The Story: Your Cloud Is Full of Zombies
+
+Your AWS org has been running for years. Projects shipped, projects died, contractors left, third parties came and went.
+
+The result?
+
+- **Unused IAM users and roles** lingering with real permissions
+- **Third-party access** that nobody remembers approving
+- **Privileged services** (like Bedrock) wide open to abuse
+- **Standing admin access** in production that auditors hate
+
+In Sonrai, those are all surfaced by the **Cloud Permissions Firewall** — which can quarantine identities, block third parties, lock down services/regions, and enforce JIT access with automated ChatOps approvals.
+
+Zombie Blaster turns that control plane into a playable map.
+
+---
+
+<details>
+<summary><h2>Installation Runbook</h2></summary>
+
+### Prerequisites
+
+- **OS**: macOS, Linux, or Windows
+- **Python**: 3.11 or higher
+- **Sonrai Security**: Active account with API access
+
+### Step 1: Get the Code
+
 ```bash
+# Clone from git
 git clone <repository-url>
+cd zombie_game
+
+# Or extract from zip
+unzip zombie_game.zip
 cd zombie_game
 ```
 
 ### Step 2: Verify Python Version
 
-Check that you have Python 3.11 or higher:
 ```bash
-python3 --version
+python3 --version  # Should be 3.11+
 ```
 
-If you need to install Python 3.11+:
-- **macOS**: `brew install python@3.11`
-- **Linux**: `sudo apt install python3.11` (or use your package manager)
-- **Windows**: Download from [python.org](https://www.python.org/downloads/)
+**Need Python 3.11+?**
+- macOS: `brew install python@3.11`
+- Linux: `sudo apt install python3.11`
+- Windows: [python.org/downloads](https://www.python.org/downloads/)
 
 ### Step 3: Create Virtual Environment
-
-Create and activate a Python virtual environment:
 
 **macOS/Linux:**
 ```bash
@@ -171,287 +93,248 @@ python -m venv venv
 venv\Scripts\activate
 ```
 
-You should see `(venv)` in your terminal prompt.
-
 ### Step 4: Install Dependencies
 
-Install all required Python packages:
 ```bash
 pip install -r requirements.txt
 ```
 
-### Step 5: Configure Sonrai API Credentials
+### Step 5: Configure Sonrai API
 
-1. Copy the example environment file:
-```bash
-cp .env.example .env
-```
+1. Copy the example config:
+   ```bash
+   cp .env.example .env
+   ```
 
-2. Get your Sonrai API credentials:
-   - Log into your Sonrai Security account
+2. Get your Sonrai credentials:
+   - Log into Sonrai Security
    - Navigate to **Settings** → **API Tokens**
-   - Create a new API token with `read:data` and `read:platform` scopes
-   - Copy your token, org ID, and GraphQL URL
+   - Create a token with `read:data` and `read:platform` scopes
 
 3. Edit `.env` with your credentials:
-```bash
-# Open in your preferred editor
-nano .env
-# or
-vim .env
-# or
-code .env  # VS Code
-```
+   ```env
+   SONRAI_API_URL=https://YOUR_ORG-graphql-server.sonraisecurity.com/graphql
+   SONRAI_ORG_ID=your_org_id_here
+   SONRAI_API_TOKEN=your_api_token_here
+   ```
 
-4. Update these values:
-```
-SONRAI_API_URL=https://YOUR_ORG-graphql-server.sonraisecurity.com/graphql
-SONRAI_ORG_ID=your_org_id_here
-SONRAI_API_TOKEN=your_api_token_here
-```
+### Step 6: Launch the Game
 
-**Note**: Keep your `.env` file private! It contains sensitive credentials.
-
-### Step 6: Verify Installation
-
-Test that everything is set up correctly:
 ```bash
 python3 src/main.py
 ```
 
-If successful, you should see the game window open!
+### Troubleshooting
 
-## Configuration
+| Issue | Solution |
+|-------|----------|
+| `SONRAI_API_TOKEN is required` | Check `.env` file exists and has valid credentials |
+| `Failed to authenticate` | Verify token hasn't expired, check org ID |
+| `ModuleNotFoundError: pygame` | Activate venv: `source venv/bin/activate` |
+| Black screen | Update pygame: `pip install --upgrade pygame` |
+| No zombies found | Check AWS account has unused identities |
 
-The `.env` file controls both API access and game settings:
-
-```env
-# Sonrai API Configuration (REQUIRED)
-SONRAI_API_URL=https://YOUR_ORG-graphql-server.sonraisecurity.com/graphql
-SONRAI_ORG_ID=your_org_id_here
-SONRAI_API_TOKEN=your_api_token_here
-
-# Game Configuration (OPTIONAL - defaults shown)
-GAME_WIDTH=800
-GAME_HEIGHT=600
-TARGET_FPS=60
-```
-
-## Troubleshooting
-
-### "SONRAI_API_TOKEN is required in .env file"
-- Make sure you copied `.env.example` to `.env`
-- Verify your `.env` file has valid credentials
-- Check that there are no extra spaces around the `=` signs
-
-### "Failed to authenticate with Sonrai API"
-- Verify your API token is still valid (check expiration date)
-- Confirm your organization ID is correct
-- Test your token using the Sonrai GraphQL explorer
-
-### "ModuleNotFoundError: No module named 'pygame'"
-- Make sure your virtual environment is activated (`source venv/bin/activate`)
-- Re-run `pip install -r requirements.txt`
-
-### Game window doesn't open / black screen
-- Check that your display resolution is at least 800x600
-- Try updating pygame: `pip install --upgrade pygame`
-- On Linux, you may need to install SDL libraries: `sudo apt install libsdl2-dev`
-
-### "No zombies found" / Empty game
-- Verify your AWS account has unused identities
-- Check the `AWS_ACCOUNT` filter in your `.env` file
-- Try adjusting `DAYS_SINCE_LAST_LOGIN` in `.env`
-
-## Usage
-
-Run the game:
-```bash
-python src/main.py
-```
-
-## Controls
-
-### Lobby Mode (Top-Down)
-- **Arrow Keys or WASD**: Move in 8 directions
-- **Space**: Fire ray gun at third-party entities
-- **Walk into doors**: Enter account levels
-
-### Platformer Mode (Side-Scrolling)
-- **Arrow Keys (← →) or A/D**: Move left/right
-- **Up Arrow or W**: Jump (gravity-based physics)
-- **Space**: Fire ray gun at zombies
-- **Return to entrance**: Complete level and return to lobby
-
-### Universal Controls
-- **Enter**: Dismiss messages and continue
-- **ESC**: Pause/quit game
-- **Cheat Codes**: Type letter sequences (see [docs/CHEAT_CODES.md](docs/CHEAT_CODES.md))
-
-The player character will automatically stop when you release the movement keys.
-
-## How It Works
-
-1. The game fetches unused AWS identities from your Sonrai account
-2. Each zombie in the game represents one unused identity
-3. When you eliminate a zombie (3 hits), the game sends a quarantine request to Sonrai
-4. Successfully quarantined identities are permanently removed from the game
-5. Third-party entities patrol the map and can be blocked (10 hits)
-6. Protected entities (exemptions + Sonrai) display purple shields and are invulnerable
-7. Your goal: eliminate all zombies and improve your cloud security!
-
-## Sonrai API Integration
-
-This game integrates with the Sonrai Security platform using GraphQL queries and mutations.
-
-**Full API Documentation**: [docs/sonrai-api/README.md](docs/sonrai-api/README.md)
-
-Quick links:
-- [Unused Identities Query](docs/sonrai-api/queries/unused-identities.md) - Fetch zombies
-- [Quarantine Mutation](docs/sonrai-api/queries/quarantine-identity.md) - Eliminate zombies
-- [Third Party Query](docs/sonrai-api/queries/third-party-access.md) - Fetch 3rd parties
-- [Exemptions Query](docs/sonrai-api/queries/exempted-identities.md) - Protected entities
-- [Quick Reference](docs/sonrai-api/QUICK_REFERENCE.md) - All API calls at a glance
-
-See [Integration Guide](docs/sonrai-api/INTEGRATION_GUIDE.md) for detailed integration information.
-
-## Development
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=src
-
-# Run property-based tests only
-pytest -k property
-```
-
-### Automated Test Launcher
-
-For manual testing with guided test plans:
-
-```bash
-# Launch with current test plan (powerups)
-python test_launcher.py
-
-# Test specific features
-python test_launcher.py --feature powerups      # Powerup system
-python test_launcher.py --feature level_entry   # Level transitions
-python test_launcher.py --feature full          # Full game test
-
-# Watch logs in real-time during testing
-python test_launcher.py --watch-logs
-
-# List available test plans
-python test_launcher.py --list
-```
-
-The test launcher will:
-- Display test objectives and success criteria
-- Show step-by-step testing instructions
-- Automatically launch the game
-- Optionally show logs in real-time
-- Provide post-test report checklist
-
-Perfect for QA sessions and feature testing!
-
-### Project Structure
-
-```
-sonrai-zombie-blaster/
-├── src/                     # Source code
-│   ├── main.py              # Entry point
-│   ├── game_engine.py       # Core game loop
-│   ├── sonrai_client.py     # API integration
-│   ├── renderer.py          # Graphics rendering
-│   ├── models.py            # Data models
-│   ├── player.py            # Player character
-│   ├── zombie.py            # Zombie entities
-│   ├── projectile.py        # Projectiles
-│   └── collision.py         # Collision detection
-├── tests/                   # Test suite
-├── docs/                    # Documentation
-│   ├── sonrai-api/          # API integration docs
-│   ├── bug-reports/         # Bug tracking
-│   ├── qa-reports/          # QA test reports
-│   ├── testing-guides/      # Testing documentation
-│   ├── CHEAT_CODES.md       # Admin cheat codes
-│   ├── GLOSSARY.md          # Game terminology
-│   └── POWERUPS.md          # Power-up reference
-├── dev_tests/               # Development test scripts
-├── assets/                  # Game assets
-├── .env                     # Configuration (not in git)
-├── .env.example             # Example configuration
-├── requirements.txt         # Python dependencies
-├── QUICKSTART.md            # Quick start guide
-├── BACKLOG.md               # Feature backlog
-└── README.md                # This file
-```
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-## Credits
-
-Built with Python and Pygame. Integrates with Sonrai Security's Cloud Permissions Firewall.
+</details>
 
 ---
 
-## Engineering & Architecture
+<details>
+<summary><h2>How the Game Maps to Real Cloud Controls</h2></summary>
 
-This section provides technical details about the game's implementation, architecture, and technology stack.
+Under the hood, this isn't a toy simulation:
+
+1. The game connects to your **Sonrai tenant** using GraphQL.
+2. It pulls:
+   - **Unused identities** → become zombies on the map
+   - **Third-party access** → become patrolling "suit" characters
+   - **Exempted identities** → become protected entities with **purple shields**
+3. When you:
+   - **Eliminate a zombie** (3 hits) → the game calls a **Quarantine Identity** mutation
+   - **Neutralize a third-party** (10 hits) → the game calls **Block Third Party**
+   - **Win a Service Protection Quest** → the game calls a service-protection mutation to lock down a real AWS service via the Permissions Firewall
+4. The game strictly uses **real CloudHierarchy scopes** and enforces never constructing scopes by hand (matching Sonrai best practices).
+
+In other words: **your inputs are fun and 8-bit; the outputs are real policy changes in your cloud.**
+
+> **Production Warning**
+> This game can trigger real quarantine and protection actions. Use a **sandbox / lab org** or heavily scoped test environment, not your primary production org.
+
+### How This Reflects the Cloud Permissions Firewall
+
+Sonrai's **Cloud Permissions Firewall** provides:
+
+- **Quarantine of unused identities** (our zombies) with one-click global policies
+- **Blocking of third-party access** at org / OU / account
+- **Disabling unused services & regions** while allowing reactivation via ChatOps
+- **Just-In-Time Access** for high-risk permissions with request/approval flows
+- **Privilege-on-Demand** and AI-summarized session activity
+
+Zombie Blaster visualizes that model as:
+
+| Game Element | Cloud Control |
+|--------------|---------------|
+| Zombies | Unused identities waiting to be quarantined |
+| Third-party suits | External orgs that can be blocked |
+| Bedrock service node | Service protections (most sensitive permissions) |
+| Auditor / Admin roles | JIT and audit remediation of standing access |
+| Purple shields | Exemptions, Sonrai system identities, JIT-protected roles |
+
+If you play this from start to finish against a real Sonrai org, you've effectively run a **gamified least-privilege enforcement pass** across unused identities, third-party access, and key services.
+
+</details>
+
+---
+
+<details>
+<summary><h2>Core Gameplay</h2></summary>
+
+### Lobby Mode – Cloud Org Map (Top-Down)
+
+The lobby is your **cloud org hallway**:
+
+- Each **door** represents an AWS account (sandbox, dev, stage, prod, org, etc.).
+- **Fog-of-war** hides what's down the hall until you explore.
+- **Third-party entities** in suits patrol near production doors.
+- Purple-shielded characters represent Sonrai systems and exempted identities that **must never be quarantined**.
+
+Walk into a door to dive into that account's level.
+
+### Platformer Mode – Account Levels (Side-Scrolling)
+
+Inside each account you get a **Mario-style platformer**:
+
+- Level width scales with zombie count (hundreds of unused identities = huge maps).
+- Zombies spawn across floating platforms with simple physics.
+- Power-ups (Star Power, Lambda Speed, etc.) give you bursts of clearance speed.
+
+**Win condition for a level:**
+
+1. Eliminate (quarantine) every zombie in that account
+2. Navigate back to the entrance platform
+3. Return to the lobby with that account now "clean"
+
+Behind the scenes, each zombie kill corresponds to a **real quarantine mutation** against the identity it represents.
+
+### Controls
+
+**Lobby (Top-Down):**
+- Arrow keys / WASD → Move
+- Space → Fire ray gun
+- Walk into doors → Enter account levels
+
+**Platformer:**
+- Left/Right (Arrow keys / A,D) → Move
+- Up / W → Jump
+- Space → Fire
+- Return to entrance platform → Exit level
+
+**Universal:**
+- Enter → Dismiss messages (including quest prompts)
+- ESC → Pause / Quit
+- F / F11 / CMD+F → Toggle fullscreen
+- Hidden cheat codes (`UNLOCK` / `SKIP`) for testing
+
+</details>
+
+---
+
+<details>
+<summary><h2>Side Quests</h2></summary>
+
+The main loop is "clean up unused identities." The side quests bring in **service protection** and **JIT access / audit**.
+
+### 1. Hacker Race – Service Protection Quest (Bedrock)
+
+The **Service Protection Quest** is a timed race against a hacker AI to protect a critical service (for example, Amazon Bedrock) with the Permissions Firewall.
+
+**What happens:**
+
+1. In Sandbox (Level 1) and Production (Level 6), when you cross a trigger point in the level, a warning pops up:
+   > "You have 60 SECONDS to protect the Bedrock service before a hacker deletes guardrails allowing prompt injection!"
+2. You hit **ENTER** to accept the quest.
+3. A **black-hat hacker** drops from the sky near the Bedrock service node and starts sprinting toward it.
+4. A big countdown timer appears (color-coded: green → orange → red as time drops).
+5. Your job: **reach the service node before the hacker**. Get within range and the game will:
+   - Call a **ProtectService** mutation via `SonraiAPIClient`
+   - Mark the service as protected
+   - Update its sprite to show a green shield
+
+**Win:**
+- Service icon shows a **green shield**
+- Quest status → COMPLETED
+- You continue the level with the Bedrock service now protected by the Permissions Firewall and reflected in Sonrai
+
+**Lose:**
+- Hacker reaches the service first or the timer expires
+- Service is compromised
+- You get a **GAME OVER** and must replay the level
+
+This models Sonrai's real-world **service protection** capability — locking down privileged permissions on specific services (like Bedrock, S3, RDS, etc.) and relying on exemptions/JIT for legitimate access.
+
+---
+
+### 2. Auditor Challenge – JIT Access Quest
+
+The **JIT Access Quest** brings the internal audit and JIT story into the game.
+
+**Cloud problem it represents:**
+- Standing admin access in production
+- Audit findings about excessive privileges and lack of approvals
+- Need to move to **Just-In-Time (JIT)** access with proper evidence and workflows
+
+**How it works in-game:**
+- Triggered in **Production Data** and **Org** levels when unprotected admin roles exist.
+- An **Auditor character** (clipboard, suit, serious expression) spawns and patrols the level watching you.
+- **Admin Role characters** (crown / gold motif) represent high-privilege permission sets that should be JIT-protected.
+- Unprotected roles glow with warning icons; JIT-enrolled ones show **purple shields** (just like exempted entities and Sonrai-managed identities).
+
+**Quest flow:**
+
+1. The game checks Sonrai via API for admin permission sets and their current JIT status.
+2. If there are **unprotected admin sets**:
+   - Auditor spawns
+   - Timer starts (for example, 180 seconds)
+   - Admin role characters appear on platforms
+3. You navigate to each admin role and interact (e.g., within range + action key):
+   - The game calls Sonrai APIs to **apply JIT protection** to that permission set
+   - The character gains a purple shield and becomes "compliant"
+4. **Success:** all admin roles are protected before the timer expires →
+   - Auditor shows an approval emote
+   - You get an "Audit Deficiency Prevented!" message
+   - Quest is marked complete
+5. **Failure:** timer runs out with unprotected roles →
+   - Auditor shows a failure emote
+   - You get an "Audit Failed!" message
+   - You must replay the level
+
+Conceptually, this quest mirrors Sonrai's **JIT Access** feature: converting standing privileges into time-bound access with approvals, session tracking, and audit-friendly evidence, typically fronted by ChatOps workflows in Slack/Teams.
+
+</details>
+
+---
+
+<details>
+<summary><h2>Architecture & Technical Details</h2></summary>
 
 ### Technology Stack
 
-**Core Technologies**
-- **Language**: Python 3.11+
-- **Game Engine**: Pygame 2.5+ (2D game framework with SDL bindings)
-- **API Integration**: Sonrai GraphQL API via `requests` library
-- **Configuration**: python-dotenv for environment variable management
-- **State Persistence**: JSON-based save system
+| Component | Technology |
+|-----------|------------|
+| Language | Python 3.11+ |
+| Game Engine | Pygame 2.5+ (SDL bindings) |
+| API | Sonrai GraphQL via `requests` |
+| Config | python-dotenv |
+| Persistence | JSON-based save system |
 
 **Total Codebase**: ~8,380 lines of Python across 21 modules
 
 ### Architecture Overview
 
-#### Dual-Engine System
-
-The game features a unique **dual-mode architecture** that seamlessly transitions between two distinct gameplay modes:
-
-1. **Lobby Engine** (Top-Down Mode)
-   - Location: `src/game_engine.py:71-100`
-   - Camera-based map exploration with fog-of-war mechanics
-   - Tile-based collision detection (16x16 pixel tiles)
-   - Zombie distribution across AWS account rooms
-   - Third-party entities patrolling hallways
-   - Door-based level transitions
-
-2. **Level Engine** (Platformer Mode)
-   - Location: `src/game_engine.py:328-430`
-   - Mario-style side-scrolling physics with gravity
-   - Randomly generated floating platform layouts
-   - Dynamic level width scaling (512 zombies = 27,200px wide)
-   - Power-up collectibles spawning on ~15% of platforms
-   - Account-specific zombie loading
-
-**Mode Transitions**: `src/game_engine.py:718-856`
-- Entering a door: Lobby → Level (loads that account's zombies only)
-- Returning to entrance: Level → Lobby (preserves progress)
-
-#### Core Architecture Components
-
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                      Main Loop                          │
 │                   (src/main.py)                         │
-│  • Event handling                                       │
-│  • Delta time calculation (60 FPS)                      │
-│  • Display scaling & fullscreen                         │
+│  • Event handling • Delta time (60 FPS) • Scaling       │
 └─────────────────┬───────────────────────────────────────┘
                   │
       ┌───────────┴───────────┐
@@ -461,217 +344,82 @@ The game features a unique **dual-mode architecture** that seamlessly transition
 │  (Logic)    │         │  (Graphics)  │
 └──────┬──────┘         └──────────────┘
        │
-       ├─► GameMap (lobby/platformer map generation)
-       │
+       ├─► GameMap (lobby/platformer generation)
        ├─► LevelManager (progression & unlocking)
-       │
-       ├─► Player (character controls & physics)
-       │
+       ├─► Player (controls & physics)
        ├─► Zombie/ThirdParty/Boss (entity behavior)
-       │
        ├─► Collision (spatial grid optimization)
-       │
        ├─► SonraiAPIClient (GraphQL integration)
-       │
        └─► SaveManager (persistence)
 ```
 
-#### Key Subsystems
+### Key Modules
 
-**1. Rendering Pipeline** (`src/renderer.py`)
-- Base resolution: 1280x720 (configurable via `GAME_WIDTH`/`GAME_HEIGHT`)
-- Aspect ratio preservation with letterboxing/pillarboxing
-- Fullscreen support (toggle with F11, F, or CMD+F)
-- Camera-based viewport with world-to-screen coordinate transformation
-- Minimap overlay (lobby mode only)
-- Health bars, shields, damage numbers, UI overlays
+| Module | Purpose |
+|--------|---------|
+| `src/main.py` | Entry point, config, window scaling |
+| `src/game_engine.py` | Lobby + platformer engine, quest orchestration |
+| `src/sonrai_client.py` | GraphQL client (identities, third parties, exemptions, protect service, JIT) |
+| `src/player.py` | Mega Man-style 8-bit character |
+| `src/zombie.py` | Zombie entity AI and rendering |
+| `src/third_party.py` | Third-party patrol entities |
+| `src/collision.py` | Spatial grid collision (O(n) for 500+ entities) |
+| `src/service_protection_quest.py` | Hacker race quest logic |
+| `src/jit_access_quest.py` | Auditor/JIT quest logic |
 
-**2. Collision Detection** (`src/collision.py`)
-- **Spatial Grid Optimization**: O(n) instead of O(n²) for 500+ entities
-- Divides world into grid cells, only checks nearby entities
-- Handles player-zombie, player-projectile, projectile-zombie collisions
-- Platform collision detection in platformer mode
+### Dual-Engine System
 
-**3. Physics System**
-- **Lobby Mode**: 8-directional movement, diagonal normalization
-- **Platformer Mode**: Gravity-based jumping, horizontal acceleration/deceleration
-- Delta time-based movement for frame-rate independence
-- Velocity measured in pixels/second
+The game features a unique **dual-mode architecture**:
 
-**4. API Integration** (`src/sonrai_client.py`)
-- GraphQL queries: unused identities, third-party access, exemptions
-- GraphQL mutations: quarantine identities, block third-parties
-- JWT token authentication
-- Error handling and retry logic
-- Full API documentation: `docs/sonrai-api/`
+**Lobby Engine (Top-Down)**
+- Camera-based exploration with fog-of-war
+- Tile-based collision (16x16 pixel tiles)
+- Zombie distribution across AWS account rooms
+- Door-based level transitions
 
-**5. State Management**
-- **GameState** (`src/models.py`): score, eliminations, play time, status
-- **Save System** (`src/save_manager.py`): JSON persistence of progress, quarantined identities, completed levels
-- **Level Progression** (`src/level_manager.py`): linear unlocking, level completion tracking
+**Level Engine (Platformer)**
+- Mario-style physics with gravity
+- Randomly generated floating platforms
+- Dynamic level width (512 zombies = 27,200px wide)
+- Power-ups on ~15% of platforms
 
-**6. Difficulty System** (`src/difficulty_config.py`)
-- Environment-based difficulty: sandbox → staging → production
-- Configurable: zombie speed, health, reveal radius, boss battles
-- Production environments require approval collectibles before quarantine
+### Performance
 
-### Controller Support
+- **Tested with 500+ zombies** at 60 FPS
+- **Spatial grid collision** keeps checks efficient (O(n) vs O(n²))
+- **Memory**: ~50-100 MB typical
+- **API latency**: Initial fetch ~2-5s, mutations <500ms
 
-**Supported Input Devices**
-- Keyboard (primary): Arrow keys, WASD, Space, Enter, ESC
-- Wireless game controllers: Xbox, PlayStation, Nintendo Switch Pro
-- D-Pad navigation: 8-directional movement in lobby
-- Analog stick support: Smooth directional input
-- Button mapping: A/Cross = Jump, X/Square = Shoot
-
-**Controller Configuration**
-- Button debouncing for reliable input
-- Dead zone handling for analog sticks
-- Tested with:
-  - Xbox Wireless Controller
-  - PlayStation DualShock/DualSense
-  - Nintendo Switch Pro Controller
-
-**Test Files**: `tests/test_controller.py`, `tests/dpad_test.py`, `tests/quick_controller_test.py`
-
-### File Structure
+### Project Structure
 
 ```
 zombie_game/
-├── src/                     # Source code (8,380 lines)
-│   ├── main.py             # Entry point & game loop
-│   ├── game_engine.py      # Core game logic (lobby + level engines)
-│   ├── game_map.py         # Map generation (both modes)
-│   ├── level_manager.py    # Level progression system
-│   ├── renderer.py         # Graphics rendering pipeline
-│   ├── player.py           # Player character behavior
-│   ├── zombie.py           # Zombie entity AI
-│   ├── third_party.py      # Third-party entity AI
-│   ├── boss.py             # Boss entity (production levels)
-│   ├── projectile.py       # Bullet physics
-│   ├── collision.py        # Spatial grid collision system
+├── src/                     # Source code (~8,380 lines)
+│   ├── main.py             # Entry point
+│   ├── game_engine.py      # Core game logic
 │   ├── sonrai_client.py    # API integration
-│   ├── models.py           # Data models (GameState, Vector2, etc.)
-│   ├── door.py             # Level transition triggers
-│   ├── powerup.py          # Power-up system
-│   ├── approval.py         # Approval collectibles
-│   ├── save_manager.py     # Save/load persistence
-│   ├── difficulty_config.py # Environment difficulty settings
-│   └── shield.py           # Protected entity shields
-│
+│   ├── player.py           # Player character
+│   ├── zombie.py           # Zombie entities
+│   ├── collision.py        # Spatial grid collision
+│   └── ...                 # Other modules
 ├── tests/                   # Test suite
-│   ├── test_controller.py  # Controller input tests
-│   ├── dpad_test.py        # D-pad navigation tests
-│   └── quick_controller_test.py # Quick controller validation
-│
-├── assets/                  # Game assets
-│   ├── reinvent_floorplan.png # Lobby background map
-│   └── aws_accounts.csv    # Account metadata (7 levels)
-│
 ├── docs/                    # Documentation
 │   ├── sonrai-api/         # API integration docs
-│   │   ├── README.md       # API overview
-│   │   ├── queries/        # GraphQL queries & mutations
-│   │   └── INTEGRATION_GUIDE.md
-│   ├── bug-reports/        # Bug tracking
-│   ├── qa-reports/         # QA test reports
-│   ├── testing-guides/     # Testing documentation
-│   ├── CHEAT_CODES.md      # Admin cheat codes
-│   ├── GLOSSARY.md         # Game terminology
+│   ├── CHEAT_CODES.md      # Admin cheats
 │   └── POWERUPS.md         # Power-up reference
-│
-├── dev_tests/              # Development test scripts
-├── .env                    # Configuration (API credentials)
-├── .env.example            # Configuration template
-├── requirements.txt        # Python dependencies
+├── assets/                  # Game assets
+├── .env.example            # Config template
+├── requirements.txt        # Dependencies
 ├── QUICKSTART.md           # Quick start guide
-├── BACKLOG.md              # Feature backlog
-└── README.md               # This file
+└── BACKLOG.md              # Feature backlog
 ```
 
-### Development Status & Roadmap
+### Controller Support
 
-**Current Status: v2 (Hybrid Mode) - Fully Functional** ✅
-
-**Implemented Features**
-- ✅ Dual-mode gameplay (lobby + platformer)
-- ✅ 7-level progression system with unlocking
-- ✅ Sonrai API integration (fetch, quarantine, block)
-- ✅ Save/load system with progress persistence
-- ✅ Controller support (keyboard + gamepad)
-- ✅ Difficulty scaling by environment type
-- ✅ Power-up system with 5+ collectible types
-- ✅ Boss battles in production environments
-- ✅ Protected entity system (exemptions + Sonrai identities)
-- ✅ Fullscreen support with aspect ratio preservation
-- ✅ Spatial grid collision optimization
-- ✅ Fog-of-war mechanics (lobby only)
-- ✅ Dynamic level generation based on zombie count
-- ✅ Damage multiplier scoring system
-- ✅ Third-party access blocking
-- ✅ Approval collectible system (production)
-
-**Known Limitations**
-- Single-player only (no multiplayer)
-- No audio/music (intentionally minimal for demo)
-- Limited to Pygame's 2D rendering (no 3D)
-- Requires local Python installation (not web-based)
-
-**Future Considerations**
-
-*Cloud Deployment*
-- **AWS Hosting**: Not currently planned, but technically feasible
-  - Option 1: Package as Lambda function with VNC/framebuffer (complex, high latency)
-  - Option 2: EC2 instance with remote desktop (simpler, better performance)
-  - Option 3: Convert to web game (requires complete rewrite in JavaScript/WebGL)
-- **Current Recommendation**: Keep as local desktop application
-  - Lower latency (critical for 60 FPS gameplay)
-  - No cloud costs for compute
-  - Easier to maintain and debug
-  - Better suited for internal tool/demo use
-
-*Potential Enhancements*
-- Audio system (background music, sound effects)
-- Additional power-up types
-- Boss variety (different bosses per environment)
-- Achievements/statistics tracking
-- Leaderboard integration
-- Co-op multiplayer (requires significant architecture changes)
-
-### Performance Characteristics
-
-**Scalability**
-- Tested with 500+ zombies simultaneously
-- 60 FPS maintained on modern hardware (2020+ MacBook Pro)
-- Spatial grid keeps collision checks efficient even with large entity counts
-- Level width scales dynamically (largest level: 27,200px wide for 512 zombies)
-
-**Memory Footprint**
-- ~50-100 MB RAM typical usage
-- Scales with zombie count and map size
-- Save files: <100 KB per save
-
-**Network Requirements**
-- Initial API calls: ~2-5 seconds for full account fetch
-- Quarantine/block operations: <500ms per action
-- Offline mode: Not supported (requires API connection)
-
-### Running in Development Mode
-
-```bash
-# Activate virtual environment
-source venv/bin/activate  # macOS/Linux
-venv\Scripts\activate     # Windows
-
-# Run with debug logging
-LOG_LEVEL=DEBUG python src/main.py
-
-# Run tests
-pytest tests/
-
-# Generate coverage report
-pytest --cov=src --cov-report=html
-```
+- **Keyboard**: Arrow keys, WASD, Space, Enter, ESC
+- **Gamepad**: Xbox, PlayStation, Nintendo Switch Pro
+- D-Pad and analog stick support
+- Button mapping: A/Cross = Jump, X/Square = Shoot
 
 ### Environment Variables
 
@@ -681,82 +429,98 @@ SONRAI_API_URL=https://YOUR_ORG-graphql-server.sonraisecurity.com/graphql
 SONRAI_ORG_ID=your_org_id_here
 SONRAI_API_TOKEN=your_api_token_here
 
-# Optional - Display Settings
-GAME_WIDTH=1280              # Base rendering width
-GAME_HEIGHT=720              # Base rendering height
-FULLSCREEN=false             # Start in fullscreen mode
-TARGET_FPS=60                # Frame rate target
+# Optional - Display
+GAME_WIDTH=1280
+GAME_HEIGHT=720
+FULLSCREEN=false
+TARGET_FPS=60
 
 # Optional - Gameplay
-MAX_ZOMBIES=1000             # Max zombies per account
+MAX_ZOMBIES=1000
 ```
 
-### Architecture Decisions & Rationale
+</details>
 
-**Why Pygame?**
-- Lightweight 2D framework with good Python integration
-- Easy to prototype and iterate quickly
-- No need for Unity/Unreal complexity for a 2D demo
-- Cross-platform (macOS, Linux, Windows)
+---
 
-**Why Dual-Engine?**
-- Lobby provides context (see all accounts, understand scope)
-- Platformer provides engaging action gameplay
-- Hybrid approach offers best of both worlds
-- Matches SDLC progression metaphor (lobby = org overview, levels = per-account work)
+<details>
+<summary><h2>Development & Testing</h2></summary>
 
-**Why Spatial Grid?**
-- Naive O(n²) collision checking fails at 100+ entities
-- Spatial grid reduces to O(n) with constant-factor overhead
-- Critical for 500+ zombie levels to maintain 60 FPS
+### Running Tests
 
-**Why Save System?**
-- Game sessions can be interrupted (real-world work)
-- Prevents re-quarantining already handled identities
-- Preserves sense of progression and achievement
-- Enables iterative gameplay (clear accounts one at a time)
+```bash
+# All tests
+pytest
 
-### Contributing & Development
+# With coverage
+pytest --cov=src
 
-**Code Style**
-- PEP 8 compliant
-- Type hints where appropriate
-- Docstrings for all public functions/classes
-- Logging via Python's `logging` module
+# Property-based tests only
+pytest -k property
+```
 
-**Testing**
-- Unit tests for core logic
-- Integration tests for API calls
-- Controller input validation tests
+### Test Launcher
 
-**Dependencies**
-- Minimal external dependencies (3 total: pygame, python-dotenv, requests)
-- All dependencies pinned in `requirements.txt`
+For manual QA testing with guided test plans:
+
+```bash
+# Launch with current test plan
+python test_launcher.py
+
+# Test specific features
+python test_launcher.py --feature powerups
+python test_launcher.py --feature level_entry
+python test_launcher.py --feature full
+
+# Watch logs during testing
+python test_launcher.py --watch-logs
+
+# List available plans
+python test_launcher.py --list
+```
+
+### Debug Mode
+
+```bash
+LOG_LEVEL=DEBUG python src/main.py
+```
 
 ### Documentation
 
-**Game Documentation**
-- **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide for new players
-- **[docs/CHEAT_CODES.md](docs/CHEAT_CODES.md)** - Admin cheat codes for testing
-- **[docs/GLOSSARY.md](docs/GLOSSARY.md)** - Game development terminology
-- **[docs/POWERUPS.md](docs/POWERUPS.md)** - Power-up types and effects
-- **[BACKLOG.md](BACKLOG.md)** - Feature backlog and roadmap
+| Doc | Purpose |
+|-----|---------|
+| [QUICKSTART.md](QUICKSTART.md) | Quick start for new players |
+| [docs/CHEAT_CODES.md](docs/CHEAT_CODES.md) | Admin cheats for testing |
+| [docs/POWERUPS.md](docs/POWERUPS.md) | Power-up types and effects |
+| [docs/sonrai-api/](docs/sonrai-api/) | Sonrai API integration |
+| [BACKLOG.md](BACKLOG.md) | Feature backlog |
 
-**Technical Documentation**
-- **[docs/sonrai-api/](docs/sonrai-api/)** - Sonrai API integration guides
-- **[docs/testing-guides/](docs/testing-guides/)** - Testing documentation
-- **[docs/qa-reports/](docs/qa-reports/)** - QA test reports
-- **[docs/bug-reports/](docs/bug-reports/)** - Bug tracking and fixes
-
-### Glossary
-
-For detailed definitions of game development terms used in this project, see **[docs/GLOSSARY.md](docs/GLOSSARY.md)**.
-
-Quick examples:
-- **Sprite**: 2D game character/object (player, zombie, projectile)
-- **Game Loop**: The main execution cycle (input → update → render)
-- **Delta Time**: Time between frames, used for smooth movement
-- **Spatial Grid**: Performance optimization for collision detection
-- **Game Mode**: Lobby (top-down) vs Level (platformer)
+</details>
 
 ---
+
+## Who This Is For
+
+- **Cloud & Identity Security teams** wanting an interactive way to explain Sonrai and least privilege
+- **Developers & DevOps** who want to "see" unused identities, third parties, and service protections instead of reading another deck
+- **Sales engineers & field teams** who need a memorable demo of the Cloud Permissions Firewall
+- **Security leaders** who want to show boards and auditors that identity risk can be both measurable and… oddly fun
+
+---
+
+## Other Branches
+
+- `v1` – original top-down lobby-only version
+- `levels` – platformer-only variation
+
+---
+
+## License & Credits
+
+**License**: MIT (see LICENSE)
+
+Built with Python, Pygame, and the Sonrai Cloud Permissions Firewall.
+
+If you build new quests, power-ups, or integrations (e.g., S3/RDS protection quests, ChatOps visualizations, scoreboards tied to real JIT requests), PRs are very welcome.
+
+Happy hunting — and happy identity cleanup.
