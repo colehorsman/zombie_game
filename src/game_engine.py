@@ -1766,6 +1766,15 @@ class GameEngine:
                         self._spawn_boss()
                         self.konami_input = []  # Reset
 
+                # Handle boss dialogue dismissal (ENTER key only)
+                if event.key == pygame.K_RETURN:
+                    if self.showing_boss_dialogue and self.boss_dialogue_content:
+                        # Dismiss dialogue and spawn the cyber boss
+                        logger.info("📖 Boss dialogue dismissed - spawning boss!")
+                        self.showing_boss_dialogue = False
+                        self._spawn_cyber_boss()
+                        continue
+
                 # Handle message dismissal and quest trigger (ENTER or SPACE key)
                 if event.key in (pygame.K_RETURN, pygame.K_SPACE):
                     # Check for quest dialog dismissal and hacker spawn
@@ -2246,11 +2255,35 @@ class GameEngine:
         return self.quest_manager.get_active_quest() if self.quest_manager else None
 
     def _spawn_boss(self) -> None:
-        """Spawn the wizard boss - drops from sky with clouds."""
+        """Spawn a boss - cyber attack themed boss with dialogue, or fallback to wizard boss."""
         if self.boss_spawned:
             return
 
         self.boss_spawned = True
+
+        # Check if current level has a cyber boss
+        current_level = self.game_state.current_level
+        self.boss_type = BOSS_LEVEL_MAP.get(current_level)
+
+        if self.boss_type:
+            # Cyber boss - show educational dialogue first
+            logger.info(f"🕷️  Preparing {self.boss_type.value} boss for level {current_level}")
+
+            # Get dialogue content
+            self.boss_dialogue_content = get_boss_dialogue(self.boss_type)
+
+            # Show dialogue (boss will spawn after ENTER is pressed)
+            self.showing_boss_dialogue = True
+            self.boss_dialogue_shown = True
+
+            # Pause game during dialogue
+            self.game_state.status = GameStatus.BOSS_BATTLE
+
+            logger.info(f"📖 Showing boss dialogue for {self.boss_type.value}")
+            return  # Don't spawn boss yet - wait for dialogue to be dismissed
+
+        # Fallback: Old wizard boss (for levels without cyber boss mapping)
+        logger.info(f"🧙 Spawning fallback wizard boss for level {current_level}")
 
         # Calculate boss spawn position (near player, above screen so he can drop down)
         if self.use_map and self.game_map:
@@ -2295,6 +2328,72 @@ class GameEngine:
         self.game_state.status = GameStatus.BOSS_BATTLE
         logger.info(f"🧙 Wizard Boss spawning at ({boss_pos.x}, {boss_pos.y}) - dropping from sky!")
 
+    def _spawn_cyber_boss(self) -> None:
+        """Actually spawn the cyber boss after dialogue is dismissed."""
+        if not self.boss_type:
+            logger.error("Cannot spawn cyber boss: boss_type not set!")
+            return
+
+        # Calculate spawn positions based on boss type
+        if self.boss_type == BossType.SCATTERED_SPIDER:
+            # Scattered Spider: 5 spiders in a formation
+            if self.use_map and self.game_map:
+                player_x = self.player.position.x
+
+                # Get ground level
+                tiles_high = self.game_map.map_height // 16
+                ground_height = 8
+                ground_y = (tiles_high - ground_height) * 16
+
+                # Create 5 spawn positions in a V formation ahead of player
+                spawn_positions = [
+                    Vector2(player_x + 300, ground_y - 100),  # Center front
+                    Vector2(player_x + 200, ground_y - 120),  # Left front
+                    Vector2(player_x + 400, ground_y - 120),  # Right front
+                    Vector2(player_x + 150, ground_y - 80),   # Left back
+                    Vector2(player_x + 450, ground_y - 80),   # Right back
+                ]
+            else:
+                # Classic mode - spawn in center
+                center_x = self.screen_width // 2
+                center_y = self.screen_height // 2
+                spawn_positions = [
+                    Vector2(center_x, center_y),
+                    Vector2(center_x - 100, center_y - 50),
+                    Vector2(center_x + 100, center_y - 50),
+                    Vector2(center_x - 150, center_y),
+                    Vector2(center_x + 150, center_y),
+                ]
+
+            # Create Scattered Spider boss
+            self.boss = create_cyber_boss(self.boss_type, spawn_positions, game_map=self.game_map)
+            logger.info(f"🕷️  Scattered Spider boss spawned with 5 mini-spiders!")
+
+        else:
+            # Other cyber bosses (to be implemented)
+            # For now, calculate a single spawn position
+            if self.use_map and self.game_map:
+                player_x = self.player.position.x
+                boss_x = player_x + 300
+
+                tiles_high = self.game_map.map_height // 16
+                ground_height = 8
+                ground_y = (tiles_high - ground_height) * 16
+                boss_y = ground_y - 100
+
+                boss_pos = Vector2(boss_x, boss_y)
+            else:
+                boss_x = self.screen_width // 2
+                boss_y = self.screen_height // 2
+                boss_pos = Vector2(boss_x, boss_y)
+
+            # Create other cyber boss (placeholder - will be implemented for each boss type)
+            self.boss = create_cyber_boss(self.boss_type, boss_pos, game_map=self.game_map)
+            logger.info(f"🎮 {self.boss_type.value} boss spawned!")
+
+        # Boss is active, battle begins
+        self.game_state.status = GameStatus.BOSS_BATTLE
+
     def _update_boss_battle(self, delta_time: float) -> None:
         """
         Update game logic during boss battle.
@@ -2332,23 +2431,64 @@ class GameEngine:
 
         # Check projectile collisions with boss
         if self.boss:
-            boss_bounds = self.boss.get_bounds()
-            for projectile in self.projectiles[:]:
-                proj_bounds = projectile.get_bounds()
-                if proj_bounds.colliderect(boss_bounds):
-                    # Hit boss
-                    self.projectiles.remove(projectile)
-                    defeated = self.boss.take_damage(projectile.damage)
-                    if defeated:
-                        # Boss defeated
-                        logger.info("Boss defeated!")
+            # Handle swarm boss (Scattered Spider) - check collision with each spider
+            if isinstance(self.boss, ScatteredSpiderBoss):
+                for projectile in self.projectiles[:]:
+                    proj_bounds = projectile.get_bounds()
+                    hit = False
+
+                    # Check collision with each spider in the swarm
+                    for spider in self.boss.get_all_spiders():
+                        spider_bounds = pygame.Rect(
+                            spider.position.x,
+                            spider.position.y,
+                            spider.width,
+                            spider.height
+                        )
+                        if proj_bounds.colliderect(spider_bounds):
+                            # Hit a spider
+                            spider.health -= projectile.damage
+                            hit = True
+
+                            if spider.health <= 0:
+                                # Spider defeated
+                                self.boss.spiders.remove(spider)
+                                logger.info(f"🕷️  Mini-spider defeated! {len(self.boss.spiders)} remaining")
+
+                            break  # Projectile can only hit one spider
+
+                    if hit and projectile in self.projectiles:
+                        self.projectiles.remove(projectile)
+
+            else:
+                # Standard boss collision
+                boss_bounds = self.boss.get_bounds()
+                for projectile in self.projectiles[:]:
+                    proj_bounds = projectile.get_bounds()
+                    if proj_bounds.colliderect(boss_bounds):
+                        # Hit boss
+                        self.projectiles.remove(projectile)
+                        defeated = self.boss.take_damage(projectile.damage)
+                        if defeated:
+                            # Boss defeated
+                            logger.info("Boss defeated!")
 
         # Update camera - follow player, but also show boss if boss is far away
         if self.use_map and self.game_map:
             # During boss battle, camera should show both player and boss
             if self.boss and not self.boss.is_defeated:
                 # Center camera between player and boss
-                center_x = (self.player.position.x + self.boss.position.x) / 2
+                if isinstance(self.boss, ScatteredSpiderBoss):
+                    # For swarm boss, use average position of all spiders
+                    spiders = self.boss.get_all_spiders()
+                    if spiders:
+                        avg_spider_x = sum(s.position.x for s in spiders) / len(spiders)
+                        center_x = (self.player.position.x + avg_spider_x) / 2
+                    else:
+                        center_x = self.player.position.x
+                else:
+                    # Standard boss - use boss position
+                    center_x = (self.player.position.x + self.boss.position.x) / 2
                 self.game_map.update_camera(center_x, self.player.position.y)
             else:
                 self.game_map.update_camera(self.player.position.x, self.player.position.y)

@@ -482,7 +482,16 @@ def main():
         # Render boss if in boss battle
         boss = game_engine.get_boss()
         if boss:
-            renderer.render_boss(boss, game_map)
+            # Import cyber boss types for type checking
+            from cyber_boss import ScatteredSpiderBoss
+
+            # Render appropriate boss type
+            if isinstance(boss, ScatteredSpiderBoss):
+                renderer.render_scattered_spider(boss, game_map)
+            else:
+                renderer.render_boss(boss, game_map)
+
+            # Render health bar for all boss types
             renderer.render_boss_health_bar(boss, game_map)
 
         # Render service protection quest elements
@@ -533,6 +542,10 @@ def main():
         if game_map and game_map.mode != "platformer":
             player = game_engine.get_player()
             renderer.render_minimap(game_map, player.position, zombies)
+
+        # Render boss dialogue if showing
+        if game_engine.showing_boss_dialogue and game_engine.boss_dialogue_content:
+            renderer.render_boss_dialogue(game_engine.boss_dialogue_content)
 
         # Render congratulations message if present
         if game_state.status == GameStatus.PAUSED and game_state.congratulations_message:
