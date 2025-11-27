@@ -719,6 +719,414 @@ class HeartbleedBoss:
         return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
 
 
+class WannaCryBoss:
+    """
+    WannaCry Boss - "Wade" the Crying Water Character.
+
+    Themed after the 2017 WannaCry ransomware, depicted as an emotional
+    water element character (inspired by Wade from Pixar's Elemental) who
+    constantly cries tears that spread like the worm-like ransomware.
+    """
+
+    def __init__(self, position: Vector2):
+        """
+        Initialize the WannaCry Wade boss.
+
+        Args:
+            position: Starting position for the boss
+        """
+        self.position = position
+        self.velocity = Vector2(0, 0)
+        self.name = "WANNACRY - WADE THE WEEPER"
+
+        # Boss dimensions (60x80 base + 30px glow = ~120x140 total)
+        self.width = 60
+        self.height = 80
+        self.effect_radius = 30  # Watery glow
+
+        # Health
+        self.health = 150
+        self.max_health = 150
+        self.is_defeated = False
+
+        # Movement - flows like water
+        self.move_speed = 60.0
+        self.facing_right = True
+
+        # Physics
+        self.gravity = 1200.0
+        self.max_fall_speed = 600.0
+        self.on_ground = False
+        self.ground_y = 0
+
+        # Crying mechanics
+        self.tear_particles = []  # Falling tears
+        self.tear_spawn_timer = 0.0
+        self.puddles = []  # Tear puddles on ground (max 10)
+        self.max_puddles = 10
+
+        # Sob wave attack
+        self.sob_timer = 0.0
+        self.sob_cooldown = 12.0  # Phase 1: every 12 seconds
+        self.is_sobbing = False
+        self.sob_charge_timer = 0.0
+        self.sob_wave = None  # Active sob wave
+
+        # Tear projectile attacks
+        self.attack_timer = 0.0
+        self.attack_cooldown = 3.0  # Phase 1: every 3 seconds
+
+        # Visual effects
+        self.wobble_timer = 0.0
+        self.glow_pulse_timer = 0.0
+        self.is_flashing = False
+        self.flash_timer = 0.0
+        self.animation_frame = 0
+        self.animation_timer = 0.0
+
+        # Emotional phase system
+        self.current_phase = 1  # 1: Sniffling, 2: Crying, 3: Ugly Crying
+
+        # Create visuals
+        self.sprite_frames = self._create_wade_sprites()
+        self.sprite = self.sprite_frames[0]  # Default to first frame
+        self.glow_sprite = self._create_watery_glow()
+
+    def _create_wade_sprites(self) -> List[pygame.Surface]:
+        """Create animated water blob sprites (Wade from Elemental style)."""
+        frames = []
+
+        # Create 3 frames for wobble animation
+        for frame_idx in range(3):
+            sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+
+            # Water colors - cyan/blue palette
+            water_cyan = (0, 206, 209)      # Dark turquoise
+            water_blue = (30, 144, 255)     # Dodger blue
+            water_light = (224, 255, 255)   # Light cyan
+            water_dark = (0, 0, 139)        # Dark blue
+            tear_color = (135, 206, 235)    # Sky blue
+
+            center_x, center_y = self.width // 2, self.height // 2
+
+            # Wobble effect - slight variations per frame
+            if frame_idx == 0:
+                compress = 0  # Normal
+            elif frame_idx == 1:
+                compress = -3  # Slightly compressed (wider)
+            else:
+                compress = 3  # Slightly stretched (taller)
+
+            # Main water blob body - teardrop shape
+            # Draw as multiple overlapping ellipses for organic water look
+            blob_width = 35
+            blob_height = 45 + compress
+
+            # Base blob (main body)
+            pygame.draw.ellipse(sprite, water_blue,
+                              (center_x - blob_width//2, center_y - blob_height//2 + 5,
+                               blob_width, blob_height))
+
+            # Top point (teardrop tip)
+            tip_points = [
+                (center_x, center_y - blob_height//2 - 10 - compress),  # Top point
+                (center_x - 8, center_y - blob_height//2 + 5),  # Left
+                (center_x + 8, center_y - blob_height//2 + 5),  # Right
+            ]
+            pygame.draw.polygon(sprite, water_blue, tip_points)
+
+            # Water highlight (wet reflection)
+            highlight_surface = pygame.Surface((15, 25), pygame.SRCALPHA)
+            pygame.draw.ellipse(highlight_surface, (*water_light, 180),
+                              (0, 0, 15, 25))
+            sprite.blit(highlight_surface, (center_x - 12, center_y - 15))
+
+            # Wave ripples across body (3 horizontal waves)
+            for i in range(3):
+                wave_y = center_y - 15 + (i * 12)
+                pygame.draw.line(sprite, (*water_cyan, 120),
+                               (center_x - 15, wave_y),
+                               (center_x + 15, wave_y), 2)
+
+            # Sad face - eyes
+            eye_y = center_y - 8
+            # Left eye (large, sad)
+            pygame.draw.circle(sprite, water_dark, (center_x - 10, eye_y), 5)
+            pygame.draw.circle(sprite, (0, 0, 0), (center_x - 10, eye_y), 4)
+            # Shine spot (makes eyes look watery)
+            pygame.draw.circle(sprite, water_light, (center_x - 8, eye_y - 2), 2)
+
+            # Right eye
+            pygame.draw.circle(sprite, water_dark, (center_x + 10, eye_y), 5)
+            pygame.draw.circle(sprite, (0, 0, 0), (center_x + 10, eye_y), 4)
+            pygame.draw.circle(sprite, water_light, (center_x + 12, eye_y - 2), 2)
+
+            # Tear streams from eyes
+            tear_width = 3
+            tear_length = 30
+            # Left tear stream
+            pygame.draw.line(sprite, (*tear_color, 200),
+                           (center_x - 10, eye_y + 3),
+                           (center_x - 10, eye_y + tear_length), tear_width)
+            # Right tear stream
+            pygame.draw.line(sprite, (*tear_color, 200),
+                           (center_x + 10, eye_y + 3),
+                           (center_x + 10, eye_y + tear_length), tear_width)
+
+            # Wobbly frowning mouth
+            mouth_y = center_y + 8
+            mouth_points = [
+                (center_x - 8, mouth_y),
+                (center_x - 4, mouth_y + 3),
+                (center_x, mouth_y + 4),
+                (center_x + 4, mouth_y + 3),
+                (center_x + 8, mouth_y)
+            ]
+            pygame.draw.lines(sprite, water_dark, False, mouth_points, 3)
+
+            # Add transparency to sprite (watery effect)
+            alpha_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+            alpha_surface.fill((255, 255, 255, 200))  # 78% opaque
+            sprite.blit(alpha_surface, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+
+            frames.append(sprite)
+
+        return frames
+
+    def _create_watery_glow(self) -> pygame.Surface:
+        """Create rippling watery glow effect."""
+        glow_width = self.width + (self.effect_radius * 2)
+        glow_height = self.height + (self.effect_radius * 2)
+        glow = pygame.Surface((glow_width, glow_height), pygame.SRCALPHA)
+
+        center_x, center_y = glow_width // 2, glow_height // 2
+
+        # Cyan/blue water glow rings
+        glow_colors = [
+            (0, 255, 255, 20),    # Cyan (outermost)
+            (135, 206, 235, 35),  # Sky blue
+            (0, 206, 209, 50),    # Dark turquoise (innermost)
+        ]
+
+        for i, color in enumerate(glow_colors):
+            radius = self.effect_radius - (i * 10)
+            pygame.draw.circle(glow, color, (center_x, center_y), radius)
+
+        return glow
+
+    def take_damage(self, damage: int) -> bool:
+        """Take damage and cry harder."""
+        if self.is_defeated:
+            return True
+
+        self.health -= damage
+        self.is_flashing = True
+        self.flash_timer = 0.2
+
+        # Cry more when damaged!
+        for _ in range(8):
+            self._spawn_tear_particle()
+
+        # Check phase transitions (gets more emotional)
+        if self.health <= 100 and self.current_phase == 1:
+            self.current_phase = 2
+            self.attack_cooldown = 2.0  # Faster tears
+            self.sob_cooldown = 8.0  # More frequent sobs
+            logger.info("😭 WannaCry Phase 2: Uncontrollable Crying!")
+        elif self.health <= 50 and self.current_phase == 2:
+            self.current_phase = 3
+            self.attack_cooldown = 1.0  # Rapid tears
+            self.sob_cooldown = 5.0  # Constant sobbing
+            self.move_speed = 80.0  # Running while crying
+            logger.info("😭 WannaCry Phase 3: UGLY CRYING!!!")
+
+        if self.health <= 0:
+            self.health = 0
+            self.is_defeated = True
+            logger.info("💧 Wade has cried himself out...")
+            return True
+
+        return False
+
+    def _spawn_tear_particle(self):
+        """Spawn a falling tear droplet."""
+        # Tears fall from eyes
+        tear = {
+            'x': self.position.x + self.width // 2 + (10 if time.time() % 2 < 1 else -10),
+            'y': self.position.y + 25,  # Eye level
+            'vx': (time.time() % 40 - 20) * 2,  # Slight horizontal spread
+            'vy': 100.0,  # Falling speed
+            'lifetime': 2.0,
+            'alpha': 255,
+            'on_ground': False
+        }
+        self.tear_particles.append(tear)
+
+    def _trigger_sob_wave(self):
+        """Trigger the sob wave attack."""
+        self.is_sobbing = True
+        self.sob_charge_timer = 1.0  # 1 second charge time
+
+        # Create sob wave
+        self.sob_wave = {
+            'x': self.position.x + self.width // 2,
+            'y': self.position.y + self.height // 2,
+            'radius': 0,
+            'max_radius': 300,
+            'lifetime': 1.0,
+            'alpha': 255,
+            'active': False  # Becomes active after charge
+        }
+        logger.info("😭 WAAAAHHH! Wade unleashes a sob wave!")
+
+    def _create_puddle(self, x: float, y: float):
+        """Create a tear puddle on the ground."""
+        if len(self.puddles) >= self.max_puddles:
+            self.puddles.pop(0)  # Remove oldest puddle
+
+        puddle = {
+            'x': x,
+            'y': y,
+            'lifetime': 5.0,
+            'alpha': 200,
+            'radius': 20
+        }
+        self.puddles.append(puddle)
+
+    def update(self, delta_time: float, player_position: Vector2, game_map=None) -> None:
+        """Update boss logic."""
+        if self.is_defeated:
+            return
+
+        # Update flash effect
+        if self.is_flashing:
+            self.flash_timer -= delta_time
+            if self.flash_timer <= 0:
+                self.is_flashing = False
+
+        # Update animation frame (wobble)
+        self.animation_timer += delta_time
+        if self.animation_timer >= 0.3:
+            self.animation_timer = 0.0
+            self.animation_frame = (self.animation_frame + 1) % 3
+            self.sprite = self.sprite_frames[self.animation_frame]
+
+        # Update glow pulse
+        self.glow_pulse_timer += delta_time
+
+        # Update wobble
+        self.wobble_timer += delta_time
+
+        # Constant crying - spawn tears periodically
+        self.tear_spawn_timer += delta_time
+        tears_per_second = 2 + (self.current_phase - 1) * 2  # More tears in higher phases
+        if self.tear_spawn_timer >= (1.0 / tears_per_second):
+            self._spawn_tear_particle()
+            self.tear_spawn_timer = 0.0
+
+        # Update tear particles
+        for tear in self.tear_particles[:]:
+            tear['lifetime'] -= delta_time
+            tear['x'] += tear['vx'] * delta_time
+            tear['y'] += tear['vy'] * delta_time
+            tear['vy'] += 300.0 * delta_time  # Gravity
+            tear['alpha'] = int(255 * (tear['lifetime'] / 2.0))
+
+            # Check if tear hit ground
+            if game_map and tear['y'] >= self.ground_y and not tear['on_ground']:
+                tear['on_ground'] = True
+                self._create_puddle(tear['x'], tear['y'])
+
+            if tear['lifetime'] <= 0:
+                self.tear_particles.remove(tear)
+
+        # Update puddles
+        for puddle in self.puddles[:]:
+            puddle['lifetime'] -= delta_time
+            puddle['alpha'] = int(200 * (puddle['lifetime'] / 5.0))
+            if puddle['lifetime'] <= 0:
+                self.puddles.remove(puddle)
+
+        # Sob wave attack
+        if not self.is_sobbing:
+            self.sob_timer += delta_time
+            if self.sob_timer >= self.sob_cooldown:
+                self._trigger_sob_wave()
+                self.sob_timer = 0.0
+        else:
+            # Charging sob
+            if self.sob_charge_timer > 0:
+                self.sob_charge_timer -= delta_time
+                if self.sob_charge_timer <= 0:
+                    # Release sob wave!
+                    self.sob_wave['active'] = True
+
+            # Update active sob wave
+            if self.sob_wave and self.sob_wave['active']:
+                self.sob_wave['lifetime'] -= delta_time
+                expand_speed = 600.0  # pixels per second
+                self.sob_wave['radius'] += expand_speed * delta_time
+                self.sob_wave['alpha'] = int(255 * (self.sob_wave['lifetime'] / 1.0))
+
+                if self.sob_wave['lifetime'] <= 0:
+                    self.sob_wave = None
+                    self.is_sobbing = False
+
+        # Movement AI - chase player while crying
+        if not self.is_sobbing:  # Can't move while sobbing
+            dx = player_position.x - self.position.x
+            if abs(dx) > 50:
+                direction = 1 if dx > 0 else -1
+                self.velocity.x = direction * self.move_speed
+                self.facing_right = (direction > 0)
+            else:
+                self.velocity.x = 0
+
+        # Apply gravity
+        if not self.on_ground:
+            self.velocity.y += self.gravity * delta_time
+            self.velocity.y = min(self.velocity.y, self.max_fall_speed)
+
+        # Update position
+        self.position.x += self.velocity.x * delta_time
+        self.position.y += self.velocity.y * delta_time
+
+        # Ground collision
+        if game_map:
+            self.on_ground = False
+            if self.position.y + self.height >= self.ground_y:
+                self.position.y = self.ground_y - self.height
+                self.velocity.y = 0
+                self.on_ground = True
+
+        # Tear projectile attacks
+        self.attack_timer += delta_time
+        if self.attack_timer >= self.attack_cooldown:
+            self._throw_tear(player_position)
+            self.attack_timer = 0.0
+
+    def _throw_tear(self, player_position: Vector2):
+        """Throw a tear projectile at player."""
+        # TODO: Integrate with game projectile system
+        logger.info("💧 Wade throws a tear!")
+
+    def get_bounds(self) -> pygame.Rect:
+        """Get bounding box for collision detection."""
+        return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
+
+    def get_sob_wave_bounds(self) -> Optional[pygame.Rect]:
+        """Get sob wave collision bounds if active."""
+        if self.sob_wave and self.sob_wave['active']:
+            radius = int(self.sob_wave['radius'])
+            return pygame.Rect(
+                int(self.sob_wave['x'] - radius),
+                int(self.sob_wave['y'] - radius),
+                radius * 2,
+                radius * 2
+            )
+        return None
+
+
 def create_cyber_boss(boss_type: BossType, level_width: int, ground_y: int):
     """
     Factory function to create the appropriate boss for a level.
@@ -762,8 +1170,12 @@ def create_cyber_boss(boss_type: BossType, level_width: int, ground_y: int):
         boss.ground_y = ground_y
         return boss
     elif boss_type == BossType.WANNACRY:
-        logger.warning("WannaCry boss not yet implemented")
-        return None
+        # Create WannaCry Wade boss
+        x = level_width // 2  # Center of level
+        y = ground_y - 100  # Start slightly above ground
+        boss = WannaCryBoss(Vector2(x, y))
+        boss.ground_y = ground_y
+        return boss
 
     logger.error(f"Unknown boss type: {boss_type}")
     return None
@@ -821,6 +1233,29 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
                 "Secret rotation and key management best practices"
             ],
             "mechanic": "The Red Queen has 3 phases based on health!\nWatch for bleeding particles and card-flip teleports.\nOFF WITH YOUR HEAD!"
+        }
+
+    elif boss_type == BossType.WANNACRY:
+        return {
+            "title": "😭💧 WANNACRY APPEARS! 💧😭",
+            "description": "WannaCry was a devastating ransomware worm in May 2017 that spread globally\nlike tears, encrypting files and demanding Bitcoin ransoms.",
+            "how_attacked": [
+                "Exploited EternalBlue (MS17-010) Windows SMB vulnerability",
+                "Worm-like self-propagation across networks",
+                "Encrypted user files with RSA-2048 encryption",
+                "Displayed ransom note demanding $300-600 in Bitcoin",
+                "Spread to 150+ countries in just 4 days"
+            ],
+            "victims": "UK NHS (80 trusts), FedEx, Telefónica, Deutsche Bahn - 200,000+ computers, $4B damages",
+            "prevention": [
+                "Patch MS17-010 immediately (critical security update)",
+                "Disable SMBv1 protocol on all systems",
+                "Network segmentation to prevent lateral movement",
+                "Regular offline backups (ransomware protection)",
+                "Email filtering and security awareness training",
+                "Cloud Permissions Firewall to limit blast radius"
+            ],
+            "mechanic": "Wade cries tears that spread like WannaCry ransomware!\nAvoid sob waves and don't stand in puddles.\nThe more you hurt him, the more he cries!"
         }
 
     # TODO: Add dialogues for other bosses
