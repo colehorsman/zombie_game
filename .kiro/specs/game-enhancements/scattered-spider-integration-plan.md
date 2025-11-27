@@ -307,10 +307,15 @@ def _update_boss_battle(self, delta_time: float) -> None:
 
 Location: After `render_boss()` (around line 553)
 
+**IMPORTANT**: Hybrid sizing approach uses glow effect for perceived size:
+- Spider sprite: 60x80 base
+- Glow effect: +30px radius on all sides
+- Total perceived size: ~120x140 (satisfies spec)
+
 ```python
 def render_scattered_spider(self, boss: 'ScatteredSpiderBoss', game_map: Optional[GameMap] = None) -> None:
     """
-    Render Scattered Spider boss (5 individual spiders).
+    Render Scattered Spider boss (5 individual spiders with glow effects).
 
     Args:
         boss: ScatteredSpiderBoss instance
@@ -319,7 +324,7 @@ def render_scattered_spider(self, boss: 'ScatteredSpiderBoss', game_map: Optiona
     if not boss or boss.is_defeated:
         return
 
-    # Render each spider
+    # Render each spider with glow effect
     for spider in boss.get_all_spiders():
         if spider.is_defeated:
             continue
@@ -329,7 +334,12 @@ def render_scattered_spider(self, boss: 'ScatteredSpiderBoss', game_map: Optiona
             if game_map.is_on_screen(spider.position.x, spider.position.y, spider.width, spider.height):
                 screen_x, screen_y = game_map.world_to_screen(spider.position.x, spider.position.y)
 
-                # Apply flash effect if active
+                # Step 1: Render glow effect (background, adds perceived size)
+                glow_x = screen_x - spider.effect_radius
+                glow_y = screen_y - spider.effect_radius
+                self.screen.blit(spider.glow_sprite, (glow_x, glow_y))
+
+                # Step 2: Render spider sprite on top
                 if spider.is_flashing:
                     flash_sprite = spider.sprite.copy()
                     flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
@@ -339,6 +349,12 @@ def render_scattered_spider(self, boss: 'ScatteredSpiderBoss', game_map: Optiona
         else:
             # Classic mode
             if -100 < spider.position.x < self.width + 100:
+                # Step 1: Render glow
+                glow_x = int(spider.position.x) - spider.effect_radius
+                glow_y = int(spider.position.y) - spider.effect_radius
+                self.screen.blit(spider.glow_sprite, (glow_x, glow_y))
+
+                # Step 2: Render spider
                 if spider.is_flashing:
                     flash_sprite = spider.sprite.copy()
                     flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)

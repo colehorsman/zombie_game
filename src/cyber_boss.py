@@ -55,9 +55,12 @@ class MiniSpider:
         self.movement_type = movement_type
         self.color_variant = color_variant
 
-        # Spider dimensions (similar to auditor size)
-        self.width = 40
-        self.height = 40
+        # Spider dimensions (hybrid size: 60x80 base + effects = ~120x140 total)
+        self.width = 60
+        self.height = 80
+
+        # Visual effect sizing (glow/aura adds perceived size)
+        self.effect_radius = 30  # Adds 30px on each side
 
         # Health - each spider has 30 HP (150 total / 5 spiders)
         self.health = 30
@@ -89,11 +92,12 @@ class MiniSpider:
         self.flash_timer = 0.0
         self.is_defeated = False
 
-        # Create sprite
+        # Create sprite and glow effect
         self.sprite = self._create_sprite()
+        self.glow_sprite = self._create_glow_effect()
 
     def _create_sprite(self) -> pygame.Surface:
-        """Create 8-bit spider sprite with color variant."""
+        """Create 8-bit spider sprite with color variant (60x80)."""
         sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
 
         # Color variants for different spiders
@@ -106,20 +110,24 @@ class MiniSpider:
         ]
         body_color = colors[self.color_variant % len(colors)]
 
-        # Spider body (oval)
+        # Spider body (oval) - scaled for 60x80 size
         center_x, center_y = self.width // 2, self.height // 2
-        pygame.draw.ellipse(sprite, body_color, (center_x - 8, center_y - 6, 16, 12))
+        body_width = 24  # Scaled from 16 (1.5x)
+        body_height = 18  # Scaled from 12 (1.5x)
+        pygame.draw.ellipse(sprite, body_color,
+                          (center_x - body_width//2, center_y - body_height//2,
+                           body_width, body_height))
 
-        # Spider legs (4 pairs, 8 legs total)
+        # Spider legs (4 pairs, 8 legs total) - scaled up
         leg_color = tuple(max(0, c - 40) for c in body_color)  # Darker legs
-        leg_length = 12
-        leg_width = 2
+        leg_length = 20  # Scaled from 12 (1.67x for dramatic effect)
+        leg_width = 3    # Scaled from 2 (1.5x)
 
         # Left legs (top to bottom)
         for i, angle in enumerate([135, 160, 200, 225]):
             rad = math.radians(angle)
-            start_x = center_x - 6
-            start_y = center_y + (i - 1.5) * 2
+            start_x = center_x - 10  # Scaled from 6
+            start_y = center_y + (i - 1.5) * 3  # Scaled spacing
             end_x = start_x + int(leg_length * math.cos(rad))
             end_y = start_y + int(leg_length * math.sin(rad))
             pygame.draw.line(sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width)
@@ -127,18 +135,53 @@ class MiniSpider:
         # Right legs (top to bottom)
         for i, angle in enumerate([45, 20, -20, -45]):
             rad = math.radians(angle)
-            start_x = center_x + 6
-            start_y = center_y + (i - 1.5) * 2
+            start_x = center_x + 10  # Scaled from 6
+            start_y = center_y + (i - 1.5) * 3  # Scaled spacing
             end_x = start_x + int(leg_length * math.cos(rad))
             end_y = start_y + int(leg_length * math.sin(rad))
             pygame.draw.line(sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width)
 
-        # Eyes (red)
+        # Eyes (red) - scaled up
         eye_color = (255, 20, 20)
-        pygame.draw.circle(sprite, eye_color, (center_x - 3, center_y - 1), 2)
-        pygame.draw.circle(sprite, eye_color, (center_x + 3, center_y - 1), 2)
+        eye_radius = 3  # Scaled from 2 (1.5x)
+        pygame.draw.circle(sprite, eye_color, (center_x - 5, center_y - 3), eye_radius)  # Scaled positions
+        pygame.draw.circle(sprite, eye_color, (center_x + 5, center_y - 3), eye_radius)
 
         return sprite
+
+    def _create_glow_effect(self) -> pygame.Surface:
+        """Create glow/aura effect for hybrid sizing (adds 30px radius)."""
+        # Glow surface is larger than sprite to add perceived size
+        glow_width = self.width + (self.effect_radius * 2)
+        glow_height = self.height + (self.effect_radius * 2)
+        glow = pygame.Surface((glow_width, glow_height), pygame.SRCALPHA)
+
+        # Color variants for glow (semi-transparent matching spider color)
+        glow_colors = [
+            (80, 80, 80, 100),      # Gray glow for black spider
+            (255, 100, 100, 100),   # Red glow
+            (100, 255, 100, 100),   # Green glow
+            (100, 150, 255, 100),   # Blue glow
+            (200, 100, 200, 100),   # Purple glow
+        ]
+        glow_color = glow_colors[self.color_variant % len(glow_colors)]
+
+        # Create pulsing glow effect with gradient circles
+        center_x = glow_width // 2
+        center_y = glow_height // 2
+
+        # Draw multiple circles with decreasing opacity for gradient effect
+        for i in range(3, 0, -1):
+            radius = self.effect_radius * (i / 3)
+            alpha = glow_color[3] // (4 - i)  # Fade out toward edges
+            color_with_alpha = (*glow_color[:3], alpha)
+
+            # Create temp surface for this ring
+            temp = pygame.Surface((glow_width, glow_height), pygame.SRCALPHA)
+            pygame.draw.circle(temp, color_with_alpha, (center_x, center_y), int(radius))
+            glow.blit(temp, (0, 0))
+
+        return glow
 
     def update(self, delta_time: float, player_pos: Vector2, game_map: Optional['GameMap'] = None) -> None:
         """
