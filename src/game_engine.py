@@ -21,6 +21,7 @@ from boss import Boss  # DEPRECATED - kept for backwards compatibility
 from cyber_boss import (
     ScatteredSpiderBoss,
     HeartbleedBoss,
+    WannaCryBoss,
     create_cyber_boss,
     BossType,
     BOSS_LEVEL_MAP,
@@ -215,7 +216,7 @@ class GameEngine:
         self.scroll_offset = 0.0
 
         # Boss battle (supports both old Boss and new cyber bosses)
-        self.boss: Optional[Union[Boss, ScatteredSpiderBoss, HeartbleedBoss]] = None
+        self.boss: Optional[Union[Boss, ScatteredSpiderBoss, HeartbleedBoss, WannaCryBoss]] = None
         self.boss_spawned = False
         self.boss_type: Optional[BossType] = None
 

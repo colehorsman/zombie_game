@@ -772,6 +772,203 @@ class Renderer:
                                  (screen_x + boss.width // 2 + offset_x,
                                   screen_y + boss.height // 2 + offset_y), 3)
 
+    def render_wannacry_boss(self, boss: 'WannaCryBoss', game_map: Optional[GameMap] = None) -> None:
+        """
+        Render WannaCry Wade boss with crying tears, puddles, and sob waves.
+
+        Args:
+            boss: WannaCryBoss instance
+            game_map: Game map for coordinate conversion
+        """
+        # Import here to avoid circular dependency
+        from cyber_boss import WannaCryBoss
+
+        if not boss or boss.is_defeated:
+            return
+
+        # Determine screen position
+        if game_map:
+            if not game_map.is_on_screen(boss.position.x, boss.position.y, boss.width, boss.height):
+                return
+            screen_x, screen_y = game_map.world_to_screen(boss.position.x, boss.position.y)
+        else:
+            screen_x, screen_y = int(boss.position.x), int(boss.position.y)
+
+        # Step 1: Render puddles on ground (behind Wade)
+        self._render_tear_puddles(boss, screen_x, screen_y, game_map)
+
+        # Step 2: Render sob wave if active
+        if boss.sob_wave and boss.sob_wave['active']:
+            self._render_sob_wave(boss, screen_x, screen_y, game_map)
+
+        # Step 3: Render watery glow effect (pulsing)
+        pulse = math.sin(boss.glow_pulse_timer * 2) * 0.3 + 0.7  # Pulse 0.7-1.0
+        glow_sprite = boss.glow_sprite.copy()
+        glow_sprite.set_alpha(int(255 * pulse * 0.5))  # Watery transparency
+        glow_x = screen_x - boss.effect_radius
+        glow_y = screen_y - boss.effect_radius
+        self.screen.blit(glow_sprite, (glow_x, glow_y))
+
+        # Step 4: Render Wade's crying sprite
+        if boss.is_sobbing and boss.sob_charge_timer > 0:
+            # Shaking during sob charge
+            shake_x = int(math.sin(boss.sob_charge_timer * 20) * 3)
+            shake_y = int(math.cos(boss.sob_charge_timer * 20) * 3)
+            sprite_x = screen_x + shake_x
+            sprite_y = screen_y + shake_y
+        else:
+            sprite_x = screen_x
+            sprite_y = screen_y
+
+        # Render sprite (already includes tear streams)
+        if boss.is_flashing:
+            flash_sprite = boss.sprite.copy()
+            flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+            self.screen.blit(flash_sprite, (sprite_x, sprite_y))
+        else:
+            self.screen.blit(boss.sprite, (sprite_x, sprite_y))
+
+        # Step 5: Render falling tear particles (on top of Wade)
+        self._render_tear_particles(boss, screen_x, screen_y, game_map)
+
+        # Step 6: Render sob charge indicator
+        if boss.is_sobbing and boss.sob_charge_timer > 0:
+            self._render_sob_charge(boss, screen_x, screen_y)
+
+    def _render_tear_particles(self, boss: 'WannaCryBoss', screen_x: int, screen_y: int, game_map: Optional[GameMap]) -> None:
+        """Render falling tear droplets."""
+        for tear in boss.tear_particles:
+            # Calculate screen position
+            if game_map:
+                tear_screen_x, tear_screen_y = game_map.world_to_screen(tear['x'], tear['y'])
+            else:
+                tear_screen_x = int(tear['x'])
+                tear_screen_y = int(tear['y'])
+
+            # Create teardrop sprite
+            tear_surface = pygame.Surface((8, 10), pygame.SRCALPHA)
+            tear_color = (135, 206, 235, tear['alpha'])  # Sky blue with fade
+
+            # Teardrop shape
+            # Top circle
+            pygame.draw.circle(tear_surface, tear_color, (4, 3), 3)
+            # Bottom point
+            pygame.draw.polygon(tear_surface, tear_color, [
+                (2, 4),
+                (6, 4),
+                (4, 9)
+            ])
+
+            # Add highlight (makes it look wet)
+            highlight = (224, 255, 255, min(255, tear['alpha'] + 50))
+            pygame.draw.circle(tear_surface, highlight, (3, 2), 1)
+
+            self.screen.blit(tear_surface, (tear_screen_x - 4, tear_screen_y - 5))
+
+    def _render_tear_puddles(self, boss: 'WannaCryBoss', screen_x: int, screen_y: int, game_map: Optional[GameMap]) -> None:
+        """Render tear puddles on the ground."""
+        for puddle in boss.puddles:
+            # Calculate screen position
+            if game_map:
+                puddle_screen_x, puddle_screen_y = game_map.world_to_screen(puddle['x'], puddle['y'])
+            else:
+                puddle_screen_x = int(puddle['x'])
+                puddle_screen_y = int(puddle['y'])
+
+            # Create puddle oval
+            puddle_width = puddle['radius'] * 2
+            puddle_height = int(puddle['radius'] * 0.6)  # Squashed oval (perspective)
+
+            puddle_surface = pygame.Surface((puddle_width, puddle_height), pygame.SRCALPHA)
+
+            # Puddle base (dark blue)
+            puddle_color = (30, 144, 255, puddle['alpha'])
+            pygame.draw.ellipse(puddle_surface, puddle_color, (0, 0, puddle_width, puddle_height))
+
+            # Puddle highlight (light blue, makes it look wet)
+            highlight_color = (135, 206, 235, int(puddle['alpha'] * 0.6))
+            pygame.draw.ellipse(puddle_surface, highlight_color,
+                              (2, 2, puddle_width - 8, puddle_height - 4))
+
+            self.screen.blit(puddle_surface, (puddle_screen_x - puddle['radius'],
+                                             puddle_screen_y - puddle_height // 2))
+
+    def _render_sob_wave(self, boss: 'WannaCryBoss', screen_x: int, screen_y: int, game_map: Optional[GameMap]) -> None:
+        """Render expanding sob wave attack."""
+        wave = boss.sob_wave
+        if not wave or not wave['active']:
+            return
+
+        # Calculate center position
+        if game_map:
+            wave_center_x, wave_center_y = game_map.world_to_screen(wave['x'], wave['y'])
+        else:
+            wave_center_x = int(wave['x'])
+            wave_center_y = int(wave['y'])
+
+        # Draw expanding ring
+        radius = int(wave['radius'])
+        thickness = 15  # Ring thickness
+
+        # Outer ring (lighter blue)
+        outer_color = (0, 255, 255, int(wave['alpha'] * 0.5))  # Cyan
+        pygame.draw.circle(self.screen, outer_color, (wave_center_x, wave_center_y), radius, thickness)
+
+        # Inner ring (darker blue)
+        if radius > thickness:
+            inner_color = (30, 144, 255, wave['alpha'])  # Dodger blue
+            pygame.draw.circle(self.screen, inner_color, (wave_center_x, wave_center_y),
+                             radius - thickness // 2, thickness // 2)
+
+        # Add wave particles (water droplets flying outward)
+        particle_count = 20
+        for i in range(particle_count):
+            angle = (i / particle_count) * 2 * math.pi
+            particle_x = wave_center_x + int(radius * math.cos(angle))
+            particle_y = wave_center_y + int(radius * math.sin(angle))
+
+            # Small water droplet
+            droplet_color = (135, 206, 235, wave['alpha'])
+            pygame.draw.circle(self.screen, droplet_color, (particle_x, particle_y), 3)
+
+    def _render_sob_charge(self, boss: 'WannaCryBoss', screen_x: int, screen_y: int) -> None:
+        """Render charging indicator for sob wave."""
+        # Pulsing indicator above Wade's head
+        charge_progress = 1.0 - (boss.sob_charge_timer / 1.0)  # 0.0 to 1.0
+
+        # Position above Wade
+        indicator_x = screen_x + boss.width // 2
+        indicator_y = screen_y - 20
+
+        # Draw charging arc
+        arc_radius = 15
+        arc_thickness = 3
+        arc_color = (0, 255, 255, 200)  # Cyan
+
+        # Draw partial arc based on charge progress
+        start_angle = -math.pi / 2  # Top
+        end_angle = start_angle + (2 * math.pi * charge_progress)
+
+        # Draw arc segments
+        segments = 20
+        for i in range(int(segments * charge_progress)):
+            angle1 = start_angle + (i / segments) * 2 * math.pi
+            angle2 = start_angle + ((i + 1) / segments) * 2 * math.pi
+
+            x1 = indicator_x + int(arc_radius * math.cos(angle1))
+            y1 = indicator_y + int(arc_radius * math.sin(angle1))
+            x2 = indicator_x + int(arc_radius * math.cos(angle2))
+            y2 = indicator_y + int(arc_radius * math.sin(angle2))
+
+            pygame.draw.line(self.screen, arc_color, (x1, y1), (x2, y2), arc_thickness)
+
+        # "WAHHH!" text when fully charged
+        if charge_progress >= 0.95:
+            font = pygame.font.Font(None, 20)
+            text = font.render("WAHHH!", True, (0, 255, 255))
+            text_rect = text.get_rect(center=(indicator_x, indicator_y))
+            self.screen.blit(text, text_rect)
+
     def render_boss_dialogue(self, dialogue_content: dict) -> None:
         """
         Render educational boss introduction dialogue (Game Boy style).
