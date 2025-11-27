@@ -894,7 +894,38 @@ class WannaCryBoss:
                 pygame.draw.circle(sprite, water_bright, (dx, dy), 3)
                 pygame.draw.circle(sprite, water_highlight, (dx - 1, dy - 1), 1)
 
-            # === FACE ===
+            # Sad mouth (downturned curve)
+            mouth_y = center_y + 5
+            mouth_curve = [
+                (center_x - 10, mouth_y),
+                (center_x - 5, mouth_y + 3),
+                (center_x, mouth_y + 4),
+                (center_x + 5, mouth_y + 3),
+                (center_x + 10, mouth_y),
+            ]
+            pygame.draw.lines(sprite, water_shadow, False, mouth_curve, 3)
+
+            # === HIGHLIGHTS AND DEPTH ===
+            # Large highlight on left side for wet shiny look
+            highlight_points = [
+                (center_x - 15, center_y - 5),
+                (center_x - 10, center_y - 10),
+                (center_x - 8, center_y),
+                (center_x - 12, center_y + 8),
+            ]
+            for i, point in enumerate(highlight_points):
+                alpha = 60 - (i * 10)
+                pygame.draw.circle(sprite, (*water_highlight, alpha), point, 8 - i)
+
+            # Shadow on right side for depth
+            shadow_points = [
+                (center_x + 18, center_y + 5),
+                (center_x + 15, center_y + 15),
+            ]
+            for point in shadow_points:
+                pygame.draw.circle(sprite, (*water_shadow, 40), point, 6)
+
+            # === FACE (drawn last so it's on top) ===
             # Large expressive eyes
             eye_y = center_y - 8
             # Left eye - large with multiple layers
@@ -926,37 +957,6 @@ class WannaCryBoss:
                 (center_x + 10, eye_y + 25),
             ]
             pygame.draw.lines(sprite, (*water_bright, 180), False, tear_stream_right, 3)
-
-            # Sad mouth (downturned curve)
-            mouth_y = center_y + 5
-            mouth_curve = [
-                (center_x - 10, mouth_y),
-                (center_x - 5, mouth_y + 3),
-                (center_x, mouth_y + 4),
-                (center_x + 5, mouth_y + 3),
-                (center_x + 10, mouth_y),
-            ]
-            pygame.draw.lines(sprite, water_shadow, False, mouth_curve, 3)
-
-            # === HIGHLIGHTS AND DEPTH ===
-            # Large highlight on left side for wet shiny look
-            highlight_points = [
-                (center_x - 15, center_y - 5),
-                (center_x - 10, center_y - 10),
-                (center_x - 8, center_y),
-                (center_x - 12, center_y + 8),
-            ]
-            for i, point in enumerate(highlight_points):
-                alpha = 60 - (i * 10)
-                pygame.draw.circle(sprite, (*water_highlight, alpha), point, 8 - i)
-
-            # Shadow on right side for depth
-            shadow_points = [
-                (center_x + 18, center_y + 5),
-                (center_x + 15, center_y + 15),
-            ]
-            for point in shadow_points:
-                pygame.draw.circle(sprite, (*water_shadow, 40), point, 6)
 
             frames.append(sprite)
 

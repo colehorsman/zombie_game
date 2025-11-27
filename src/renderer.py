@@ -801,13 +801,13 @@ class Renderer:
         if boss.sob_wave and boss.sob_wave['active']:
             self._render_sob_wave(boss, screen_x, screen_y, game_map)
 
-        # Step 3: Render watery glow effect (pulsing)
-        pulse = math.sin(boss.glow_pulse_timer * 2) * 0.3 + 0.7  # Pulse 0.7-1.0
-        glow_sprite = boss.glow_sprite.copy()
-        glow_sprite.set_alpha(int(255 * pulse * 0.5))  # Watery transparency
-        glow_x = screen_x - boss.effect_radius
-        glow_y = screen_y - boss.effect_radius
-        self.screen.blit(glow_sprite, (glow_x, glow_y))
+        # Step 3: Render watery glow effect (pulsing) - TEMPORARILY DISABLED FOR DEBUG
+        # pulse = math.sin(boss.glow_pulse_timer * 2) * 0.3 + 0.7  # Pulse 0.7-1.0
+        # glow_sprite = boss.glow_sprite.copy()
+        # glow_sprite.set_alpha(int(255 * pulse * 0.5))  # Watery transparency
+        # glow_x = screen_x - boss.effect_radius
+        # glow_y = screen_y - boss.effect_radius
+        # self.screen.blit(glow_sprite, (glow_x, glow_y))
 
         # Step 4: Render Wade's crying sprite
         if boss.is_sobbing and boss.sob_charge_timer > 0:
