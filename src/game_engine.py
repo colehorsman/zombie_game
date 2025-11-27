@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import pygame
 
@@ -17,7 +17,14 @@ from level_manager import LevelManager
 from difficulty_config import EnvironmentDifficulty, get_difficulty_for_environment
 from approval import ApprovalManager
 from powerup import PowerUp, PowerUpManager, PowerUpType, spawn_random_powerups
-from boss import Boss
+from boss import Boss  # DEPRECATED - kept for backwards compatibility
+from cyber_boss import (
+    ScatteredSpiderBoss,
+    create_cyber_boss,
+    BossType,
+    BOSS_LEVEL_MAP,
+    get_boss_dialogue
+)
 from save_manager import SaveManager
 from service_protection_quest import (
     ServiceProtectionQuestManager,
@@ -206,9 +213,15 @@ class GameEngine:
         self.scroll_speed = 50.0  # pixels per second
         self.scroll_offset = 0.0
 
-        # Boss battle
-        self.boss: Optional[Boss] = None
+        # Boss battle (supports both old Boss and new cyber bosses)
+        self.boss: Optional[Union[Boss, ScatteredSpiderBoss]] = None
         self.boss_spawned = False
+        self.boss_type: Optional[BossType] = None
+
+        # Boss dialogue system
+        self.showing_boss_dialogue = False
+        self.boss_dialogue_content: Optional[dict] = None
+        self.boss_dialogue_shown = False
 
         # Konami code cheat (up up down down left right left right)
         self.konami_code = [pygame.K_UP, pygame.K_UP, pygame.K_DOWN, pygame.K_DOWN,
