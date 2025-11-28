@@ -12,7 +12,7 @@ Every AWS organization accumulates unused identities—forgotten contractor acco
 
 **Sonrai Zombie Blaster** makes identity cleanup tangible and engaging:
 - **Visualize** unused identities as zombies in a retro 8-bit game
-- **Eliminate** them through side-scrolling platformer gameplay  
+- **Eliminate** them through side-scrolling platformer gameplay
 - **Trigger** real Sonrai API calls to quarantine actual identities
 - **Learn** security concepts through interactive quests
 
@@ -45,6 +45,27 @@ python3 src/main.py
 **Need more details?** See [QUICKSTART.md](docs/guides/QUICKSTART.md) for comprehensive setup guide.
 
 </details>
+
+---
+
+## 🤖 Built with Kiro AI
+
+**This project showcases Kiro as a full-stack AI pair programmer managing the complete software development lifecycle.**
+
+### Kiro's Roles
+- **🎯 Product Manager** - Sprint planning, backlog prioritization, velocity tracking
+- **🏗️ Technical Lead** - Architecture decisions, performance optimization (15 FPS → 60 FPS)
+- **🧪 QA Engineer** - 191 automated tests, 3-layer testing strategy, 92.7% pass rate
+- **📚 Documentation Agent** - 43 markdown files, AWS-style standards, evidence-based claims
+
+### Kiro Integration Stats
+- **9 steering files** (2,432 lines) defining agent roles and workflows
+- **6 feature specs** with requirements → design → tasks breakdown
+- **7 agent hooks** for automated testing, security scanning, and code review
+- **2 complete sprints** with velocity tracking and retrospectives
+- **GitHub MCP integration** for issue tracking and CI/CD monitoring
+
+**[📖 See Full Kiro Submission Details](.kiro/KIROWEEN_SUBMISSION.md)**
 
 ---
 
