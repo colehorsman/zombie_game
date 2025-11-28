@@ -10,6 +10,12 @@
 
 ## 📝 Recent Updates
 
+**November 28, 2024 - Sprint Strategy Optimization:**
+- 🎯 **Timeline Revised:** Shifted focus to rigorous testing and polish (Nov 28-30) before re:Invent gameplay footage collection (Dec 1-2)
+- **Rationale:** Ensure amazing user experience at re:Invent by addressing bugs and polish first, then capture high-quality footage
+- **Impact:** Better demo quality, more compelling video content, reduced risk of showcasing bugs
+- **Status:** KIRO-001 and KIRO-002 remain deferred pending re:Invent testing feedback
+
 **November 28, 2024 - Operations & Security Sprint Completion:**
 - ✅ **Completed:** OPS-001 (Document Deployment Process - comprehensive guide with all 13 agents)
 - ✅ **Completed:** SEC-002 (Add Request Timeouts - timeout strategy with retry logic)
@@ -711,12 +717,13 @@
 - KIRO-003, KIRO-004
 
 **Optimized Timeline:**
-- Days 1-2 (Nov 28-29): User testing at re:Invent + evidence collection after testing
-- Days 3-4 (Nov 30 - Dec 1): Content creation + repository prep (KIRO-002)
-- Days 5-6 (Dec 2-3): Video editing with re:Invent footage (KIRO-003)
-- Day 7 (Dec 4): Final submission (KIRO-004)
+- Days 1-3 (Nov 28-30): Rigorous testing + bug fixes + polish (ensure amazing re:Invent experience)
+- Days 4-5 (Dec 1-2): re:Invent gameplay footage collection (high-quality demo capture)
+- Day 6 (Dec 3): Video editing + evidence collection (KIRO-001, KIRO-003)
+- Day 7 (Dec 4): Kiro usage write-up + final prep (KIRO-002, KIRO-004)
+- Deadline (Dec 5): Final submission @ 4:00pm CST
 
-**Key Optimization:** User collecting gameplay footage at AWS re:Invent removes video recording from critical path, reducing workload to 3-4 hours/day.
+**Key Optimization:** Prioritizing polish before re:Invent ensures high-quality footage capture, reducing risk of showcasing bugs and improving overall submission quality.
 
 **This sprint takes ABSOLUTE PRIORITY over all other work.**
 
