@@ -209,21 +209,29 @@
 
 ## 🚀 Next Steps
 
-### Tomorrow (Nov 29):
-1. User testing at AWS re:Invent
-2. Collect gameplay footage for video
-3. Gather user feedback for UX improvements
-4. Start KIRO-001 (evidence collection)
+### Testing Phase (Nov 29-30):
+1. Rigorous gameplay testing
+2. Bug identification and fixes
+3. UX polish and improvements
+4. Performance validation (60 FPS)
+5. Quest workflow testing
+6. Controller support verification
 
-### Weekend (Nov 30 - Dec 1):
-1. Complete KIRO-002 (Kiro usage write-up)
-2. Organize evidence directory
-3. Begin video script
+### re:Invent (Dec 1-2):
+1. Collect gameplay footage at booth
+2. Gather user feedback
+3. Capture reactions and testimonials
+4. Document real-world usage
 
-### Next Week (Dec 2-5):
-1. Video production (Dec 2-3)
-2. Final submission prep (Dec 4)
-3. Submit before deadline (Dec 5)
+### Post-re:Invent (Dec 3-4):
+1. Video editing with re:Invent footage (Dec 3)
+2. Evidence collection (Dec 3)
+3. Kiro usage write-up (Dec 4)
+4. Final submission prep (Dec 4)
+
+### Deadline (Dec 5):
+1. Final review and polish
+2. Submit to Devpost before 4:00pm CST
 
 ---
 

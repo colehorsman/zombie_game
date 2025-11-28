@@ -31,24 +31,31 @@
 **Key Insight:** User collecting gameplay footage at AWS re:Invent this week removes video recording from critical path!
 
 **Optimized Timeline:**
-- **Days 1-2 (Nov 28-29):** Evidence collection + write-up start
-- **Days 3-4 (Nov 30 - Dec 1):** Content creation + repository prep
-- **Days 5-6 (Dec 2-3):** Video editing (with re:Invent footage)
-- **Day 7 (Dec 4):** Final submission
+- **Days 1-3 (Nov 28-30):** Rigorous testing + bug fixes + polish
+- **Days 4-5 (Dec 1-2):** re:Invent gameplay footage collection
+- **Day 6 (Dec 3):** Video editing + evidence collection
+- **Day 7 (Dec 4):** Kiro usage write-up + final prep
+- **Deadline (Dec 5):** Final submission @ 4:00pm CST
 
 **Critical Path:** ~22-29 hours over 7 days = 3-4 hours/day ✅
 
-**Immediate Actions:**
+**Immediate Actions (Nov 28-30):**
 1. ✅ SONRAI-001: Rotate API tokens (COMPLETE)
-2. ⏸️ KIRO-001: Evidence collection (DEFERRED - user testing this afternoon)
-3. ⏸️ KIRO-002: Start write-up outline (DEFERRED - after testing)
+2. ✅ DEVEX-001, DEVEX-002: Developer docs (COMPLETE)
+3. ✅ OPS-001: Deployment guide (COMPLETE)
+4. ✅ SEC-002: API timeouts (COMPLETE)
+5. 🎮 **Rigorous testing** - Ensure amazing experience for re:Invent
+6. 🐛 **Bug fixes** - Address any issues found during testing
+7. ✨ **Polish** - Visual improvements, UX refinements
 
-**re:Invent Shot List:**
-- Lobby navigation
-- Zombie elimination with API calls
-- Quest demonstrations
-- Visual effects (60 FPS, purple shields)
+**re:Invent Shot List (Dec 1-2):**
+- Lobby navigation and door interactions
+- Zombie elimination with real-time API calls
+- Quest demonstrations (Service Protection, JIT Access)
+- Visual effects (60 FPS, purple shields, particles)
 - Real-time remediation indicators
+- Arcade mode gameplay
+- Boss battle sequences
 
 ---
 
