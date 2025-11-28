@@ -1,0 +1,166 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run Game",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/python",
+            "args": [
+                "src/main.py"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Run Tests",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/pytest",
+            "args": [
+                "tests/",
+                "-v"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Run Tests with Coverage",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/pytest",
+            "args": [
+                "tests/",
+                "-v",
+                "--cov=src",
+                "--cov-report=html"
+            ],
+            "problemMatcher": [],
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            }
+        },
+        {
+            "label": "Security Scan (Bandit)",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/bandit",
+            "args": [
+                "-r",
+                "src/",
+                "-c",
+                ".bandit"
+            ],
+            "problemMatcher": [],
+            "group": "test"
+        },
+        {
+            "label": "Security Scan (Gitleaks)",
+            "type": "shell",
+            "command": "gitleaks",
+            "args": [
+                "detect",
+                "--no-git"
+            ],
+            "problemMatcher": [],
+            "group": "test"
+        },
+        {
+            "label": "Format Code (Black)",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/black",
+            "args": [
+                "src/",
+                "tests/",
+                "--line-length=100"
+            ],
+            "problemMatcher": [],
+            "group": "none"
+        },
+        {
+            "label": "Sort Imports (isort)",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/isort",
+            "args": [
+                "src/",
+                "tests/",
+                "--profile",
+                "black"
+            ],
+            "problemMatcher": [],
+            "group": "none"
+        },
+        {
+            "label": "Type Check (mypy)",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/mypy",
+            "args": [
+                "src/",
+                "--ignore-missing-imports"
+            ],
+            "problemMatcher": [],
+            "group": "test"
+        },
+        {
+            "label": "Lint (pylint)",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/pylint",
+            "args": [
+                "src/"
+            ],
+            "problemMatcher": [],
+            "group": "test"
+        },
+        {
+            "label": "Clean Cache",
+            "type": "shell",
+            "command": "find",
+            "args": [
+                ".",
+                "-type",
+                "d",
+                "-name",
+                "__pycache__",
+                "-exec",
+                "rm",
+                "-rf",
+                "{}",
+                "+",
+                "&&",
+                "find",
+                ".",
+                "-type",
+                "f",
+                "-name",
+                "*.pyc",
+                "-delete"
+            ],
+            "problemMatcher": [],
+            "group": "none"
+        },
+        {
+            "label": "Install Dependencies",
+            "type": "shell",
+            "command": "${workspaceFolder}/venv/bin/pip",
+            "args": [
+                "install",
+                "-r",
+                "requirements.txt"
+            ],
+            "problemMatcher": [],
+            "group": "none"
+        }
+    ]
+}

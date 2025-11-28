@@ -39,7 +39,7 @@ htmlcov/
 .coverage.*
 
 # IDE
-.vscode/
+# .vscode/ - Now included for better developer experience (DEVEX-003)
 .idea/
 *.swp
 *.swo
