@@ -34,10 +34,10 @@
 
 **Critical Path:** ~22-29 hours over 7 days = 3-4 hours/day ✅
 
-**Immediate Actions (Start Now):**
+**Immediate Actions:**
 1. ✅ SONRAI-001: Rotate API tokens (COMPLETE)
-2. 🔄 KIRO-001: Evidence collection (IN PROGRESS)
-3. 🔄 KIRO-002: Start write-up outline (NEXT)
+2. ⏸️ KIRO-001: Evidence collection (DEFERRED - user testing this afternoon)
+3. ⏸️ KIRO-002: Start write-up outline (DEFERRED - after testing)
 
 **re:Invent Shot List:**
 - Lobby navigation
@@ -60,10 +60,11 @@
 
 ### Kiroween Submission Tasks (ABSOLUTE PRIORITY)
 
-#### KIRO-001: Create Evidence Directory
+#### ⏸️ KIRO-001: Create Evidence Directory (DEFERRED)
 - **Priority**: 🔴 P0 - CRITICAL
 - **Effort**: S (2-3 hours)
 - **Deadline**: Nov 28-29 (Days 1-2)
+- **Status**: ⏸️ DEFERRED - User testing game this afternoon, will collect evidence after
 - **Tasks**:
   - [ ] Screenshot Kiro conversations showing vibe coding
   - [ ] Document spec-driven development examples
@@ -72,9 +73,10 @@
   - [ ] Highlight 13-agent architecture review
 - **ARB Reference**: Kiroween Submission Agent Review
 
-#### KIRO-002: Write Comprehensive Kiro Usage Document
+#### ⏸️ KIRO-002: Write Comprehensive Kiro Usage Document (DEFERRED)
 - **Priority**: 🔴 P0 - CRITICAL
 - **Effort**: L (8-10 hours)
+- **Status**: ⏸️ DEFERRED - Will start after testing and evidence collection
 - **Deadline**: Nov 30 - Dec 1 (Days 3-4)
 - **Tasks**:
   - [ ] Vibe coding examples with before/after
