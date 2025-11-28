@@ -2,9 +2,9 @@
 
 import logging
 import time
+from dataclasses import dataclass
 from enum import Enum, auto
 from typing import List, Optional
-from dataclasses import dataclass
 
 import pygame
 
@@ -73,14 +73,27 @@ class CheatCodeController:
     # Timeout for resetting input sequences (seconds)
     INPUT_TIMEOUT = 2.0
 
+    # Controller D-pad button mappings
+    DPAD_UP = 11
+    DPAD_DOWN = 12
+    DPAD_LEFT = 13
+    DPAD_RIGHT = 14
+
+    # Controller Konami sequence (D-pad buttons)
+    CONTROLLER_KONAMI = [11, 11, 12, 12, 13, 14, 13, 14]  # UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT
+
     def __init__(self):
         """Initialize the cheat code controller."""
         # Text cheat buffer (UNLOCK, SKIP)
         self.cheat_buffer: List[int] = []
 
-        # Konami code buffer
+        # Konami code buffer (keyboard)
         self.konami_buffer: List[int] = []
         self.last_konami_time: float = 0.0
+
+        # Controller Konami buffer
+        self.controller_konami_buffer: List[int] = []
+        self.last_controller_konami_time: float = 0.0
 
         # Arcade code buffer
         self.arcade_buffer: List[int] = []
@@ -89,9 +102,7 @@ class CheatCodeController:
         # State
         self.unlock_enabled: bool = False
 
-    def process_key(
-        self, key: int, current_time: Optional[float] = None
-    ) -> CheatCodeResult:
+    def process_key(self, key: int, current_time: Optional[float] = None) -> CheatCodeResult:
         """
         Process a key press and check for cheat code activation.
 
@@ -167,10 +178,58 @@ class CheatCodeController:
 
         return CheatCodeResult(action=CheatCodeAction.NONE)
 
+    def process_controller_button(
+        self, button: int, current_time: Optional[float] = None
+    ) -> CheatCodeResult:
+        """
+        Process a controller button press for cheat codes (D-pad only).
+
+        Args:
+            button: Controller button number
+            current_time: Current time in seconds (defaults to time.time())
+
+        Returns:
+            CheatCodeResult with action and optional message
+        """
+        if current_time is None:
+            current_time = time.time()
+
+        # Only process D-pad buttons
+        if button not in [self.DPAD_UP, self.DPAD_DOWN, self.DPAD_LEFT, self.DPAD_RIGHT]:
+            return CheatCodeResult(action=CheatCodeAction.NONE)
+
+        # Check for timeout
+        if current_time - self.last_controller_konami_time > self.INPUT_TIMEOUT:
+            self.controller_konami_buffer = []
+
+        self.last_controller_konami_time = current_time
+
+        # Add to buffer
+        self.controller_konami_buffer.append(button)
+
+        # Trim buffer
+        if len(self.controller_konami_buffer) > 8:
+            self.controller_konami_buffer = self.controller_konami_buffer[-8:]
+
+        # Check controller Konami code
+        if (
+            len(self.controller_konami_buffer) >= 8
+            and self.controller_konami_buffer[-8:] == self.CONTROLLER_KONAMI
+        ):
+            self.controller_konami_buffer = []
+            logger.info("🎮 CONTROLLER KONAMI CODE ACTIVATED!")
+            return CheatCodeResult(
+                action=CheatCodeAction.SPAWN_BOSS,
+                message="🎮 KONAMI CODE!\n\nBoss incoming...\n\nPress A to continue",
+            )
+
+        return CheatCodeResult(action=CheatCodeAction.NONE)
+
     def reset(self) -> None:
         """Reset all cheat code buffers."""
         self.cheat_buffer = []
         self.konami_buffer = []
+        self.controller_konami_buffer = []
         self.arcade_buffer = []
 
     def is_unlock_enabled(self) -> bool:
