@@ -58,15 +58,22 @@ jobs:
       run: |
         pip-audit --desc --format json --output reports/pip-audit.json || true
 
+    - name: Check for SARIF files
+      id: check_sarif
+      if: always()
+      run: |
+        echo "bandit_exists=$(test -f reports/bandit.sarif && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+        echo "semgrep_exists=$(test -f reports/semgrep.sarif && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
     - name: Upload Bandit SARIF to GitHub Security
-      if: always() && hashFiles('reports/bandit.sarif') != ''
+      if: always() && steps.check_sarif.outputs.bandit_exists == 'true'
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: reports/bandit.sarif
         category: bandit
 
     - name: Upload Semgrep SARIF to GitHub Security
-      if: always() && hashFiles('reports/semgrep.sarif') != ''
+      if: always() && steps.check_sarif.outputs.semgrep_exists == 'true'
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: reports/semgrep.sarif
