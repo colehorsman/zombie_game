@@ -63,11 +63,8 @@ paths = [
     '''/tests/fixtures/'''  # Test fixtures with fake data
 ]
 
-# Allowlist specific findings that are false positives
-[[allowlist.regexes]]
-description = "Ignore test passwords"
-regex = '''password.*=.*['"](test|example|dummy)['"']'''
-
-[[allowlist.regexes]]
-description = "Ignore placeholder tokens"
-regex = '''YOUR_.*_HERE'''
+# Allowlist specific regex patterns that are false positives
+regexes = [
+    '''password.*=.*['"](test|example|dummy)['"']''',  # Test passwords
+    '''YOUR_.*_HERE'''  # Placeholder tokens
+]
