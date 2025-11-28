@@ -492,3 +492,142 @@ if self.boss and not self.boss.is_defeated:
 4. WannaCry specific "flash" attack with area of effect
 
 ---
+
+
+### BUG-011: Hacker Challenge Message Ugly and Too Verbose
+**Severity:** P1
+**Component:** UI / Quest System
+**Description:** Hacker challenge message (Service Protection Quest) uses ugly white box, too much text
+**User Feedback:** "the hacker challenge meggage is ugly should be more brief, more bubble like and purple"
+**Impact:** Inconsistent visual style, poor UX
+
+**Current:** White box with long text
+**Desired:** Purple bubble theme, brief message
+
+**Fix:**
+```python
+# In game_engine.py where hacker quest message is created:
+# Make it brief and use purple theme
+
+# Current (verbose):
+message = "Long explanation about hacker race..."
+
+# New (brief):
+message = "⚠️ SERVICE PROTECTION CHALLENGE!\n\nHacker detected!\nProtect services before hacker reaches them!\n\nPress ENTER/A to start"
+
+# In renderer.py:
+# Add "CHALLENGE" keyword detection for purple theme
+is_challenge = any(word in message for word in [
+    "CHALLENGE", "QUEST", "MISSION", "OBJECTIVE", 
+    "SUCCESS", "FAILED", "HACKER", "PROTECTION"
+])
+```
+
+---
+
+### FEATURE-001: Game Over Screen Missing
+**Severity:** P0
+**Component:** Game Over System
+**Description:** When player health reaches 0, health just resets - no game over screen
+**User Feedback:** "i depleted my health bar and nothing happened but my health starte over. probably should be like game over message again purple and somethign like all zombies have been released, all 3rd parties are now allowd and services have been iunprotected or something like that - i dont think that was in previously so thats a feature"
+**Impact:** No consequence for dying, breaks game loop
+
+**Expected Behavior:**
+1. Player health reaches 0
+2. Game over screen appears (purple theme)
+3. Show consequences message
+4. Options: Retry Level, Return to Lobby
+
+**Game Over Message:**
+```
+💀 SECURITY BREACH!
+
+All zombies have been released!
+All 3rd parties are now allowed!
+Services are unprotected!
+
+Your Score: [score]
+Zombies Eliminated: [count]
+
+▶ Retry Level
+  Return to Lobby
+```
+
+**Implementation:**
+```python
+# In game_engine.py, check player health:
+def _update_playing(self, delta_time):
+    # ... existing code ...
+    
+    # Check if player died
+    if self.player.health <= 0:
+        self._show_game_over_screen()
+
+def _show_game_over_screen(self):
+    """Show game over screen with consequences."""
+    self.game_state.previous_status = self.game_state.status
+    self.game_state.status = GameStatus.PAUSED
+    
+    message = (
+        "💀 SECURITY BREACH!\n\n"
+        "All zombies have been released!\n"
+        "All 3rd parties are now allowed!\n"
+        "Services are unprotected!\n\n"
+        f"Zombies Eliminated: {self.game_state.zombies_eliminated}\n\n"
+        "▶ Retry Level\n"
+        "  Return to Lobby"
+    )
+    
+    self.game_state.congratulations_message = message
+    self.game_over_menu_active = True
+    logger.info("💀 Game Over - Player died!")
+```
+
+**Menu Options:**
+- Retry Level: Reset level, restore health, try again
+- Return to Lobby: Go back to lobby, keep progress
+
+---
+
+## Updated Implementation Priority
+
+### Phase 1: Critical Fixes (Today) - URGENT
+1. ✅ BUG-001: Fix controller pause button behavior - FIXED
+2. ✅ BUG-002: Add controller Konami code support - FIXED
+3. ✅ BUG-008: Controller A button message dismissal - FIXED
+4. 🔥 **FEATURE-001: Game Over Screen** - CRITICAL MISSING FEATURE
+5. 🔍 BUG-009: Start button pause during boss battle - INVESTIGATING
+6. BUG-003: Fix pause menu text rendering
+
+### Phase 2: Polish (Tomorrow)
+7. BUG-011: Hacker challenge message styling (purple + brief)
+8. BUG-007: WannaCry message styling (purple + brief)
+9. BUG-010: Boss damage to player (collision detection)
+10. ENHANCEMENT-002: Standardize A=ENTER throughout
+11. BUG-004: Add Sonrai logo to pause menu
+12. BUG-005: Fix pause icon display
+13. BUG-006: Fix health regeneration
+14. ENHANCEMENT-001: Purple theme for all challenge messages
+
+---
+
+## Testing Checklist After New Fixes
+
+### Game Over System
+- [ ] Player dies when health reaches 0
+- [ ] Game over screen appears (purple theme)
+- [ ] Consequences message displays
+- [ ] Can retry level
+- [ ] Can return to lobby
+- [ ] Health resets on retry
+- [ ] Progress preserved
+
+### Message Styling
+- [ ] Hacker challenge uses purple theme
+- [ ] Hacker challenge is brief
+- [ ] WannaCry message uses purple theme
+- [ ] WannaCry message is brief
+- [ ] All challenge messages consistent
+- [ ] All messages dismissible with A button
+
+---
