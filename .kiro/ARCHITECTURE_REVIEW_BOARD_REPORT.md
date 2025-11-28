@@ -10,16 +10,17 @@
 
 ## 📝 Recent Updates
 
-**November 28, 2024 - Kiroween Sprint Progress:**
+**November 28, 2024 - Kiroween Sprint Status Update:**
 - ✅ **Completed:** SONRAI-001 (Rotate API tokens before submission)
-- 🔄 **In Progress:** KIRO-001 (Evidence collection)
-- 📋 **Next:** KIRO-002 (Kiro usage write-up)
+- ⏸️ **Deferred:** KIRO-001 (Evidence collection) - User testing game at re:Invent this afternoon
+- ⏸️ **Deferred:** KIRO-002 (Kiro usage write-up) - Will start after testing session
 - **Agent Score Updates:**
   - Sonrai Integration: 8.5 → 9.0 (+0.5 for token rotation)
   - Kiroween Submission: 9.0 → 9.5 (+0.5 for sprint planning optimization)
 - **Overall Score:** 7.5 → 7.6
 - **Reason:** Critical security task completed (API token rotation), sprint strategy optimized with re:Invent footage integration
 - **Days to Deadline:** 7 days remaining (Dec 5, 2025 @ 4:00pm CST)
+- **Status Note:** Evidence collection and write-up deferred to allow user to test game and collect real gameplay footage at AWS re:Invent. This aligns with optimized sprint strategy.
 
 ---
 
@@ -375,7 +376,7 @@
 - ✅ **Sprint strategy optimized** - User collecting gameplay footage at AWS re:Invent
 - ✅ **Timeline refined** - 3-4 hours/day over 7 days (manageable workload)
 - ✅ **Shot list created** - Clear video requirements documented
-- 🔄 **Evidence collection in progress** - KIRO-001 underway
+- ⏸️ **Evidence collection deferred** - KIRO-001 paused for user testing this afternoon
 
 **Remaining Gaps:**
 - 🟡 **Evidence collection incomplete** - Need screenshots, metrics, examples (IN PROGRESS)
@@ -386,13 +387,13 @@
 **Recommendations:**
 
 **P0 - CRITICAL (Due by Dec 5, 2025):**
-1. 🔄 **[KIRO-001] Create evidence directory** (S: 2-3 hours) - **IN PROGRESS**
+1. ⏸️ **[KIRO-001] Create evidence directory** (S: 2-3 hours) - **DEFERRED**
    - Screenshot Kiro conversations showing vibe coding
    - Document spec-driven development examples
    - Capture hook configurations and automation
    - Export MCP usage metrics
    - Highlight 13-agent architecture review
-   - **Status:** Started Nov 28, 2024 (Days 1-2)
+   - **Status:** Deferred - User testing game at re:Invent this afternoon, will collect evidence after testing session
 
 2. 📋 **[KIRO-002] Write comprehensive Kiro usage document** (L: 8-10 hours) - **NEXT**
    - Vibe coding examples with before/after
@@ -615,7 +616,7 @@
 ### By Priority
 
 **P0 - CRITICAL (10 items remaining, 39-51 hours) - INCLUDES KIROWEEN DEADLINE:**
-- **KIRO-001** (IN PROGRESS), **KIRO-002** (NEXT), **KIRO-003, KIRO-004** (Kiroween submission - DUE DEC 5)
+- ⏸️ **KIRO-001** (DEFERRED), ⏸️ **KIRO-002** (DEFERRED), **KIRO-003, KIRO-004** (Kiroween submission - DUE DEC 5)
 - ✅ **SONRAI-001** (COMPLETE - Rotate API tokens)
 - SEC-001, OPS-001, DEVEX-001, DEVEX-002, UX-001, UX-002
 
@@ -648,12 +649,12 @@
 
 **Stories:**
 - ✅ SONRAI-001 (COMPLETE)
-- 🔄 KIRO-001 (IN PROGRESS)
-- 📋 KIRO-002 (NEXT)
+- ⏸️ KIRO-001 (DEFERRED - user testing at re:Invent)
+- ⏸️ KIRO-002 (DEFERRED - after testing)
 - KIRO-003, KIRO-004
 
 **Optimized Timeline:**
-- Days 1-2 (Nov 28-29): Evidence collection + write-up start (KIRO-001 in progress)
+- Days 1-2 (Nov 28-29): User testing at re:Invent + evidence collection after testing
 - Days 3-4 (Nov 30 - Dec 1): Content creation + repository prep (KIRO-002)
 - Days 5-6 (Dec 2-3): Video editing with re:Invent footage (KIRO-003)
 - Day 7 (Dec 4): Final submission (KIRO-004)
