@@ -7,21 +7,47 @@
     },
     "github": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": ""
       },
       "disabled": false,
-      "autoApprove": ["list_issues", "search_repositories", "get_file_contents"]
+      "autoApprove": [
+        "list_issues",
+        "search_repositories",
+        "get_file_contents",
+        "list_pull_requests",
+        "list_commits"
+      ]
     },
     "brave-search": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-brave-search"
+      ],
       "env": {
         "BRAVE_API_KEY": ""
       },
-      "disabled": false,
-      "autoApprove": ["brave_web_search"]
+      "disabled": true,
+      "autoApprove": [
+        "brave_web_search"
+      ]
+    },
+    "fetch": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-fetch"
+      ],
+      "env": {},
+      "disabled": true,
+      "autoApprove": [
+        "fetch"
+      ]
     }
   }
 }
