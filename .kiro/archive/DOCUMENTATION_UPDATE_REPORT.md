@@ -1,7 +1,7 @@
 # Documentation Update Report
 
-**Date:** 2025-11-27  
-**Agent:** Documentation Agent  
+**Date:** 2025-11-27
+**Agent:** Documentation Agent
 **Task:** Integrate root-level markdown files into README with expandable sections
 
 ---

@@ -19,8 +19,8 @@ This will load the QA-specific guidelines and focus the agent on testing tasks.
 ## Available Hooks
 
 ### 1. QA Review (Manual)
-**Purpose**: Comprehensive QA review of recent changes  
-**How to use**: Click "QA Review" in the Agent Hooks panel  
+**Purpose**: Comprehensive QA review of recent changes
+**How to use**: Click "QA Review" in the Agent Hooks panel
 **What it does**:
 - Reviews recent code changes
 - Identifies missing test coverage
@@ -29,8 +29,8 @@ This will load the QA-specific guidelines and focus the agent on testing tasks.
 - Verifies critical functionality
 
 ### 2. Test API Integration (Manual)
-**Purpose**: Test all Sonrai API integration scenarios  
-**How to use**: Click "Test API Integration" in the Agent Hooks panel  
+**Purpose**: Test all Sonrai API integration scenarios
+**How to use**: Click "Test API Integration" in the Agent Hooks panel
 **What it does**:
 - Tests successful API calls
 - Tests failure scenarios (auth, network, rate limiting)
@@ -38,8 +38,8 @@ This will load the QA-specific guidelines and focus the agent on testing tasks.
 - Ensures proper mocking in tests
 
 ### 3. Test Game Mechanics (Manual)
-**Purpose**: Test core game systems  
-**How to use**: Click "Test Game Mechanics" in the Agent Hooks panel  
+**Purpose**: Test core game systems
+**How to use**: Click "Test Game Mechanics" in the Agent Hooks panel
 **What it does**:
 - Tests collision detection
 - Tests movement systems
@@ -47,16 +47,16 @@ This will load the QA-specific guidelines and focus the agent on testing tasks.
 - Tests health and damage systems
 
 ### 4. Generate Coverage Report (Manual)
-**Purpose**: Generate detailed test coverage report  
-**How to use**: Click "Generate Coverage Report" in the Agent Hooks panel  
+**Purpose**: Generate detailed test coverage report
+**How to use**: Click "Generate Coverage Report" in the Agent Hooks panel
 **What it does**:
 - Runs pytest with coverage analysis
 - Generates HTML coverage report
 - Shows which lines are not covered by tests
 
 ### 5. Run Tests on Save (Automatic - Disabled by default)
-**Purpose**: Auto-run tests when saving Python files  
-**How to use**: Enable in Agent Hooks panel  
+**Purpose**: Auto-run tests when saving Python files
+**How to use**: Enable in Agent Hooks panel
 **What it does**:
 - Watches for changes to src/**/*.py files
 - Automatically runs pytest when files are saved
@@ -67,21 +67,21 @@ This will load the QA-specific guidelines and focus the agent on testing tasks.
 ### 1. After Implementing a New Feature
 
 ```
-Hey Kiro, I just implemented [feature name]. Can you use #qa-testing-agent 
+Hey Kiro, I just implemented [feature name]. Can you use #qa-testing-agent
 to review the code and create comprehensive tests for it?
 ```
 
 ### 2. Before Committing Code
 
 ```
-#qa-testing-agent Please run a full QA review before I commit. 
+#qa-testing-agent Please run a full QA review before I commit.
 Check test coverage and run all tests.
 ```
 
 ### 3. When Fixing a Bug
 
 ```
-#qa-testing-agent I fixed a bug in [component]. Can you create a 
+#qa-testing-agent I fixed a bug in [component]. Can you create a
 regression test to ensure this bug doesn't come back?
 ```
 
@@ -154,7 +154,7 @@ pytest --lf tests/
 
 ### Request comprehensive testing:
 ```
-#qa-testing-agent I need you to test the new damage system. 
+#qa-testing-agent I need you to test the new damage system.
 Create unit tests for:
 - Damage application
 - Health tracking
@@ -166,7 +166,7 @@ Run the tests and report any issues.
 
 ### Request API testing:
 ```
-#qa-testing-agent Please test the Sonrai API client. 
+#qa-testing-agent Please test the Sonrai API client.
 I want to ensure we handle:
 - Network timeouts
 - Authentication failures
@@ -178,8 +178,8 @@ Create mocked tests for all scenarios.
 
 ### Request regression testing:
 ```
-#qa-testing-agent I fixed a bug where projectiles weren't 
-hitting zombies correctly. Can you create a regression test 
+#qa-testing-agent I fixed a bug where projectiles weren't
+hitting zombies correctly. Can you create a regression test
 to ensure this specific scenario works?
 ```
 
