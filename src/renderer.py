@@ -308,7 +308,7 @@ class Renderer:
 
         # Draw label
         try:
-            label_text = self.label_font.render("MAP", True, (255, 153, 0))  # AWS Orange
+            label_text = self.label_font.render("AWS Organization", True, (255, 153, 0))  # AWS Orange
             self.screen.blit(label_text, (minimap_x + 5, minimap_y - 18))
         except:
             pass
