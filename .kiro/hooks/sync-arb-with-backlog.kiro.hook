@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "name": "Sync Architecture Review Board with Backlog",
+  "description": "When BACKLOG.md is updated, synchronize with Architecture Review Board Report and recalculate overall assessment score",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      ".kiro/BACKLOG.md",
+      "docs/BACKLOG.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "#architecture-agent The BACKLOG.md file was just updated.\n\n**Your responsibility as Architecture Agent: Maintain the Architecture Review Board Report**\n\nPlease perform the following synchronization tasks:\n\n## 1. Read Both Documents\n- Read `.kiro/BACKLOG.md` to see what tasks were completed/updated\n- Read `.kiro/ARCHITECTURE_REVIEW_BOARD_REPORT.md` to see current state\n\n## 2. Identify Completed ARB Recommendations\nCheck if any of the 47 ARB recommendations (ARCH-001 through KIRO-004) were completed:\n- Look for matching task descriptions in BACKLOG.md\n- Check if tasks are marked as complete (✅ or [x])\n- Note which agent's recommendations were addressed\n\n## 3. Update Agent Assessments\nFor each agent whose recommendations were completed:\n- Increase their score by 0.5-1.0 points (depending on impact)\n- Update their \"Positive Observations\" section\n- Move completed recommendations from their list\n- Add note about improvement\n\n## 4. Recalculate Overall Score\n- Sum all 12 agent scores\n- Divide by 12 for weighted average\n- Update \"Overall Assessment\" section\n- Update \"Conclusion\" section\n\n## 5. Update Sprint Plan\n- Mark completed stories as done\n- Adjust remaining sprint estimates\n- Update \"Next Review\" date if sprint completed\n\n## 6. Document Changes\nAdd a \"Recent Updates\" section at the top of ARB report:\n```markdown\n## 📝 Recent Updates\n\n**[Date]:** \n- Completed: [List of completed recommendations]\n- Agent score updates: [Agent name] X.X → Y.Y\n- Overall score: X.X → Y.Y\n- Reason: [Brief explanation]\n```\n\n## 7. Commit Changes\nAfter updating the ARB report:\n```bash\ngit add .kiro/ARCHITECTURE_REVIEW_BOARD_REPORT.md\ngit commit -m \"chore: sync ARB report with backlog updates\n\nPaired programming by Cole & Kiro\n\n- Updated [Agent] assessment: X.X → Y.Y\n- Completed recommendations: [LIST]\n- Overall score: X.X → Y.Y\n- Synchronized with BACKLOG.md changes\"\n```\n\n## 8. Report Summary\nProvide a brief summary:\n- Which recommendations were completed\n- Which agent scores changed\n- New overall score\n- Next priority recommendations\n\n**Remember:** The ARB report is a living document that should reflect the current state of the project. Keep it accurate and up-to-date!"
+  }
+}

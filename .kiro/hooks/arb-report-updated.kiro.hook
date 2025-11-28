@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "ARB Report Updated - Sync to Backlog",
+  "description": "When Architecture Review Board Report is manually updated, ensure BACKLOG.md reflects any new recommendations or priority changes",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      ".kiro/ARCHITECTURE_REVIEW_BOARD_REPORT.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "#product-manager The Architecture Review Board Report was just updated.\n\n**Your responsibility as Product Manager: Maintain backlog synchronization**\n\nPlease perform the following tasks:\n\n## 1. Read Both Documents\n- Read `.kiro/ARCHITECTURE_REVIEW_BOARD_REPORT.md` to see what changed\n- Read `.kiro/BACKLOG.md` to see current backlog state\n\n## 2. Identify Changes in ARB Report\nCheck for:\n- New recommendations added\n- Priority changes (P0 → P1, etc.)\n- Completed recommendations marked\n- New agent assessments\n- Updated overall score\n\n## 3. Sync New Recommendations to Backlog\nFor any new ARB recommendations not in BACKLOG.md:\n- Add to appropriate priority section\n- Use format: `- [ ] [AGENT-###] Description (Size: X hours)`\n- Include reference to ARB report\n- Add to correct sprint if planned\n\n## 4. Update Priority Sections\nIf ARB priorities changed:\n- Move tasks between P0/P1/P2 sections\n- Update sprint assignments\n- Adjust velocity estimates\n\n## 5. Mark Completed Items\nIf ARB shows recommendations as complete:\n- Mark corresponding backlog items as done (✅)\n- Move to \"Completed\" section\n- Update sprint burndown\n\n## 6. Update Backlog Header\nUpdate the backlog status section:\n```markdown\n## 📊 Current Status\n\n**Last Sync with ARB:** [Date]\n**Overall Project Health:** X.X/10\n**P0 Items:** X remaining\n**P1 Items:** X remaining\n**Current Sprint:** Sprint X\n```\n\n## 7. Commit Changes\nAfter updating BACKLOG.md:\n```bash\ngit add .kiro/BACKLOG.md\ngit commit -m \"chore: sync backlog with ARB report updates\n\nPaired programming by Cole & Kiro\n\n- Added new recommendations: [LIST]\n- Updated priorities: [CHANGES]\n- Marked completed: [ITEMS]\n- Synchronized with ARB report\"\n```\n\n## 8. Report Summary\nProvide a brief summary:\n- New items added to backlog\n- Priority changes made\n- Items marked complete\n- Impact on current sprint\n\n**Remember:** The backlog should always reflect the current ARB recommendations and priorities!"
+  }
+}
