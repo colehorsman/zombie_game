@@ -43,6 +43,7 @@ from combo_tracker import ComboTracker
 from pause_menu_controller import PauseMenuController, PauseMenuAction
 from arcade_results_controller import ArcadeResultsController, ArcadeResultsAction, ArcadeStatsSnapshot
 from cheat_code_controller import CheatCodeController, CheatCodeAction
+from boss_dialogue_controller import BossDialogueController
 
 
 logger = logging.getLogger(__name__)
@@ -224,10 +225,8 @@ class GameEngine:
         self.boss_spawned = False
         self.boss_type: Optional[BossType] = None
 
-        # Boss dialogue system
-        self.showing_boss_dialogue = False
-        self.boss_dialogue_content: Optional[dict] = None
-        self.boss_dialogue_shown = False
+        # Boss dialogue system - now managed by BossDialogueController
+        self.boss_dialogue_controller = BossDialogueController()
 
         # Pause menu (Zelda-style) - now managed by PauseMenuController
         self.pause_menu_controller = PauseMenuController()
@@ -1900,10 +1899,9 @@ class GameEngine:
 
                 # Handle boss dialogue dismissal (ENTER key only)
                 if event.key == pygame.K_RETURN:
-                    if self.showing_boss_dialogue and self.boss_dialogue_content:
+                    if self.boss_dialogue_controller.is_showing:
                         # Dismiss dialogue and spawn the cyber boss
-                        logger.info("📖 Boss dialogue dismissed - spawning boss!")
-                        self.showing_boss_dialogue = False
+                        self.boss_dialogue_controller.dismiss()
                         self._spawn_cyber_boss()
                         continue
 
@@ -2308,6 +2306,31 @@ class GameEngine:
         else:
             self.cheat_code_controller.disable_unlock()
 
+    # Backwards compatibility properties for boss dialogue (delegates to BossDialogueController)
+    @property
+    def showing_boss_dialogue(self) -> bool:
+        """Get boss dialogue visibility. Backwards compatibility for BossDialogueController."""
+        return self.boss_dialogue_controller.is_showing
+
+    @property
+    def boss_dialogue_content(self) -> Optional[dict]:
+        """Get boss dialogue content as dict. Backwards compatibility for BossDialogueController."""
+        if self.boss_dialogue_controller.content:
+            return {
+                "title": self.boss_dialogue_controller.content.title,
+                "description": self.boss_dialogue_controller.content.description,
+                "how_attacked": self.boss_dialogue_controller.content.how_attacked,
+                "victims": self.boss_dialogue_controller.content.victims,
+                "prevention": self.boss_dialogue_controller.content.prevention,
+                "mechanic": self.boss_dialogue_controller.content.mechanic,
+            }
+        return None
+
+    @property
+    def boss_dialogue_shown(self) -> bool:
+        """Check if dialogue was shown. Backwards compatibility for BossDialogueController."""
+        return self.boss_dialogue_controller.has_been_shown
+
     def distribute_zombies(self) -> None:
         """Distribute zombies across the level space."""
         if not self.zombies:
@@ -2472,17 +2495,13 @@ class GameEngine:
             # Cyber boss - show educational dialogue first
             logger.info(f"🕷️  Preparing {self.boss_type.value} boss for level {current_level}")
 
-            # Get dialogue content
-            self.boss_dialogue_content = get_boss_dialogue(self.boss_type)
-
-            # Show dialogue (boss will spawn after ENTER is pressed)
-            self.showing_boss_dialogue = True
-            self.boss_dialogue_shown = True
+            # Get dialogue content and show via controller
+            dialogue_data = get_boss_dialogue(self.boss_type)
+            self.boss_dialogue_controller.show(dialogue_data)
 
             # Pause game during dialogue
             self.game_state.status = GameStatus.BOSS_BATTLE
 
-            logger.info(f"📖 Showing boss dialogue for {self.boss_type.value}")
             return  # Don't spawn boss yet - wait for dialogue to be dismissed
 
         # Fallback: Old wizard boss (for levels without cyber boss mapping)

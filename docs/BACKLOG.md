@@ -67,6 +67,17 @@
 | FEAT-009 | 🟢 P3 | As a player, I want damage numbers to appear when hitting enemies | 📋 Ready | Rise 30px, fade over 1s, max 20 active |
 | FEAT-010 | 🟢 P3 | As a player, I want protected entities to show purple shields | 📋 Ready | Pulsing animation, 50% opacity, tooltip on proximity |
 
+### Epic: Player Damage & Consequences System
+
+| ID | Priority | User Story | Status | Notes |
+|----|----------|------------|--------|-------|
+| FEAT-027 | 🟠 P1 | As a player, I want to take damage when zombies touch me | 📋 Ready | Adds risk/reward, teaches defensive positioning |
+| FEAT-028 | 🟠 P1 | Player health system (10 HP, visual health bar) | 📋 Ready | Hearts display, damage feedback, invincibility frames |
+| FEAT-029 | 🟠 P1 | Damage consequences: 1 hit = 1 zombie unquarantined | 📋 Ready | Teaches cost of mistakes, mirrors real security incidents |
+| FEAT-030 | 🟡 P2 | Death/respawn: All zombies unquarantined, level restarts | 📋 Ready | Except during boss battles (game over instead) |
+| FEAT-031 | 🟡 P2 | Arcade mode damage: 1 hit = -1 from elimination count | 📋 Ready | Different consequence for timed mode |
+| FEAT-032 | 🟢 P3 | Health power-ups and recovery items | 📋 Ready | Healing items, shield power-ups, temporary invincibility |
+
 ---
 
 ## 📋 Features - Backlog
@@ -467,6 +478,487 @@ class OutageManager:
 - Compliance Audit (teaches documentation)
 
 **Estimated Effort**: 3-4 days for Phase 1, 2-3 days per additional phase
+
+---
+
+## ❤️ Player Damage & Consequences System - Detailed Design
+
+### Overview
+**Goal**: Add meaningful consequences to player mistakes, teaching that security incidents have real costs and that defensive positioning matters as much as offensive action.
+
+### Core Concept
+Players start with 10 HP. When zombies touch the player, they take damage. Each hit has consequences that mirror real-world security incidents—undoing previous remediation work and forcing players to re-secure compromised identities.
+
+---
+
+## Health System Mechanics
+
+### Base Health System
+**Starting Health**: 10 HP (displayed as 5 hearts, 2 HP per heart)
+
+**Visual Display**:
+- **Top-left HUD**: Row of hearts (♥♥♥♥♥)
+- **Full Heart**: ♥ (red, 2 HP)
+- **Half Heart**: ♡ (pink outline, 1 HP)
+- **Empty Heart**: ♡ (gray outline, 0 HP)
+
+**Damage Values**:
+- **Zombie Touch**: 1 HP damage
+- **Third-Party Touch**: 2 HP damage
+- **Boss Touch**: 3 HP damage
+- **Hacker Touch**: 2 HP damage
+- **Environmental Hazards**: 1 HP damage (future: spikes, fire)
+
+**Invincibility Frames**:
+- **Duration**: 1.5 seconds after taking damage
+- **Visual**: Player sprite flashes (alternating visible/invisible every 0.1s)
+- **Purpose**: Prevents instant death from multiple zombies
+- **Gameplay**: Teaches spacing and escape tactics
+
+---
+
+## Damage Consequences by Game Mode
+
+### Normal Level Mode: Zombie Unquarantine
+
+**Mechanic**: Each hit unquarantines 1 previously eliminated zombie
+
+**Implementation**:
+```python
+def on_player_damage(damage_amount):
+    player.health -= damage_amount
+    
+    # For each HP lost, unquarantine 1 zombie
+    for i in range(damage_amount):
+        if quarantined_zombies:
+            zombie = quarantined_zombies.pop()
+            zombie.respawn_at_spawn_point()
+            zombie.status = "active"
+            active_zombies.append(zombie)
+            
+    show_message(f"⚠️ Security breach! {damage_amount} identities reactivated!")
+```
+
+**Visual Feedback**:
+- **Screen Flash**: Red tint for 0.3 seconds
+- **Damage Number**: "-1 HP" floats up from player
+- **Zombie Respawn**: Purple portal effect at spawn point
+- **Message**: "⚠️ Security breach! 1 identity reactivated!"
+- **Sound**: Damage sound + zombie groan (optional)
+
+**Educational Value**:
+- **Teaches**: Security incidents can undo previous work
+- **Mirrors**: Real breaches that reactivate dormant accounts
+- **Shows**: Importance of maintaining security posture
+- **Demonstrates**: Cost of mistakes in production
+
+**Strategic Impact**:
+- **Risk/Reward**: Aggressive play vs. defensive positioning
+- **Resource Management**: Health is a resource like ammo
+- **Difficulty Scaling**: More zombies = harder to avoid damage
+- **Comeback Mechanic**: Can re-eliminate respawned zombies
+
+---
+
+### Death & Level Restart
+
+**Trigger**: Player health reaches 0 HP
+
+**Consequence**: All zombies unquarantined, level restarts from beginning
+
+**Implementation**:
+```python
+def on_player_death():
+    # Unquarantine ALL zombies
+    for zombie in quarantined_zombies:
+        zombie.respawn_at_spawn_point()
+        zombie.status = "active"
+        active_zombies.extend(quarantined_zombies)
+        quarantined_zombies.clear()
+    
+    # Reset player state
+    player.health = 10
+    player.position = level_start_position
+    player.power_ups.clear()
+    
+    # Reset quest progress (if any)
+    active_quest.reset()
+    
+    show_message("💀 SECURITY FAILURE - All identities reactivated. Level restarting...")
+    play_death_animation()
+```
+
+**Death Animation**:
+1. **Player Collapse**: Sprite falls down (0.5s)
+2. **Screen Fade**: Fade to black (1s)
+3. **Message Display**: "SECURITY FAILURE" (2s)
+4. **Statistics**: Show zombies eliminated before death
+5. **Restart Prompt**: "Press SPACE to restart level"
+
+**Educational Value**:
+- **Teaches**: Complete security failures require full remediation
+- **Mirrors**: Major breaches that compromise entire environments
+- **Shows**: Importance of not letting threats accumulate
+- **Demonstrates**: Cost of losing control
+
+**Exception - Boss Battles**:
+- **Different Behavior**: Death during boss = Game Over (not restart)
+- **Reason**: Boss battles are climactic, should have higher stakes
+- **Message**: "💀 GAME OVER - Boss defeated you. Return to lobby?"
+
+---
+
+### Arcade Mode: Elimination Count Penalty
+
+**Mechanic**: Each hit subtracts 1 from elimination count (not score)
+
+**Implementation**:
+```python
+def on_player_damage_arcade(damage_amount):
+    player.health -= damage_amount
+    
+    # Subtract from elimination count
+    arcade_stats.eliminations = max(0, arcade_stats.eliminations - damage_amount)
+    
+    # Visual feedback
+    show_floating_text(f"-{damage_amount} eliminations!", color=RED)
+    
+    # No zombie respawn in arcade mode (would be chaotic)
+```
+
+**Why Different?**:
+- **Arcade Mode**: Timed challenge, respawning zombies would be too punishing
+- **Score Preservation**: Combo multipliers and power-ups still count
+- **Elimination Count**: Only the "zombies eliminated" stat is reduced
+- **Balance**: Keeps arcade mode fast-paced and fun
+
+**Visual Feedback**:
+- **Screen Flash**: Red tint
+- **Stat Update**: Elimination counter decreases visibly
+- **Message**: "⚠️ Hit! -1 elimination"
+- **No Respawn**: Zombies stay eliminated
+
+**Educational Value**:
+- **Teaches**: Mistakes have measurable costs
+- **Shows**: Performance metrics can be negatively impacted
+- **Demonstrates**: Importance of avoiding incidents even under time pressure
+
+**Death in Arcade Mode**:
+- **Consequence**: Session ends immediately
+- **Results Screen**: Shows stats at time of death
+- **No Restart**: Must start new arcade session
+- **Message**: "💀 Arcade session failed! Final score: [score]"
+
+---
+
+## Health Recovery System
+
+### Health Power-Ups
+
+**Heart Power-Up** ❤️
+- **Spawn Rate**: 5% chance when eliminating zombie
+- **Effect**: Restore 2 HP (1 full heart)
+- **Max Health**: Cannot exceed 10 HP
+- **Visual**: Red heart icon, pulsing animation
+- **Duration**: 10 seconds before despawning
+- **Sound**: Healing chime (optional)
+
+**Shield Power-Up** 🛡️
+- **Spawn Rate**: 3% chance when eliminating third-party
+- **Effect**: Temporary invincibility (5 seconds)
+- **Visual**: Blue shield bubble around player
+- **Behavior**: Zombies bounce off shield
+- **Strategic Use**: Push through zombie crowds safely
+
+**Mega Health** 💊
+- **Spawn Rate**: 1% chance (rare)
+- **Effect**: Full health restore (10 HP)
+- **Visual**: Green cross icon, glowing
+- **Message**: "✨ Full health restored!"
+
+### Quest Rewards
+- **Quest Completion**: Restore 3 HP
+- **Boss Defeat**: Full health restore
+- **Level Completion**: Full health for next level
+
+---
+
+## Collision Detection & Damage
+
+### Zombie Collision
+```python
+def check_zombie_collision(player, zombies):
+    if player.invincible:
+        return  # No damage during invincibility frames
+    
+    for zombie in zombies:
+        if player.bounds.colliderect(zombie.bounds):
+            apply_damage(player, 1)
+            knockback_player(player, zombie.position)
+            start_invincibility_frames(player, 1.5)
+            break  # Only one hit per frame
+```
+
+### Knockback System
+- **Direction**: Away from damage source
+- **Distance**: 30 pixels
+- **Duration**: 0.2 seconds
+- **Purpose**: Creates space, prevents stunlock
+- **Visual**: Player sprite pushed back
+
+### Damage Feedback
+1. **Visual**: Screen flash, player flash, damage number
+2. **Audio**: Damage sound, player grunt (optional)
+3. **Haptic**: Controller rumble (if supported)
+4. **UI**: Health bar update, heart animation
+
+---
+
+## Difficulty Scaling
+
+### By Account Type
+
+**Sandbox Account**:
+- **Starting Health**: 10 HP (normal)
+- **Damage**: Standard (1 HP per zombie)
+- **Respawn Penalty**: 1 zombie per hit
+- **Health Drops**: 5% chance
+
+**Dev Account**:
+- **Starting Health**: 10 HP
+- **Damage**: Standard
+- **Respawn Penalty**: 1 zombie per hit
+- **Health Drops**: 4% chance
+
+**Staging Account**:
+- **Starting Health**: 8 HP (harder)
+- **Damage**: Standard
+- **Respawn Penalty**: 2 zombies per hit (more punishing)
+- **Health Drops**: 3% chance
+
+**Production Account**:
+- **Starting Health**: 6 HP (hardest)
+- **Damage**: Standard
+- **Respawn Penalty**: 2 zombies per hit
+- **Health Drops**: 2% chance
+- **Additional**: Production outages can cause damage
+
+---
+
+## Educational Messaging
+
+### Damage Messages (Contextual)
+
+**First Hit**:
+```
+⚠️ SECURITY BREACH DETECTED!
+A zombie touched you - 1 identity reactivated.
+Maintain safe distance from threats!
+```
+
+**Multiple Hits**:
+```
+⚠️ MULTIPLE BREACHES!
+{count} identities reactivated.
+Defensive positioning is critical!
+```
+
+**Low Health (3 HP or less)**:
+```
+🚨 CRITICAL: Health low!
+One more breach could trigger full remediation.
+Seek health power-ups or complete quest for healing.
+```
+
+**Death**:
+```
+💀 TOTAL SECURITY FAILURE
+All remediation work lost. Environment compromised.
+
+In production, this would mean:
+- All quarantined accounts reactivated
+- Full incident response required
+- Potential data breach
+- Compliance violations
+
+Learn from this. Restart and secure the environment.
+```
+
+---
+
+## Real-World Parallels
+
+### What This Teaches
+
+**Taking Damage = Security Incident**
+- **Real World**: Malware infection, unauthorized access, data leak
+- **Game**: Zombie touches player
+- **Consequence**: Previous security work is undone
+
+**Zombie Respawn = Account Reactivation**
+- **Real World**: Compromised account reactivates after incomplete remediation
+- **Game**: Previously eliminated zombie returns
+- **Lesson**: Incidents can undo security improvements
+
+**Death = Major Breach**
+- **Real World**: Complete environment compromise requiring full remediation
+- **Game**: All zombies unquarantined, level restart
+- **Lesson**: Losing control has catastrophic consequences
+
+**Health Management = Risk Management**
+- **Real World**: Maintaining security posture, monitoring threats
+- **Game**: Avoiding damage, collecting health power-ups
+- **Lesson**: Proactive defense is cheaper than reactive remediation
+
+**Invincibility Frames = Incident Response Window**
+- **Real World**: Brief window to contain breach before it spreads
+- **Game**: 1.5 seconds to escape after taking damage
+- **Lesson**: Quick response can prevent cascading failures
+
+---
+
+## Implementation Details
+
+### Data Model
+```python
+@dataclass
+class PlayerHealth:
+    current_hp: int = 10
+    max_hp: int = 10
+    invincible: bool = False
+    invincibility_timer: float = 0.0
+    last_damage_time: float = 0.0
+    damage_history: List[DamageEvent] = field(default_factory=list)
+
+@dataclass
+class DamageEvent:
+    timestamp: float
+    damage_amount: int
+    source: str  # "zombie", "third_party", "boss", etc.
+    zombies_respawned: int
+```
+
+### Health Manager
+```python
+class HealthManager:
+    def apply_damage(self, player, amount, source):
+        """Apply damage and trigger consequences"""
+        
+    def start_invincibility(self, player, duration):
+        """Start invincibility frames"""
+        
+    def update_invincibility(self, player, delta_time):
+        """Update invincibility timer"""
+        
+    def respawn_zombies(self, count):
+        """Respawn zombies as damage consequence"""
+        
+    def restore_health(self, player, amount):
+        """Restore health from power-ups"""
+```
+
+### Visual Components
+- **Health Bar**: Top-left corner, heart icons
+- **Damage Flash**: Red screen overlay (0.3s)
+- **Player Flash**: Sprite flashing during invincibility
+- **Damage Numbers**: Float up from player position
+- **Respawn Effects**: Purple portal at zombie spawn points
+
+---
+
+## Testing Strategy
+
+### Unit Tests
+- Health reduction on damage
+- Invincibility frame timing
+- Zombie respawn count calculation
+- Health power-up restoration
+- Max health clamping
+
+### Integration Tests
+- Damage → zombie respawn workflow
+- Death → level restart workflow
+- Arcade mode damage → elimination penalty
+- Boss battle death → game over
+
+### Property Tests
+- Health never exceeds max
+- Health never goes below 0
+- Invincibility prevents damage
+- Respawn count matches damage taken
+
+### Manual Testing
+- Take damage from each enemy type
+- Verify visual feedback (flash, hearts, numbers)
+- Test invincibility frames (no double-hit)
+- Verify zombie respawn locations
+- Test death and restart flow
+- Test arcade mode damage penalty
+
+---
+
+## Balancing Considerations
+
+### Too Punishing?
+- **Concern**: Players frustrated by losing progress
+- **Mitigation**: Invincibility frames, health power-ups, quest healing
+- **Tuning**: Adjust respawn count per difficulty level
+
+### Too Easy?
+- **Concern**: Players ignore damage, no consequences
+- **Mitigation**: Increase respawn count in higher difficulties
+- **Tuning**: Reduce health power-up spawn rate
+
+### Arcade Mode Balance
+- **Concern**: Damage too punishing in timed mode
+- **Solution**: Elimination penalty instead of respawn
+- **Tuning**: Consider reducing damage in arcade mode
+
+---
+
+## Implementation Priority
+
+**Phase 1 (Core System)**:
+1. Health system (10 HP, visual display)
+2. Damage detection (zombie collision)
+3. Invincibility frames (1.5s)
+4. Damage consequences (zombie respawn)
+
+**Phase 2 (Feedback)**:
+5. Visual feedback (flash, hearts, numbers)
+6. Death and restart flow
+7. Educational messages
+
+**Phase 3 (Recovery)**:
+8. Health power-ups (heart drops)
+9. Quest healing rewards
+10. Shield power-up
+
+**Phase 4 (Polish)**:
+11. Arcade mode damage penalty
+12. Boss battle death = game over
+13. Difficulty scaling by account
+
+**Estimated Effort**: 4-5 days total (1-2 days per phase)
+
+---
+
+## Success Metrics
+
+**Gameplay Balance**:
+- Average deaths per level: 1-2 (challenging but fair)
+- Health power-up usage: 60%+ (players seek healing)
+- Damage avoidance: Players learn to maintain distance
+
+**Educational Impact**:
+- Players understand damage = undone work
+- Players learn defensive positioning
+- Players appreciate cost of mistakes
+
+**Player Feedback**:
+- "Damage feels fair, not cheap"
+- "I learned to be more careful"
+- "Health management adds strategy"
 
 ---
 
