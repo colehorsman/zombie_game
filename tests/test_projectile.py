@@ -1,8 +1,8 @@
 """Tests for projectile system."""
 
 import pytest
-from src.models import Vector2
-from src.projectile import Projectile
+from models import Vector2
+from projectile import Projectile
 
 
 class TestProjectileInitialization:

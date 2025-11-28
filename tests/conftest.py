@@ -12,8 +12,8 @@ sys.path.insert(0, str(src_path))
 @pytest.fixture
 def sample_zombie():
     """Create a sample zombie for testing."""
-    from src.models import Vector2
-    from src.zombie import Zombie
+    from models import Vector2
+    from zombie import Zombie
 
     return Zombie(
         identity_id="test-zombie-123",
@@ -26,7 +26,7 @@ def sample_zombie():
 @pytest.fixture
 def sample_projectile():
     """Create a sample projectile for testing."""
-    from src.models import Vector2
-    from src.projectile import Projectile
+    from models import Vector2
+    from projectile import Projectile
 
     return Projectile(position=Vector2(50, 100), velocity=Vector2(300, 0), damage=1)

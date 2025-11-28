@@ -5,8 +5,8 @@ from hypothesis import given, strategies as st
 from unittest.mock import patch
 import pygame
 
-from src.powerup import PowerUp, PowerUpType, PowerUpManager, spawn_random_powerups
-from src.models import Vector2
+from powerup import PowerUp, PowerUpType, PowerUpManager, spawn_random_powerups
+from models import Vector2
 
 
 @pytest.fixture(scope="module", autouse=True)

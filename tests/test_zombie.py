@@ -1,8 +1,8 @@
 """Tests for zombie entity behavior."""
 
 import pytest
-from src.models import Vector2
-from src.zombie import Zombie
+from models import Vector2
+from zombie import Zombie
 
 
 class TestZombieInitialization:

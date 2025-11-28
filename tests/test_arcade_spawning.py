@@ -1,11 +1,11 @@
 """Tests for arcade mode dynamic zombie spawning."""
 
 import pytest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
-from src.arcade_mode import ArcadeModeManager
-from src.zombie import Zombie
-from src.models import Vector2
+from arcade_mode import ArcadeModeManager
+from zombie import Zombie
+from models import Vector2
 
 
 @pytest.fixture
@@ -194,64 +194,60 @@ class TestReadyToRespawn:
 class TestZombieRespawn:
     """Test zombie respawn positioning."""
 
-    def test_respawn_left_of_player(self, arcade_manager, sample_zombie):
+    @patch("random.choice")
+    def test_respawn_left_of_player(self, mock_choice, arcade_manager, sample_zombie):
         """Should respawn zombie 500 pixels left of player."""
         player_pos = Vector2(1000, 300)
         level_width = 5000
         ground_y = 500
 
         # Mock random to always choose left
-        import random
-
-        random.choice = lambda x: True  # Always spawn left
+        mock_choice.return_value = True  # Always spawn left
 
         arcade_manager.respawn_zombie(sample_zombie, player_pos, level_width, ground_y)
 
         # Should be 500 pixels left
         assert sample_zombie.position.x == 500  # 1000 - 500
 
-    def test_respawn_right_of_player(self, arcade_manager, sample_zombie):
+    @patch("random.choice")
+    def test_respawn_right_of_player(self, mock_choice, arcade_manager, sample_zombie):
         """Should respawn zombie 500 pixels right of player."""
         player_pos = Vector2(1000, 300)
         level_width = 5000
         ground_y = 500
 
         # Mock random to always choose right
-        import random
-
-        random.choice = lambda x: False  # Always spawn right
+        mock_choice.return_value = False  # Always spawn right
 
         arcade_manager.respawn_zombie(sample_zombie, player_pos, level_width, ground_y)
 
         # Should be 500 pixels right
         assert sample_zombie.position.x == 1500  # 1000 + 500
 
-    def test_respawn_clamp_left_edge(self, arcade_manager, sample_zombie):
+    @patch("random.choice")
+    def test_respawn_clamp_left_edge(self, mock_choice, arcade_manager, sample_zombie):
         """Should clamp spawn position to left edge."""
         player_pos = Vector2(200, 300)  # Near left edge
         level_width = 5000
         ground_y = 500
 
         # Mock random to spawn left
-        import random
-
-        random.choice = lambda x: True
+        mock_choice.return_value = True
 
         arcade_manager.respawn_zombie(sample_zombie, player_pos, level_width, ground_y)
 
         # Should clamp to minimum 50
         assert sample_zombie.position.x >= 50
 
-    def test_respawn_clamp_right_edge(self, arcade_manager, sample_zombie):
+    @patch("random.choice")
+    def test_respawn_clamp_right_edge(self, mock_choice, arcade_manager, sample_zombie):
         """Should clamp spawn position to right edge."""
         player_pos = Vector2(4800, 300)  # Near right edge
         level_width = 5000
         ground_y = 500
 
         # Mock random to spawn right
-        import random
-
-        random.choice = lambda x: False
+        mock_choice.return_value = False
 
         arcade_manager.respawn_zombie(sample_zombie, player_pos, level_width, ground_y)
 

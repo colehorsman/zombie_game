@@ -3,12 +3,6 @@
 import pytest
 from unittest.mock import Mock, patch
 import pygame
-import sys
-from pathlib import Path
-
-# Add src to path
-src_path = Path(__file__).parent.parent / "src"
-sys.path.insert(0, str(src_path))
 
 from powerup import PowerUp, PowerUpType, PowerUpManager, spawn_random_powerups
 from models import Vector2

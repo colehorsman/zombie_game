@@ -3,7 +3,7 @@
 import pytest
 from hypothesis import given, strategies as st
 
-from src.combo_tracker import ComboTracker
+from combo_tracker import ComboTracker
 
 
 class TestComboTrackerBasics:

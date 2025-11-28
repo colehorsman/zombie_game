@@ -1,10 +1,10 @@
 """Tests for collision detection system."""
 
 import pytest
-from src.models import Vector2
-from src.collision import SpatialGrid, check_collisions_with_spatial_grid
-from src.zombie import Zombie
-from src.projectile import Projectile
+from models import Vector2
+from collision import SpatialGrid, check_collisions_with_spatial_grid
+from zombie import Zombie
+from projectile import Projectile
 
 
 class TestSpatialGrid:

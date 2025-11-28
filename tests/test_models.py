@@ -1,7 +1,7 @@
 """Tests for core data models."""
 
 import pytest
-from src.models import (
+from models import (
     Vector2,
     GameState,
     GameStatus,

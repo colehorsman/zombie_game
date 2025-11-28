@@ -4,6 +4,24 @@
       "url": "https://mcp.s.sonraisecurity.com/stage12902075",
       "disabled": true,
       "autoApprove": []
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": ""
+      },
+      "disabled": false,
+      "autoApprove": ["list_issues", "search_repositories", "get_file_contents"]
+    },
+    "brave-search": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
+      "env": {
+        "BRAVE_API_KEY": ""
+      },
+      "disabled": false,
+      "autoApprove": ["brave_web_search"]
     }
   }
 }

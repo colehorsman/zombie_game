@@ -4,10 +4,10 @@ import pytest
 from hypothesis import given, strategies as st
 from unittest.mock import Mock
 
-from src.arcade_mode import ArcadeModeManager
-from src.models import ArcadeStats, ArcadeModeState, Vector2
-from src.zombie import Zombie
-from src.powerup import PowerUpType
+from arcade_mode import ArcadeModeManager
+from models import ArcadeStats, ArcadeModeState, Vector2
+from zombie import Zombie
+from powerup import PowerUpType
 from dataclasses import is_dataclass
 
 
