@@ -2,6 +2,7 @@
 
 **Last Updated**: 2024-11-28
 **Sprint**: Kiroween Submission Sprint (HARD DEADLINE: Dec 5, 2025)
+**Days Remaining**: 7
 
 ---
 
@@ -18,6 +19,32 @@
 
 **Current Sprint:** Kiroween Submission (7 days remaining)
 **Sprint Goal:** Complete hackathon submission by Dec 5, 2025 @ 4:00pm CST
+
+---
+
+## 🎯 Sprint Strategy
+
+**Key Insight:** User collecting gameplay footage at AWS re:Invent this week removes video recording from critical path!
+
+**Optimized Timeline:**
+- **Days 1-2 (Nov 28-29):** Evidence collection + write-up start
+- **Days 3-4 (Nov 30 - Dec 1):** Content creation + repository prep
+- **Days 5-6 (Dec 2-3):** Video editing (with re:Invent footage)
+- **Day 7 (Dec 4):** Final submission
+
+**Critical Path:** ~22-29 hours over 7 days = 3-4 hours/day ✅
+
+**Immediate Actions (Start Now):**
+1. ✅ SONRAI-001: Rotate API tokens (COMPLETE)
+2. 🔄 KIRO-001: Evidence collection (IN PROGRESS)
+3. 🔄 KIRO-002: Start write-up outline (NEXT)
+
+**re:Invent Shot List:**
+- Lobby navigation
+- Zombie elimination with API calls
+- Quest demonstrations
+- Visual effects (60 FPS, purple shields)
+- Real-time remediation indicators
 
 ---
 
@@ -82,16 +109,17 @@
   - [ ] Submit to Devpost
 - **ARB Reference**: Kiroween Submission Agent Review
 
-#### SONRAI-001: Rotate API Tokens Before Submission
+#### ✅ SONRAI-001: Rotate API Tokens Before Submission (COMPLETE)
 - **Priority**: 🔴 P0 - CRITICAL
 - **Effort**: S (1 hour)
-- **Deadline**: Before Dec 5, 2025
+- **Completed**: Nov 28, 2024
 - **Tasks**:
-  - [ ] Generate new token in Sonrai platform
-  - [ ] Update .env file
-  - [ ] Test connectivity
-  - [ ] Document rotation date
+  - [x] Generate new token in Sonrai platform
+  - [x] Update .env file
+  - [x] Test connectivity
+  - [x] Document rotation date
 - **ARB Reference**: Sonrai Integration Agent Review
+- **Status**: ✅ COMPLETE - API token rotated and tested
 
 ---
 
