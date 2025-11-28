@@ -14,6 +14,14 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# API Timeout Configuration (SEC-002)
+# These timeouts prevent hanging requests and ensure responsive gameplay
+API_TIMEOUT_SHORT = 10  # Quick operations (auth, health checks)
+API_TIMEOUT_STANDARD = 30  # Standard queries (fetch data)
+API_TIMEOUT_MUTATION = 15  # Mutations (quarantine, block)
+API_MAX_RETRIES = 3  # Maximum retry attempts for failed requests
+API_RETRY_DELAY = 1.0  # Initial delay between retries (seconds)
+
 
 class SonraiAPIClient:
     """Handles all communication with the Sonrai Security API."""
@@ -59,7 +67,7 @@ class SonraiAPIClient:
                 self.api_url,
                 json={"query": query},
                 headers=self._get_headers(),
-                timeout=10,
+                timeout=API_TIMEOUT_SHORT,
             )
             response.raise_for_status()
             logger.info("Successfully authenticated with Sonrai API")
@@ -80,6 +88,66 @@ class SonraiAPIClient:
             "Authorization": f"Bearer {self.api_token}",
             "Content-Type": "application/json",
         }
+
+    def _make_request_with_timeout(
+        self,
+        query: str,
+        variables: Dict[str, Any] = None,
+        timeout: int = API_TIMEOUT_STANDARD,
+        max_retries: int = API_MAX_RETRIES,
+    ) -> Dict[str, Any]:
+        """
+        Make API request with timeout and retry logic.
+
+        Args:
+            query: GraphQL query or mutation
+            variables: Query variables
+            timeout: Request timeout in seconds
+            max_retries: Maximum number of retry attempts
+
+        Returns:
+            API response data
+
+        Raises:
+            requests.exceptions.Timeout: If request times out after all retries
+            requests.exceptions.RequestException: If request fails after all retries
+        """
+        last_exception: Exception = None
+
+        for attempt in range(max_retries):
+            try:
+                payload: Dict[str, Any] = {"query": query}
+                if variables:
+                    payload["variables"] = variables
+
+                response = requests.post(
+                    self.api_url,
+                    json=payload,
+                    headers=self._get_headers(),
+                    timeout=timeout,
+                )
+                response.raise_for_status()
+                return response.json()
+
+            except requests.exceptions.Timeout as e:
+                last_exception = e
+                logger.warning(f"API request timeout (attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    delay = API_RETRY_DELAY * (2**attempt)  # Exponential backoff
+                    logger.info(f"Retrying in {delay}s...")
+                    time.sleep(delay)
+
+            except requests.exceptions.RequestException as e:
+                last_exception = e
+                logger.warning(f"API request failed (attempt {attempt + 1}/{max_retries}): {e}")
+                if attempt < max_retries - 1:
+                    delay = API_RETRY_DELAY * (2**attempt)
+                    logger.info(f"Retrying in {delay}s...")
+                    time.sleep(delay)
+
+        # All retries exhausted
+        logger.error(f"API request failed after {max_retries} attempts")
+        raise last_exception
 
     def fetch_accounts_with_unused_identities(self) -> dict:
         """

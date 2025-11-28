@@ -159,16 +159,18 @@
 - **ARB Reference**: DevEx Agent Review
 - **Status**: ✅ COMPLETE - Detailed troubleshooting for setup, runtime, tests, and platform issues
 
-#### UX-001: Add Interactive Tutorial
+#### ⏸️ UX-001: Add Interactive Tutorial (DEFERRED)
 - **Priority**: 🔴 P0
 - **Effort**: L (2-3 days)
-- **Description**: New players need guidance
+- **Status**: ⏸️ DEFERRED - Needs user testing feedback to design properly
+- **Description**: In-game tutorial (tooltips, guided first-time experience)
 - **ARB Reference**: UX/Design Agent Review
 
-#### UX-002: Add Quest Objective UI
+#### ⏸️ UX-002: Add Quest Objective UI (DEFERRED)
 - **Priority**: 🔴 P0
 - **Effort**: M (4-6 hours)
-- **Description**: Make quest goals clear
+- **Status**: ⏸️ DEFERRED - Will design based on testing feedback
+- **Description**: Make quest goals clear with on-screen objectives
 - **ARB Reference**: UX/Design Agent Review
 
 ---
@@ -207,11 +209,13 @@
 
 ### Security Recommendations
 
-#### SEC-002: Add Request Timeouts
+#### ✅ SEC-002: Add Request Timeouts (COMPLETE)
 - **Priority**: 🟠 P1
 - **Effort**: S (2-3 hours)
-- **Description**: Prevent hanging requests
+- **Completed**: Nov 28, 2024
+- **Description**: Prevent hanging requests with timeout configuration and retry logic
 - **ARB Reference**: Security Agent Review
+- **Status**: ✅ COMPLETE - Added timeout constants, retry with exponential backoff, comprehensive documentation
 
 #### SEC-003: Implement API Rate Limiting
 - **Priority**: 🟠 P1
