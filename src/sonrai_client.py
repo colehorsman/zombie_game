@@ -1286,3 +1286,64 @@ class SonraiAPIClient:
             error_msg = f"Unexpected error protecting service: {str(e)}"
             logger.error(error_msg)
             return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+
+    def batch_quarantine_identities(self, zombies: List) -> 'QuarantineReport':
+        """
+        Quarantine multiple identities in batches with rate limiting.
+        
+        Rate limit: 10 API calls per batch with 1-second delay between batches.
+        
+        Args:
+            zombies: List of Zombie objects to quarantine
+            
+        Returns:
+            QuarantineReport with success/failure counts
+        """
+        from models import QuarantineReport
+        
+        report = QuarantineReport(
+            total_queued=len(zombies),
+            successful=0,
+            failed=0,
+            errors=[]
+        )
+        
+        if not zombies:
+            logger.info("📭 No zombies to quarantine")
+            return report
+        
+        logger.info(f"🔄 Starting batch quarantine of {len(zombies)} identities...")
+        
+        batch_size = 10
+        batch_count = (len(zombies) + batch_size - 1) // batch_size
+        
+        for batch_idx in range(batch_count):
+            start_idx = batch_idx * batch_size
+            end_idx = min(start_idx + batch_size, len(zombies))
+            batch = zombies[start_idx:end_idx]
+            
+            logger.info(f"📦 Processing batch {batch_idx + 1}/{batch_count} ({len(batch)} identities)")
+            
+            for zombie in batch:
+                result = self.quarantine_identity(
+                    identity_id=zombie.identity_id,
+                    identity_name=zombie.identity_name,
+                    account=zombie.account,
+                    scope=zombie.scope
+                )
+                
+                if result.success:
+                    report.successful += 1
+                    logger.debug(f"  ✅ {zombie.identity_name}")
+                else:
+                    report.failed += 1
+                    report.errors.append(f"{zombie.identity_name}: {result.error_message}")
+                    logger.warning(f"  ❌ {zombie.identity_name}: {result.error_message}")
+            
+            # Rate limiting: 1-second delay between batches
+            if batch_idx < batch_count - 1:
+                logger.debug(f"⏸️  Rate limiting: waiting 1 second before next batch...")
+                time.sleep(1.0)
+        
+        logger.info(f"✅ Batch quarantine complete: {report.successful} successful, {report.failed} failed")
+        return report

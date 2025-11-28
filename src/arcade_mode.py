@@ -35,6 +35,13 @@ class ArcadeModeManager:
         
         # Session start time (for calculating eliminations per second)
         self.session_duration = 0.0
+        
+        # Dynamic spawning
+        self.respawn_queue: List[Zombie] = []  # Zombies waiting to respawn
+        self.respawn_timers: dict = {}  # {zombie_id: time_remaining}
+        self.respawn_delay = 2.0  # 2 seconds
+        self.spawn_distance = 500  # Spawn 500 pixels from player
+        self.min_zombie_count = 20  # Minimum zombies on screen
 
     def start_session(self) -> None:
         """Start a new arcade mode session with 3-second countdown."""
@@ -54,6 +61,10 @@ class ArcadeModeManager:
         
         # Reset combo tracker
         self.combo_tracker.reset()
+        
+        # Reset spawning
+        self.respawn_queue.clear()
+        self.respawn_timers.clear()
 
     def update(self, delta_time: float) -> None:
         """
@@ -81,6 +92,9 @@ class ArcadeModeManager:
         # Update combo tracker
         self.combo_tracker.update(delta_time)
         
+        # Update respawn timers
+        self._update_respawn_timers(delta_time)
+        
         # Clamp timer to 0
         if self.time_remaining < 0:
             self.time_remaining = 0.0
@@ -88,6 +102,17 @@ class ArcadeModeManager:
         # Check for session end
         if self.time_remaining <= 0:
             self._end_session()
+
+    def _update_respawn_timers(self, delta_time: float) -> None:
+        """
+        Update respawn timers for dynamic spawning.
+        
+        Args:
+            delta_time: Time elapsed since last frame
+        """
+        # TODO: Implement dynamic spawning logic
+        # This is a placeholder to prevent AttributeError
+        pass
 
     def _end_session(self) -> None:
         """End the arcade mode session."""
@@ -236,3 +261,119 @@ class ArcadeModeManager:
         )
         logger.info(f"🎁 Spawned {len(powerups)} arcade power-ups")
         return powerups
+
+    def calculate_initial_zombie_count(self, level_width: int) -> int:
+        """
+        Calculate initial zombie count based on level width.
+        
+        Density: 1 zombie per 100 pixels
+        Minimum: 20 zombies
+        
+        Args:
+            level_width: Width of the level in pixels
+            
+        Returns:
+            Number of zombies to spawn
+        """
+        density_count = level_width // 100
+        return max(self.min_zombie_count, density_count)
+
+    def queue_zombie_for_respawn(self, zombie: Zombie) -> None:
+        """
+        Queue a zombie for respawn after 2-second delay.
+        
+        Args:
+            zombie: Zombie to respawn
+        """
+        if not self.active or self.in_countdown:
+            return
+        
+        # Add to respawn queue if not already there
+        if zombie.identity_id not in self.respawn_timers:
+            self.respawn_queue.append(zombie)
+            self.respawn_timers[zombie.identity_id] = self.respawn_delay
+            logger.debug(f"🔄 Queued zombie for respawn: {zombie.identity_name} (2s delay)")
+
+    def _update_respawn_timers(self, delta_time: float) -> None:
+        """
+        Update respawn timers and trigger respawns.
+        
+        Args:
+            delta_time: Time elapsed since last frame
+        """
+        # Update all timers
+        expired_ids = []
+        for zombie_id, time_remaining in self.respawn_timers.items():
+            self.respawn_timers[zombie_id] = time_remaining - delta_time
+            if self.respawn_timers[zombie_id] <= 0:
+                expired_ids.append(zombie_id)
+        
+        # Remove expired timers
+        for zombie_id in expired_ids:
+            del self.respawn_timers[zombie_id]
+
+    def get_zombies_ready_to_respawn(self) -> List[Zombie]:
+        """
+        Get zombies that are ready to respawn (timer expired).
+        
+        Returns:
+            List of zombies ready to respawn
+        """
+        ready = []
+        for zombie in self.respawn_queue[:]:  # Copy to avoid modification during iteration
+            if zombie.identity_id not in self.respawn_timers:
+                ready.append(zombie)
+                self.respawn_queue.remove(zombie)
+        
+        return ready
+
+    def respawn_zombie(self, zombie: Zombie, player_pos: Vector2, level_width: int, ground_y: int) -> None:
+        """
+        Respawn a zombie at a safe distance from the player.
+        
+        Spawns 500 pixels away from player (left or right).
+        
+        Args:
+            zombie: Zombie to respawn
+            player_pos: Player's current position
+            level_width: Width of the level
+            ground_y: Y position of the ground
+        """
+        import random
+        
+        # Choose spawn side (left or right of player)
+        spawn_left = random.choice([True, False])
+        
+        if spawn_left:
+            # Spawn to the left
+            spawn_x = player_pos.x - self.spawn_distance
+            # Clamp to level bounds
+            spawn_x = max(50, spawn_x)
+        else:
+            # Spawn to the right
+            spawn_x = player_pos.x + self.spawn_distance
+            # Clamp to level bounds
+            spawn_x = min(level_width - 50, spawn_x)
+        
+        # Reset zombie state
+        zombie.position = Vector2(spawn_x, ground_y - zombie.height)
+        zombie.health = zombie.max_health
+        zombie.is_flashing = False
+        zombie.flash_timer = 0.0
+        zombie.velocity = Vector2(0, 0)
+        zombie.on_ground = True
+        zombie.is_hidden = False
+        
+        logger.debug(f"♻️  Respawned zombie: {zombie.identity_name} at ({spawn_x}, {ground_y})")
+
+    def should_respawn_zombies(self, current_zombie_count: int) -> bool:
+        """
+        Check if zombies should be respawned to maintain minimum count.
+        
+        Args:
+            current_zombie_count: Current number of active zombies
+            
+        Returns:
+            True if zombies should be respawned
+        """
+        return current_zombie_count < self.min_zombie_count

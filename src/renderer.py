@@ -186,17 +186,20 @@ class Renderer:
                 if game_map.is_on_screen(third_party.position.x, third_party.position.y, third_party.width, third_party.height):
                     screen_x, screen_y = game_map.world_to_screen(third_party.position.x, third_party.position.y)
                     
-                    # Apply flash effect if active
+                    # Render sprite
                     self.screen.blit(third_party.sprite, (screen_x, screen_y))
-                                    if third_party.is_flashing:
-                            self._apply_flash_effect(screen_x, screen_y, third_party.width, third_party.height)
+                    
+                    # Apply flash effect if active
+                    if third_party.is_flashing:
+                        self._apply_flash_effect(screen_x, screen_y, third_party.width, third_party.height)
             else:
                 # Classic mode: only render 3rd parties that are on or near the screen
                 if -100 < third_party.position.x < self.width + 100:
+                    # Render sprite
+                    self.screen.blit(third_party.sprite, (int(third_party.position.x), int(third_party.position.y)))
+                    
                     # Apply flash effect if active
                     if third_party.is_flashing:
-                    self.screen.blit(third_party.sprite, (int(third_party.position.x), int(third_party.position.y)))
-                                if third_party.is_flashing:
                         self._apply_flash_effect(int(third_party.position.x), int(third_party.position.y), third_party.width, third_party.height)
 
     def render_doors(self, doors: List[Door], game_map: GameMap) -> None:
@@ -536,10 +539,12 @@ class Renderer:
                     cloud_screen_x = screen_x - (boss.cloud_sprite.get_width() - boss.width) // 2
                     self.screen.blit(boss.cloud_sprite, (cloud_screen_x, cloud_screen_y))
                 
-                # Apply flash effect if active
+                # Render sprite
                 self.screen.blit(boss.sprite, (screen_x, screen_y))
-                                if boss.is_flashing:
-                        self._apply_flash_effect(screen_x, screen_y, boss.width, boss.height)
+                
+                # Apply flash effect if active
+                if boss.is_flashing:
+                    self._apply_flash_effect(screen_x, screen_y, boss.width, boss.height)
         else:
             # Classic mode: render if on screen
             if -100 < boss.position.x < self.width + 100:
@@ -648,8 +653,10 @@ class Renderer:
 
                     # Step 2: Render spider sprite on top
                     self.screen.blit(spider.sprite, (screen_x, screen_y))
-                                        if spider.is_flashing:
-                            self._apply_flash_effect(screen_x, screen_y, spider.width, spider.height)
+                    
+                    # Apply flash effect if active
+                    if spider.is_flashing:
+                        self._apply_flash_effect(screen_x, screen_y, spider.width, spider.height)
             else:
                 # Classic mode
                 if -100 < spider.position.x < self.width + 100:

@@ -3,10 +3,29 @@
 ## Feature Development Process
 
 ### 1. Branch Strategy
+**ALWAYS work on feature/bug/fix branches, never directly on `main`**
+
 - Create feature branches from `main`: `feature/<feature-name>`
+- Create bug fix branches: `fix/<bug-description>`
+- Create hotfix branches: `hotfix/<critical-fix>`
 - Use descriptive branch names matching backlog items
 - Keep branches focused on single features
 - Merge back to main after testing
+- Delete branch after successful merge
+
+**Examples:**
+```bash
+# Feature development
+git checkout -b feature/arcade-mode
+git checkout -b feature/jit-access-quest
+
+# Bug fixes
+git checkout -b fix/zombie-collision-bug
+git checkout -b fix/door-cooldown-issue
+
+# Hotfixes (critical production issues)
+git checkout -b hotfix/api-timeout-crash
+```
 
 ### 2. Implementation Order
 When implementing features, follow this priority:

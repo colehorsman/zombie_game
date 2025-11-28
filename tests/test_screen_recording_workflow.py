@@ -238,9 +238,10 @@ class TestScreenRecordingWorkflow:
         assert game_engine.game_state.congratulations_message is not None
         assert "PAUSED" in game_engine.game_state.congratulations_message
         
-        # Verify menu options exist
-        assert len(game_engine.pause_menu_options) == 4
+        # Verify menu options exist (5 in Sandbox with arcade mode option)
+        assert len(game_engine.pause_menu_options) == 5
         assert "Return to Game" in game_engine.pause_menu_options
+        assert "🎮 Arcade Mode" in game_engine.pause_menu_options
         assert "Return to Lobby" in game_engine.pause_menu_options
         assert "Save Game" in game_engine.pause_menu_options
         assert "Quit Game" in game_engine.pause_menu_options
@@ -257,10 +258,10 @@ class TestScreenRecordingWorkflow:
         game_engine._enter_level(sandbox_door)
         game_engine._show_pause_menu()
         
-        # Test navigation down
+        # Test navigation down (5 options in Sandbox)
         initial_index = game_engine.pause_menu_selected_index
         game_engine._navigate_pause_menu(1)
-        assert game_engine.pause_menu_selected_index == (initial_index + 1) % 4
+        assert game_engine.pause_menu_selected_index == (initial_index + 1) % 5
         
         # Test navigation up
         game_engine._navigate_pause_menu(-1)

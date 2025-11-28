@@ -348,17 +348,20 @@ class TestArcadeResultsOptionExecution:
         assert engine.game_state.status == GameStatus.LOBBY
 
     def test_execute_quarantine_all_option_placeholder(self, game_engine_with_results):
-        """Test executing 'Yes - Quarantine All' option (placeholder implementation)."""
+        """Test executing 'Yes - Quarantine All' option (batch quarantine implemented)."""
         engine = game_engine_with_results
         
         # Select "Yes - Quarantine All" (index 0)
         engine.arcade_results_selected_index = 0
         engine._execute_arcade_results_option()
         
-        # TODO: This is a placeholder - batch quarantine not yet implemented
-        # For now, it should clear queue and return to lobby
+        # Batch quarantine is now implemented
+        # Should clear queue after batch operation
         assert len(engine.arcade_manager.get_elimination_queue()) == 0
-        assert engine.game_state.status == GameStatus.LOBBY
+        
+        # Should show results message (not immediately return to lobby)
+        assert engine.game_state.status == GameStatus.PAUSED
+        assert "Batch Quarantine Complete" in engine.game_state.congratulations_message
 
 
 class TestArcadeResultsEdgeCases:

@@ -16,20 +16,39 @@ Every AWS organization accumulates unused identities—forgotten contractor acco
 - **Trigger** real Sonrai API calls to quarantine actual identities
 - **Learn** security concepts through interactive quests
 
-## Quick Start
+---
+
+## 🚀 Quick Start
+
+<details>
+<summary><b>60-Second Setup</b></summary>
 
 ```bash
-# Setup (2 minutes)
+# 1. Clone and navigate
 git clone <repository-url> && cd zombie_game
+
+# 2. Create virtual environment
 python3 -m venv venv && source venv/bin/activate
+
+# 3. Install dependencies
 pip install -r requirements.txt
-cp .env.example .env  # Add your Sonrai credentials
+
+# 4. Configure credentials
+cp .env.example .env  # Edit with your Sonrai API credentials
+
+# 5. Run the game!
 python3 src/main.py
 ```
 
 **Controls:** WASD/Arrows to move • Space to shoot • Enter to dismiss messages
 
-## Key Features
+**Need more details?** See [QUICKSTART.md](docs/guides/QUICKSTART.md) for comprehensive setup guide.
+
+</details>
+
+---
+
+## ✨ Key Features
 
 - **Dual-Mode Gameplay** - Top-down lobby exploration + side-scrolling platformer levels
 - **Real API Integration** - Every action triggers actual Sonrai GraphQL mutations
@@ -37,91 +56,254 @@ python3 src/main.py
 - **Performance** - 60 FPS with 500+ entities through spatial grid optimization
 - **Comprehensive Testing** - 191 automated tests with 92.7% pass rate
 
-## Documentation
+---
+
+## 📖 Documentation
 
 <details>
-<summary><b>📖 Getting Started</b></summary>
+<summary><b>� Gettinng Started</b></summary>
 
-- **[Quick Start Guide](docs/guides/QUICKSTART.md)** - Get running in 60 seconds
-- **[Installation Guide](docs/guides/INSTALLATION.md)** - Detailed setup instructions
+### Quick Setup
+- **[60-Second Quickstart](docs/guides/QUICKSTART.md)** - Get running immediately
 - **[Configuration Guide](docs/guides/CONFIGURATION.md)** - Environment variables and settings
+
+### For Developers
+- **[Claude AI Guide](docs/guides/CLAUDE.md)** - Working with Claude Code on this project
+- **[Development Workflow](.kiro/steering/development-workflow.md)** - Best practices and patterns
 
 </details>
 
 <details>
-<summary><b>🏗️ Architecture & Design</b></summary>
+<summary><b>🏗️ Architecture & Technical Deep Dive</b></summary>
 
+### System Design
 - **[System Architecture](docs/architecture/ARCHITECTURE.md)** - Technical deep dive
 - **[Performance Optimization](docs/architecture/PERFORMANCE.md)** - Spatial grid and scaling
 - **[Design Patterns](docs/architecture/PATTERNS.md)** - State machines, factories, strategies
+
+### Technical Showcase
+- **[Project Showcase](docs/architecture/PROJECT_SHOWCASE.md)** - Achievements and innovation
+- **[Hackathon Submission](docs/reference/HACKATHON_SUBMISSION.md)** - Complete technical narrative
+
+</details>
+
+<details>
+<summary><b>🐛 Bug Reports & Fixes</b></summary>
+
+### Recent Fixes
+- **[Collision Bug Fix](docs/bug-reports/BUG_FIX_COLLISION_AFTER_QUEST.md)** - Spatial grid recreation fix
+- **[Bug Reports](docs/bug-reports/)** - All documented bugs and resolutions
+
+### Known Issues
+See [BACKLOG.md](docs/BACKLOG.md) for current bugs and their status.
+
+</details>
+
+<details>
+<summary><b>🔒 Security</b></summary>
+
+### Security Scanning
+- **[Security Documentation](docs/reference/SECURITY.md)** - Comprehensive security scanning guide
+- **[Public Release Checklist](docs/reference/PUBLIC_RELEASE_CHECKLIST.md)** - Security verification
+
+### Security Tools
+- SAST (Bandit, Semgrep)
+- Dependency scanning (Safety, pip-audit)
+- Secret detection (Gitleaks)
+- CI/CD integration
+
+</details>
+
+<details>
+<summary><b>📋 Product Backlog</b></summary>
+
+### Current Sprint
+- **[Product Backlog](docs/BACKLOG.md)** - Features, bugs, and roadmap
+- **[Implementation Status](.kiro/specs/arcade-mode/IMPLEMENTATION_STATUS.md)** - Arcade mode progress
+
+### Priorities
+- 🔴 P0: Critical (blocking issues)
+- 🟠 P1: High (next release)
+- 🟡 P2: Medium (schedule when possible)
+- 🟢 P3: Low (future consideration)
 
 </details>
 
 <details>
 <summary><b>🤝 Contributing</b></summary>
 
+### How to Contribute
 - **[Contribution Guide](docs/community/CONTRIBUTING.md)** - How to contribute
 - **[Development Workflow](docs/community/DEVELOPMENT.md)** - Best practices
 - **[Code Standards](docs/community/STANDARDS.md)** - Style and quality guidelines
 
+### Testing
+- **[Beta Testing Strategy](.kiro/steering/beta-testing-strategy.md)** - Automated testing approach
+- **[QA Reports](docs/qa-reports/)** - Quality assurance documentation
+
 </details>
 
 <details>
-<summary><b>📚 Reference</b></summary>
+<summary><b>📚 API Reference</b></summary>
 
-- **[API Reference](docs/reference/API.md)** - Sonrai GraphQL integration
+### Sonrai Integration
+- **[API Integration Guide](docs/sonrai-api/INTEGRATION_GUIDE.md)** - Complete integration docs
+- **[Quick Reference](docs/sonrai-api/QUICK_REFERENCE.md)** - Common queries and mutations
+- **[Query Examples](docs/sonrai-api/queries/)** - GraphQL query library
+
+### Game Mechanics
 - **[Game Mechanics](docs/reference/MECHANICS.md)** - Power-ups, quests, controls
-- **[Changelog](docs/reference/CHANGELOG.md)** - Version history
-- **[Troubleshooting](docs/reference/TROUBLESHOOTING.md)** - Common issues
+- **[Cheat Codes](docs/CHEAT_CODES.md)** - Testing shortcuts
 
 </details>
 
 <details>
-<summary><b>🎯 Project Info</b></summary>
+<summary><b>🎯 Project Information</b></summary>
 
-- **[Project Overview](docs/reference/PROJECT_SUMMARY.md)** - Executive summary
-- **[Technical Showcase](docs/architecture/PROJECT_SHOWCASE.md)** - Achievements and innovation
+### Overview
+- **[Project Summary](docs/reference/PROJECT_SUMMARY.md)** - Executive summary
 - **[Repository Structure](docs/reference/REPOSITORY_STRUCTURE.md)** - Codebase organization
+- **[Changelog](docs/reference/CHANGELOG.md)** - Version history
+
+### Documentation Hub
+- **[Complete Documentation](docs/README.md)** - Central documentation hub
+- **[Documentation Standards](docs/DOCUMENTATION_STANDARDS.md)** - Writing guidelines
 
 </details>
 
-## Technical Highlights
+<details>
+<summary><b>🔧 Troubleshooting</b></summary>
 
-**Dual-Engine Architecture**
-- Seamlessly merges top-down exploration with side-scrolling platformer
+### Common Issues
+- **[Troubleshooting Guide](docs/reference/TROUBLESHOOTING.md)** - Solutions to common problems
+- **[QA Reports](docs/qa-reports/)** - Test results and known issues
+
+### Support
+- [GitHub Issues](../../issues) - Report bugs
+- [Discussions](../../discussions) - Ask questions
+
+</details>
+
+---
+
+## 🎯 Technical Highlights
+
+<details>
+<summary><b>Dual-Engine Architecture</b></summary>
+
+Seamlessly merges two completely different game modes:
+- **Lobby Mode**: Top-down exploration with fog-of-war
+- **Platformer Mode**: Side-scrolling with gravity physics
 - Mode-aware physics, camera, collision, and controls
+- Seamless transitions through door-based level entry
 
-**Performance Optimization**  
-- Spatial grid reduces collision detection from O(n²) to O(n)
+</details>
+
+<details>
+<summary><b>Performance Optimization</b></summary>
+
+**Spatial Grid Collision Detection**
+- Reduces complexity from O(n²) to O(n)
 - 18.5× speedup enables 60 FPS with 500+ entities
+- Only checks nearby cells instead of all entities
 
-**Real API Integration**
-- Actual Sonrai GraphQL mutations, not mocks
-- Exponential backoff retry logic with graceful degradation
+**Mathematical Impact:**
+```
+Naive: n × m checks (500 × 10 = 5,000 per frame)
+Spatial Grid: n × 9k checks (10 × 9 × 3 = 270 per frame)
+Speedup: 5,000 / 270 ≈ 18.5×
+```
 
-## Use Cases
+</details>
 
-- **Security Training** - Onboard new hires through gameplay
-- **Conference Demos** - Memorable alternative to PowerPoint
+<details>
+<summary><b>Real API Integration</b></summary>
+
+Every game action triggers actual Sonrai GraphQL mutations:
+- **Quarantine Identity** - Eliminate zombie → `ChangeQuarantineStatus`
+- **Block Third Party** - Neutralize entity → `DenyThirdPartyAccess`
+- **Protect Service** - Win quest → `ProtectService`
+- **Apply JIT** - Secure admin role → `SetJitConfiguration`
+
+**Reliability Features:**
+- Exponential backoff retry logic
+- Graceful degradation on API errors
+- Real CloudHierarchy scopes (never constructed manually)
+
+</details>
+
+---
+
+## 💼 Use Cases
+
+- **Security Training** - Onboard new hires through interactive gameplay
+- **Conference Demos** - Memorable alternative to PowerPoint at AWS re:Invent
 - **Executive Presentations** - Visual representation of identity sprawl
-- **Team Building** - Competitive cleanup challenges
+- **Team Building** - Competitive cleanup challenges with real impact
+- **Compliance Audits** - Demonstrate proactive identity management
 
-## Requirements
+---
 
+## 📋 Requirements
+
+**System Requirements:**
 - Python 3.11+
-- Sonrai Security account with API access
 - 4 GB RAM minimum
 - macOS, Linux, or Windows
 
-## License
+**Sonrai Requirements:**
+- Sonrai Security account with API access
+- API token with `read:data` and `read:platform` scopes
+- AWS organization with unused identities
+
+**Optional:**
+- Bluetooth/wired game controller (8BitDo tested)
+- Fullscreen display for best experience
+
+---
+
+## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
-## Links
+This project is open source and available for:
+- Educational purposes
+- Security training
+- Conference demonstrations
+- Community contributions
 
-- **[Full Documentation](docs/README.md)** - Complete documentation hub
+---
+
+## 🔗 Quick Links
+
+### Documentation
+- **[Complete Documentation Hub](docs/README.md)** - Central navigation
+- **[60-Second Quickstart](docs/guides/QUICKSTART.md)** - Get running immediately
+- **[Hackathon Submission](docs/reference/HACKATHON_SUBMISSION.md)** - Full technical narrative
+
+### Development
+- **[Product Backlog](docs/BACKLOG.md)** - Features and roadmap
+- **[Claude AI Guide](docs/guides/CLAUDE.md)** - AI-assisted development
+- **[Security Scanning](docs/reference/SECURITY.md)** - Security tools and processes
+
+### Community
 - **[GitHub Issues](../../issues)** - Bug reports and feature requests
 - **[Discussions](../../discussions)** - Questions and ideas
+- **[Contributing Guide](docs/community/CONTRIBUTING.md)** - How to contribute
+
+---
+
+## 🏆 Project Status
+
+| Metric | Status |
+|--------|--------|
+| Core Game | ✅ 100% Complete |
+| Quests | ✅ 2/2 Implemented |
+| Tests | 🟢 177/191 Passing (92.7%) |
+| Documentation | 🟢 Comprehensive |
+| Performance | ✅ 60 FPS Target Met |
+
+**Current Focus:** Visual polish, bug fixes, arcade mode enhancements
 
 ---
 

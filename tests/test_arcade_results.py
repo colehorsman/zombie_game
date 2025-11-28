@@ -592,12 +592,13 @@ class TestArcadeResultsOptionExecution:
         # Execute option
         game_engine._execute_arcade_results_option()
         
-        # Should clear queue (batch quarantine not yet implemented)
+        # Should clear queue after batch quarantine
         queue = game_engine.arcade_manager.get_elimination_queue()
         assert len(queue) == 0
         
-        # Should return to lobby
-        assert game_engine.game_state.status == GameStatus.LOBBY
+        # Should show results message (not immediately return to lobby)
+        assert game_engine.game_state.status == GameStatus.PAUSED
+        assert "Batch Quarantine Complete" in game_engine.game_state.congratulations_message
 
     def test_execute_no_discard_queue_option(self, game_engine):
         """Test executing 'No - Discard Queue' option."""

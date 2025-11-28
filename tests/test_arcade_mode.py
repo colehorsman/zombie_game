@@ -26,6 +26,13 @@ class TestArcadeModeManagerBasics:
         assert manager.powerups_collected == 0
         assert manager.highest_combo == 0
         assert manager.session_duration == 0.0
+        
+        # Dynamic spawning attributes
+        assert len(manager.respawn_queue) == 0
+        assert len(manager.respawn_timers) == 0
+        assert manager.respawn_delay == 2.0
+        assert manager.spawn_distance == 500
+        assert manager.min_zombie_count == 20
 
     def test_start_session_activates_countdown(self):
         """Test starting session activates countdown."""
@@ -46,6 +53,8 @@ class TestArcadeModeManagerBasics:
         manager.powerups_collected = 10
         manager.highest_combo = 15
         manager.elimination_queue.append(Mock())
+        manager.respawn_queue.append(Mock())
+        manager.respawn_timers["zombie-1"] = 1.5
         
         # Start new session
         manager.start_session()
@@ -54,6 +63,10 @@ class TestArcadeModeManagerBasics:
         assert manager.powerups_collected == 0
         assert manager.highest_combo == 0
         assert len(manager.elimination_queue) == 0
+        
+        # Dynamic spawning should be reset
+        assert len(manager.respawn_queue) == 0
+        assert len(manager.respawn_timers) == 0
 
     def test_countdown_phase_decrements_countdown_timer(self):
         """Test countdown phase decrements countdown timer."""
@@ -299,6 +312,70 @@ class TestArcadeModeManagerBasics:
         assert manager.active is False
         assert manager.in_countdown is False
         assert len(manager.elimination_queue) == 0
+
+
+class TestArcadeModeDynamicSpawning:
+    """Tests for dynamic spawning features."""
+
+    def test_respawn_queue_initialization(self):
+        """Test respawn queue initializes empty."""
+        manager = ArcadeModeManager()
+        assert len(manager.respawn_queue) == 0
+        assert isinstance(manager.respawn_queue, list)
+
+    def test_respawn_timers_initialization(self):
+        """Test respawn timers initializes empty."""
+        manager = ArcadeModeManager()
+        assert len(manager.respawn_timers) == 0
+        assert isinstance(manager.respawn_timers, dict)
+
+    def test_respawn_delay_default_value(self):
+        """Test respawn delay has correct default value."""
+        manager = ArcadeModeManager()
+        assert manager.respawn_delay == 2.0
+
+    def test_spawn_distance_default_value(self):
+        """Test spawn distance has correct default value."""
+        manager = ArcadeModeManager()
+        assert manager.spawn_distance == 500
+
+    def test_min_zombie_count_default_value(self):
+        """Test minimum zombie count has correct default value."""
+        manager = ArcadeModeManager()
+        assert manager.min_zombie_count == 20
+
+    def test_update_respawn_timers_exists(self):
+        """Test _update_respawn_timers method exists and is callable."""
+        manager = ArcadeModeManager()
+        manager.start_session()
+        manager.update(3.1)  # Complete countdown
+        
+        # Should not raise AttributeError
+        manager._update_respawn_timers(0.016)
+
+    def test_respawn_queue_cleared_on_session_start(self):
+        """Test respawn queue is cleared when starting new session."""
+        manager = ArcadeModeManager()
+        
+        # Add mock zombies to respawn queue
+        manager.respawn_queue.append(Mock())
+        manager.respawn_queue.append(Mock())
+        
+        manager.start_session()
+        
+        assert len(manager.respawn_queue) == 0
+
+    def test_respawn_timers_cleared_on_session_start(self):
+        """Test respawn timers are cleared when starting new session."""
+        manager = ArcadeModeManager()
+        
+        # Add mock timers
+        manager.respawn_timers["zombie-1"] = 1.5
+        manager.respawn_timers["zombie-2"] = 0.8
+        
+        manager.start_session()
+        
+        assert len(manager.respawn_timers) == 0
 
 
 class TestArcadeModeManagerProperties:

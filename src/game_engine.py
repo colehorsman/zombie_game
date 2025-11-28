@@ -237,6 +237,12 @@ class GameEngine:
         self.konami_input = []  # Track current input sequence
         self.konami_timeout = 2.0  # Reset sequence after 2 seconds of no input
         self.last_konami_input_time = 0.0
+        
+        # Arcade mode cheat code (UP UP DOWN DOWN A B)
+        self.arcade_code = [pygame.K_UP, pygame.K_UP, pygame.K_DOWN, pygame.K_DOWN,
+                           pygame.K_a, pygame.K_b]
+        self.arcade_input = []  # Track arcade code input
+        self.last_arcade_input_time = 0.0
 
         # Pause menu (Zelda-style)
         self.pause_menu_options = ["Return to Game", "Return to Lobby", "Save Game", "Quit Game"]
@@ -1178,8 +1184,51 @@ class GameEngine:
             self._show_arcade_results()
             return
 
+        # Dynamic zombie spawning - maintain minimum count
+        if self.arcade_manager.should_respawn_zombies(len([z for z in self.zombies if not z.is_hidden])):
+            ready_zombies = self.arcade_manager.get_zombies_ready_to_respawn()
+            for zombie in ready_zombies:
+                if self.game_map:
+                    ground_y = 800  # Platform ground level
+                    self.arcade_manager.respawn_zombie(
+                        zombie,
+                        self.player.position,
+                        self.game_map.map_width,
+                        ground_y
+                    )
+                    logger.debug(f"♻️  Respawned zombie in arcade mode: {zombie.identity_name}")
+
         # Disable quests during arcade mode
         # (Quests are updated in _update_playing, which still runs)
+
+    def _start_arcade_mode(self) -> None:
+        """Start arcade mode session with initialization."""
+        logger.info("🎮 Starting arcade mode session...")
+        
+        # Start arcade manager
+        self.arcade_manager.start_session()
+        
+        # Calculate initial zombie count based on level width
+        if self.game_map:
+            initial_count = self.arcade_manager.calculate_initial_zombie_count(self.game_map.map_width)
+            logger.info(f"🎮 Arcade mode: {initial_count} zombies calculated for level width {self.game_map.map_width}")
+        
+        # Spawn arcade power-ups
+        if self.game_map:
+            ground_y = 800
+            arcade_powerups = self.arcade_manager.spawn_arcade_powerups(
+                self.game_map.map_width,
+                ground_y,
+                count=10  # More power-ups for arcade mode
+            )
+            self.powerups.extend(arcade_powerups)
+            logger.info(f"🎁 Spawned {len(arcade_powerups)} arcade power-ups")
+        
+        # Show confirmation message
+        self.game_state.quest_message = "🎮 ARCADE MODE ACTIVATED!\n\nEliminate as many zombies as possible in 60 seconds!"
+        self.game_state.quest_message_timer = 3.0
+        
+        logger.info("✅ Arcade mode initialized successfully")
 
     def _show_arcade_results(self) -> None:
         """Show arcade mode results screen with quarantine options."""
@@ -1296,10 +1345,33 @@ class GameEngine:
         logger.info(f"🎮 Arcade results: executing option '{selected_option}'")
         
         if selected_option == "Yes - Quarantine All":
-            # TODO: Implement batch quarantine (Task 11)
-            logger.info("🔄 Batch quarantine not yet implemented - clearing queue")
+            # Batch quarantine all queued zombies
+            queue = self.arcade_manager.get_elimination_queue()
+            logger.info(f"🔄 Starting batch quarantine of {len(queue)} identities...")
+            
+            # Show progress message
+            self.game_state.congratulations_message = (
+                f"🔄 Quarantining {len(queue)} identities...\n\n"
+                "Please wait..."
+            )
+            
+            # Perform batch quarantine
+            report = self.api_client.batch_quarantine_identities(queue)
+            
+            # Clear queue
             self.arcade_manager.clear_elimination_queue()
-            self._return_to_lobby()
+            
+            # Show results
+            self.game_state.congratulations_message = (
+                f"✅ Batch Quarantine Complete!\n\n"
+                f"Successful: {report.successful}/{report.total_queued}\n"
+                f"Failed: {report.failed}/{report.total_queued}\n\n"
+                "Press ENTER/SPACE to continue"
+            )
+            
+            # Set flag to return to lobby on next input
+            self.game_state.previous_status = GameStatus.LOBBY
+            logger.info(f"✅ Batch quarantine complete: {report.successful} successful, {report.failed} failed")
         
         elif selected_option == "No - Discard Queue":
             # Discard queue and return to lobby
@@ -1626,6 +1698,9 @@ class GameEngine:
             # Note: arcade_manager.queue_elimination also updates combo tracker internally
             self.arcade_manager.queue_elimination(zombie)
             
+            # Queue zombie for respawn (dynamic spawning)
+            self.arcade_manager.queue_zombie_for_respawn(zombie)
+            
             # Update game state counters
             self.game_state.zombies_remaining -= 1
             
@@ -1659,6 +1734,17 @@ class GameEngine:
 
     def _show_pause_menu(self) -> None:
         """Show Zelda-style pause menu with options."""
+        # Add arcade mode option if in Sandbox account
+        base_options = ["Return to Game", "Return to Lobby", "Save Game", "Quit Game"]
+        
+        if (self.game_state.status == GameStatus.PLAYING and 
+            self.game_state.current_level_account_id == "577945324761" and
+            not self.arcade_manager.is_active()):
+            # Insert arcade mode option after "Return to Game"
+            self.pause_menu_options = ["Return to Game", "🎮 Arcade Mode", "Return to Lobby", "Save Game", "Quit Game"]
+        else:
+            self.pause_menu_options = base_options
+        
         # Reset menu selection to first option
         self.pause_menu_selected_index = 0
         logger.info(f"⏸️  Pause menu initialized - selection index: {self.pause_menu_selected_index}")
@@ -1719,6 +1805,12 @@ class GameEngine:
         if selected_option == "Return to Game":
             # Resume the game
             self.dismiss_message()
+        elif selected_option == "🎮 Arcade Mode":
+            # Start arcade mode
+            logger.info("🎮 Starting arcade mode from pause menu...")
+            self.game_state.congratulations_message = None
+            self.game_state.status = self.game_state.previous_status
+            self._start_arcade_mode()
         elif selected_option == "Return to Lobby":
             # Return to lobby (only if in a level)
             if self.game_state.previous_status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
@@ -1976,6 +2068,29 @@ class GameEngine:
                         logger.info("🎮 KONAMI CODE ACTIVATED! Spawning boss...")
                         self._spawn_boss()
                         self.konami_input = []  # Reset
+                
+                # Arcade mode cheat code detection (UP UP DOWN DOWN A B)
+                if current_time - self.last_arcade_input_time > self.konami_timeout:
+                    self.arcade_input = []
+                
+                self.last_arcade_input_time = current_time
+                self.arcade_input.append(event.key)
+                
+                if len(self.arcade_input) > 6:
+                    self.arcade_input = self.arcade_input[-6:]
+                
+                # Check if arcade code matches
+                if len(self.arcade_input) >= 6:
+                    if self.arcade_input[-6:] == self.arcade_code:
+                        # Only activate in Sandbox account
+                        if self.game_state.status == GameStatus.PLAYING:
+                            if self.game_state.current_level_account_id == "577945324761":
+                                logger.info("🎮 ARCADE CODE ACTIVATED! Starting arcade mode...")
+                                self._start_arcade_mode()
+                                self.arcade_input = []
+                            else:
+                                logger.info("⚠️  Arcade mode only available in Sandbox account")
+                                self.arcade_input = []
 
                 # Handle boss dialogue dismissal (ENTER key only)
                 if event.key == pygame.K_RETURN:
