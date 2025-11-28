@@ -539,12 +539,12 @@ def main():
             # Render JIT quest messages
             renderer.render_jit_quest_message(game_state.jit_quest)
 
-        # Render UI
-        renderer.render_ui(game_state)
+        # Render UI (including player health)
+        player = game_engine.get_player()
+        renderer.render_ui(game_state, player)
 
         # Render minimap (if using map mode, but not in platformer levels)
         if game_map and game_map.mode != "platformer":
-            player = game_engine.get_player()
             renderer.render_minimap(game_map, player.position, zombies)
 
         # Render boss dialogue if showing

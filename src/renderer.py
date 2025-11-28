@@ -1130,28 +1130,33 @@ class Renderer:
                      int(projectile.position.y - projectile.radius))
                 )
 
-    def render_ui(self, game_state: GameState) -> None:
+    def render_ui(self, game_state: GameState, player: 'Player' = None) -> None:
         """
         Render the UI overlay with game statistics.
 
         Args:
             game_state: Current game state
+            player: Player object for health display
         """
+        # Always render player health if player provided
+        if player:
+            self._render_player_health(player)
+
         # Check if arcade mode is active
         if game_state.arcade_mode and game_state.arcade_mode.active:
-            self._render_arcade_ui(game_state.arcade_mode)
+            self._render_arcade_ui(game_state.arcade_mode, player)
             return
-        
+
         # Normal mode UI
-        # Zombies quarantined count
+        # Zombies quarantined count (shift down to make room for health)
         zombies_text = f"Zombies: Quarantined {game_state.zombies_quarantined}/{game_state.total_zombies}"
         zombies_surface = self.ui_font.render(zombies_text, True, self.ui_text_color)
-        self.screen.blit(zombies_surface, (10, 10))
+        self.screen.blit(zombies_surface, (10, 50))
 
-        # 3rd parties blocked count
+        # 3rd parties blocked count (shifted down for health display)
         third_parties_text = f"3rd Parties: Blocked {game_state.third_parties_blocked}/{game_state.total_third_parties}"
         third_parties_surface = self.ui_font.render(third_parties_text, True, self.ui_text_color)
-        self.screen.blit(third_parties_surface, (10, 45))
+        self.screen.blit(third_parties_surface, (10, 85))
 
         # Error message if present
         if game_state.error_message:
@@ -1167,12 +1172,13 @@ class Renderer:
         if game_state.status == GameStatus.VICTORY:
             self._render_victory_screen(game_state)
 
-    def _render_arcade_ui(self, arcade_state) -> None:
+    def _render_arcade_ui(self, arcade_state, player: 'Player' = None) -> None:
         """
         Render arcade mode UI overlay.
-        
+
         Args:
             arcade_state: ArcadeModeState from game state
+            player: Player object (health already rendered by render_ui)
         """
         # Countdown phase - show large countdown
         if arcade_state.in_countdown:
@@ -1255,6 +1261,90 @@ class Renderer:
         # Power-up duration display (if active)
         # This would need to be passed from game engine - placeholder for now
         # TODO: Add power-up duration display
+
+    def _render_player_health(self, player: 'Player') -> None:
+        """
+        Render player health as hearts in top-left corner.
+
+        Args:
+            player: Player object with health attributes
+        """
+        # Heart dimensions
+        heart_size = 24
+        heart_spacing = 4
+        start_x = 10
+        start_y = 10
+
+        # Colors
+        FULL_HEART = (255, 50, 50)      # Red
+        HALF_HEART = (255, 150, 150)    # Pink
+        EMPTY_HEART = (80, 80, 80)      # Gray
+
+        # Calculate hearts (2 HP per heart, 5 hearts total for 10 HP)
+        hearts_total = player.max_health // 2
+        full_hearts = player.current_health // 2
+        has_half_heart = player.current_health % 2 == 1
+
+        for i in range(hearts_total):
+            x = start_x + i * (heart_size + heart_spacing)
+            y = start_y
+
+            if i < full_hearts:
+                # Full heart
+                self._draw_heart(x, y, heart_size, FULL_HEART)
+            elif i == full_hearts and has_half_heart:
+                # Half heart
+                self._draw_heart(x, y, heart_size, HALF_HEART, half=True)
+            else:
+                # Empty heart
+                self._draw_heart(x, y, heart_size, EMPTY_HEART, outline_only=True)
+
+    def _draw_heart(self, x: int, y: int, size: int, color: tuple,
+                    half: bool = False, outline_only: bool = False) -> None:
+        """
+        Draw a heart shape at the specified position.
+
+        Args:
+            x: X position
+            y: Y position
+            size: Size of the heart
+            color: RGB color tuple
+            half: If True, draw only left half filled
+            outline_only: If True, draw only outline
+        """
+        # Simple heart using circles and triangle
+        radius = size // 4
+        center_y = y + radius
+
+        if outline_only:
+            # Draw outline only
+            pygame.draw.circle(self.screen, color, (x + radius, center_y), radius, 2)
+            pygame.draw.circle(self.screen, color, (x + size - radius, center_y), radius, 2)
+            # Triangle outline (bottom point)
+            points = [
+                (x, center_y),
+                (x + size, center_y),
+                (x + size // 2, y + size - 2)
+            ]
+            pygame.draw.polygon(self.screen, color, points, 2)
+        else:
+            # Filled heart
+            pygame.draw.circle(self.screen, color, (x + radius, center_y), radius)
+            pygame.draw.circle(self.screen, color, (x + size - radius, center_y), radius)
+            # Triangle (bottom point)
+            points = [
+                (x, center_y),
+                (x + size, center_y),
+                (x + size // 2, y + size - 2)
+            ]
+            pygame.draw.polygon(self.screen, color, points)
+
+            if half:
+                # Cover right half with dark overlay for half-heart effect
+                half_rect = pygame.Rect(x + size // 2, y, size // 2 + 2, size)
+                overlay = pygame.Surface((half_rect.width, half_rect.height), pygame.SRCALPHA)
+                overlay.fill((0, 0, 0, 180))
+                self.screen.blit(overlay, half_rect)
 
     def _render_victory_screen(self, game_state: GameState) -> None:
         """

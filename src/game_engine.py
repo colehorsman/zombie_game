@@ -1356,6 +1356,9 @@ class GameEngine:
         # Update player (platformer mode - with gravity)
         self.player.update(delta_time, is_platformer_mode=True)
 
+        # Update player invincibility frames
+        self.player.update_invincibility(delta_time)
+
         # PLATFORMER: Check for solid collision with zombies (can't walk through them)
         player_bounds = self.player.get_bounds()
 
@@ -1371,6 +1374,11 @@ class GameEngine:
                             self.star_power_touched_zombies.add(zombie)
                             self._handle_zombie_elimination(zombie)  # Instant elimination
                         continue  # Don't push player back, zombie is eliminated
+
+                    # Apply damage to player (if not invincible)
+                    if self.player.take_damage(1):
+                        # Damage was applied - trigger consequences
+                        self._on_player_damaged(zombie)
 
                     # Zombie is solid - push player back
                     # Determine push direction based on player movement
@@ -1662,6 +1670,81 @@ class GameEngine:
 
         # Block immediately via API (no pause, no delay)
         self._block_third_party(third_party)
+
+    def _on_player_damaged(self, source_zombie: 'Zombie') -> None:
+        """
+        Handle consequences when player takes damage.
+
+        Args:
+            source_zombie: The zombie that dealt the damage
+        """
+        logger.info(f"💔 Player damaged by {source_zombie.identity_name}!")
+
+        # Check for death
+        if self.player.is_dead:
+            self._on_player_death()
+            return
+
+        # ARCADE MODE: Subtract from elimination count instead of respawning
+        if self.arcade_manager.is_active():
+            state = self.arcade_manager.get_state()
+            if state.eliminations_count > 0:
+                # Reduce elimination count by 1
+                self.arcade_manager.combo_tracker.eliminations -= 1
+                logger.info(f"🎮 ARCADE: -1 elimination! Count: {self.arcade_manager.combo_tracker.eliminations}")
+            return
+
+        # NORMAL MODE: Respawn a quarantined zombie as consequence
+        self._respawn_quarantined_zombie()
+
+    def _respawn_quarantined_zombie(self) -> None:
+        """Respawn one previously quarantined zombie as damage consequence."""
+        # Find a hidden/quarantined zombie to respawn
+        quarantined = [z for z in self.zombies if z.is_hidden and not z.is_quarantining]
+
+        if quarantined:
+            zombie = quarantined[0]
+            zombie.is_hidden = False
+            zombie.health = zombie.max_health  # Reset health
+
+            # Remove from quarantined set if tracked
+            if zombie.identity_srn in self.quarantined_identities:
+                self.quarantined_identities.discard(zombie.identity_srn)
+
+            # Update counter
+            self.game_state.zombies_remaining += 1
+
+            logger.warning(f"⚠️ SECURITY BREACH! {zombie.identity_name} reactivated!")
+            self.game_state.resource_message = f"⚠️ {zombie.identity_name} reactivated!"
+            self.game_state.resource_message_timer = 2.0
+        else:
+            logger.info("No quarantined zombies to respawn")
+
+    def _on_player_death(self) -> None:
+        """Handle player death - restart level with all zombies respawned."""
+        logger.error("💀 PLAYER DIED! Restarting level...")
+
+        # Show death message
+        self.game_state.resource_message = "💀 SECURITY FAILURE - All identities reactivated!"
+        self.game_state.resource_message_timer = 3.0
+
+        # Respawn ALL quarantined zombies
+        respawn_count = 0
+        for zombie in self.zombies:
+            if zombie.is_hidden:
+                zombie.is_hidden = False
+                zombie.health = zombie.max_health
+                respawn_count += 1
+
+        # Clear quarantine tracking
+        self.quarantined_identities.clear()
+        self.game_state.zombies_remaining = len([z for z in self.zombies if not z.is_hidden])
+
+        # Reset player
+        self.player.reset_health()
+        self.player.position = Vector2(self.landing_zone.x, self.player.ground_y)
+
+        logger.info(f"💀 Respawned {respawn_count} zombies. Level restarting.")
 
     def _show_pause_menu(self) -> None:
         """Show Zelda-style pause menu with options. Delegates to PauseMenuController."""

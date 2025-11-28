@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Pre-Commit Security Check",
+  "description": "Runs comprehensive security scans before commits or merges to detect secrets, critical vulnerabilities, and sensitive data. Checks for exposed API keys, credentials, security issues using gitleaks, bandit, and semgrep based on existing security configurations.",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "runCommand",
+    "command": "bash scripts/security_scan.sh"
+  }
+}

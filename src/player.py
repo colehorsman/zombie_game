@@ -1,9 +1,12 @@
 """Player character implementation."""
 
 import pygame
+import logging
 from typing import Optional
 
 from models import Vector2
+
+logger = logging.getLogger(__name__)
 
 
 class Player:
@@ -57,6 +60,18 @@ class Player:
 
         # Visual direction (only left/right for sprite)
         self.visual_direction = 1  # 1 = right, -1 = left
+
+        # Health system
+        self.max_health: int = 10
+        self.current_health: int = self.max_health
+
+        # Invincibility frames (after taking damage)
+        self.is_invincible: bool = False
+        self.invincibility_timer: float = 0.0
+        self.invincibility_duration: float = 1.5  # seconds
+        self.flash_timer: float = 0.0
+        self.flash_interval: float = 0.1  # Flash every 0.1s during invincibility
+        self.is_visible: bool = True  # For flashing effect
 
         # Create base sprite (facing right)
         self.base_sprite = self._create_sprite()
@@ -448,3 +463,93 @@ class Player:
             self.width,
             self.height
         )
+
+    # ========== Health System Methods ==========
+
+    def take_damage(self, amount: int = 1) -> bool:
+        """
+        Apply damage to the player.
+
+        Args:
+            amount: Amount of damage to apply
+
+        Returns:
+            True if damage was applied, False if player is invincible
+        """
+        if self.is_invincible:
+            return False
+
+        self.current_health -= amount
+        self.current_health = max(0, self.current_health)
+
+        # Start invincibility frames
+        self.is_invincible = True
+        self.invincibility_timer = self.invincibility_duration
+        self.flash_timer = 0.0
+        self.is_visible = True
+
+        logger.info(f"💔 Player took {amount} damage! Health: {self.current_health}/{self.max_health}")
+
+        return True
+
+    def heal(self, amount: int) -> None:
+        """
+        Restore health to the player.
+
+        Args:
+            amount: Amount of health to restore
+        """
+        old_health = self.current_health
+        self.current_health = min(self.max_health, self.current_health + amount)
+        healed = self.current_health - old_health
+
+        if healed > 0:
+            logger.info(f"💚 Player healed {healed} HP! Health: {self.current_health}/{self.max_health}")
+
+    def full_heal(self) -> None:
+        """Restore player to full health."""
+        self.current_health = self.max_health
+        logger.info(f"💚 Player fully healed! Health: {self.current_health}/{self.max_health}")
+
+    def update_invincibility(self, delta_time: float) -> None:
+        """
+        Update invincibility frames and flashing effect.
+
+        Args:
+            delta_time: Time since last update in seconds
+        """
+        if not self.is_invincible:
+            self.is_visible = True
+            return
+
+        self.invincibility_timer -= delta_time
+
+        if self.invincibility_timer <= 0:
+            # Invincibility ended
+            self.is_invincible = False
+            self.is_visible = True
+            logger.debug("🛡️ Invincibility ended")
+        else:
+            # Flash effect
+            self.flash_timer += delta_time
+            if self.flash_timer >= self.flash_interval:
+                self.flash_timer = 0.0
+                self.is_visible = not self.is_visible
+
+    @property
+    def is_dead(self) -> bool:
+        """Check if player has no health remaining."""
+        return self.current_health <= 0
+
+    @property
+    def health_percentage(self) -> float:
+        """Get health as a percentage (0.0 to 1.0)."""
+        return self.current_health / self.max_health
+
+    def reset_health(self) -> None:
+        """Reset health and invincibility state (for level restart)."""
+        self.current_health = self.max_health
+        self.is_invincible = False
+        self.invincibility_timer = 0.0
+        self.is_visible = True
+        logger.info("🔄 Player health reset")
