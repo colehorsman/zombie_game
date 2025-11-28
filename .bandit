@@ -3,25 +3,8 @@
 
 [bandit]
 # Paths to exclude from scanning
-exclude_dirs = [
-    "/tests/",
-    "/venv/",
-    "/env/",
-    "/.venv/",
-    "/build/",
-    "/dist/"
-]
-
-# Security issue severity levels to report (LOW, MEDIUM, HIGH)
-# Only report MEDIUM and HIGH by default
-level = MEDIUM
-
-# Confidence levels to report (LOW, MEDIUM, HIGH)
-confidence = MEDIUM
+exclude = tests,venv,env,.venv,build,dist
 
 # Specific tests to skip (use test IDs like B101, B201, etc.)
-# Add test IDs here if you get false positives
-skips = []
-
-# File extensions to scan
-include = ["*.py"]
+# Uncomment and add test IDs if you get false positives
+# skips = B101,B201
