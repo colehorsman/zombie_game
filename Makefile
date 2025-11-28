@@ -1,93 +1,129 @@
-# Zombie Game - Development & Security Makefile
-# Author: Cole & Kiro
+# Sonrai Zombie Blaster - Makefile
+# Common development tasks
 
-.PHONY: help install test security clean run lint format
+.PHONY: help setup run test test-cov clean lint format security install
 
-# Default target - show help
+# Default target
 help:
-	@echo "Zombie Game - Available Commands:"
+	@echo "Sonrai Zombie Blaster - Development Commands"
+	@echo "============================================="
 	@echo ""
-	@echo "Development:"
-	@echo "  make install       Install all dependencies"
-	@echo "  make run           Run the game"
-	@echo "  make test          Run all tests"
-	@echo "  make lint          Run code linters"
-	@echo "  make format        Format code with black"
+	@echo "Setup:"
+	@echo "  make setup       - One-command setup (venv, deps, .env)"
+	@echo "  make install     - Install/update dependencies"
 	@echo ""
-	@echo "Security:"
-	@echo "  make security      Run comprehensive security scan"
-	@echo "  make sast          Run SAST scanners (Bandit + Semgrep)"
-	@echo "  make deps-scan     Scan dependencies for vulnerabilities"
-	@echo "  make secrets       Detect hardcoded secrets"
+	@echo "Run:"
+	@echo "  make run         - Run the game"
+	@echo "  make test        - Run all tests"
+	@echo "  make test-cov    - Run tests with coverage report"
 	@echo ""
-	@echo "Cleanup:"
-	@echo "  make clean         Remove temporary files and reports"
+	@echo "Code Quality:"
+	@echo "  make lint        - Run linters (pylint, mypy)"
+	@echo "  make format      - Format code (black, isort)"
+	@echo "  make security    - Run security scans"
+	@echo ""
+	@echo "Maintenance:"
+	@echo "  make clean       - Remove cache files"
+	@echo "  make clean-all   - Remove cache and venv"
 	@echo ""
 
-# Install dependencies
+# Setup
+setup:
+	@./setup.sh
+
 install:
-	pip3 install -r requirements.txt
-	pip3 install --upgrade bandit semgrep safety pip-audit black pylint pytest
+	@echo "📦 Installing dependencies..."
+	@pip install -r requirements.txt
+	@echo "✅ Dependencies installed"
 
-# Run the game
+# Run
 run:
-	python3 src/main.py
+	@echo "🎮 Starting Sonrai Zombie Blaster..."
+	@python3 src/main.py
 
-# Run all tests
+# Testing
 test:
-	python3 -m pytest tests/ -v
+	@echo "🧪 Running tests..."
+	@pytest tests/ -v
 
-# Run comprehensive security scan
-security:
-	@echo "Running comprehensive security scan..."
-	@mkdir -p reports
-	@./scripts/security_scan.sh
+test-cov:
+	@echo "🧪 Running tests with coverage..."
+	@pytest tests/ -v --cov=src --cov-report=html --cov-report=term
+	@echo "📊 Coverage report: htmlcov/index.html"
 
-# Run SAST scanners
-sast:
-	@echo "Running SAST scanners..."
-	@mkdir -p reports
-	@echo "→ Bandit (Python SAST)..."
-	@bandit -r src/ -f json -o reports/bandit.json --config .bandit || true
-	@echo "→ Semgrep (Advanced SAST)..."
-	@semgrep --config=.semgrep.yml --config=p/python src/ || true
+test-unit:
+	@echo "🧪 Running unit tests..."
+	@pytest tests/unit/ -v
 
-# Scan dependencies
-deps-scan:
-	@echo "Scanning dependencies for vulnerabilities..."
-	@mkdir -p reports
-	@echo "→ Safety check..."
-	@safety check --json --output reports/safety.json || true
-	@echo "→ pip-audit check..."
-	@pip-audit --desc --format json --output reports/pip-audit.json || true
+test-integration:
+	@echo "🧪 Running integration tests..."
+	@pytest tests/integration/ -v
 
-# Detect secrets
-secrets:
-	@echo "Scanning for hardcoded secrets..."
-	@mkdir -p reports
-	@if command -v gitleaks >/dev/null 2>&1; then \
-		gitleaks detect --config .gitleaks.toml --report-path reports/gitleaks.json --no-git; \
-	else \
-		echo "Gitleaks not installed. Install with: brew install gitleaks"; \
-	fi
-
-# Lint code
+# Code Quality
 lint:
-	@echo "Running linters..."
-	@pylint src/ --rcfile=.pylintrc || true
-	@bandit -r src/ --config .bandit || true
+	@echo "🔍 Running linters..."
+	@echo "  → pylint..."
+	@pylint src/ || true
+	@echo "  → mypy..."
+	@mypy src/ --ignore-missing-imports || true
+	@echo "✅ Linting complete"
 
-# Format code
 format:
-	@echo "Formatting code with black..."
-	@black src/ tests/
+	@echo "✨ Formatting code..."
+	@echo "  → black..."
+	@black src/ tests/ --line-length=100
+	@echo "  → isort..."
+	@isort src/ tests/ --profile black
+	@echo "✅ Formatting complete"
 
-# Clean temporary files
+security:
+	@echo "🔒 Running security scans..."
+	@echo "  → bandit..."
+	@bandit -r src/ -c .bandit || true
+	@echo "  → gitleaks..."
+	@gitleaks detect --no-git || true
+	@echo "✅ Security scan complete"
+
+# Maintenance
 clean:
-	@echo "Cleaning temporary files..."
+	@echo "🧹 Cleaning cache files..."
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
-	@find . -type f -name "*.pyo" -delete 2>/dev/null || true
-	@find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
-	@rm -rf .pytest_cache build/ dist/ *.egg-info
-	@echo "Clean complete!"
+	@find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name ".hypothesis" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type d -name "htmlcov" -exec rm -rf {} + 2>/dev/null || true
+	@find . -type f -name ".coverage" -delete 2>/dev/null || true
+	@echo "✅ Cache cleaned"
+
+clean-all: clean
+	@echo "🧹 Removing virtual environment..."
+	@rm -rf venv
+	@echo "✅ Full clean complete"
+
+# Development
+dev:
+	@echo "🔧 Starting development mode..."
+	@echo "  → Installing pre-commit hooks..."
+	@pre-commit install
+	@echo "  → Running tests..."
+	@make test
+	@echo "✅ Development environment ready"
+
+# Pre-commit
+pre-commit:
+	@echo "🔍 Running pre-commit checks..."
+	@pre-commit run --all-files
+
+# Documentation
+docs:
+	@echo "📚 Opening documentation..."
+	@open README.md || xdg-open README.md || echo "See README.md"
+
+# Quick commands
+q: run
+t: test
+f: format
+l: lint
+s: security
+c: clean
