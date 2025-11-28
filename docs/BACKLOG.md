@@ -1,10 +1,11 @@
 # Product Backlog - Sonrai Zombie Blaster
 
 **Last Updated**: 2024-11-28
-**Product Owner**: Cole Horsman (with 11-Agent Kiro Architecture Review Board)
+**Last Sync with ARB**: 2024-11-28
+**Product Owner**: Cole Horsman (with 13-Agent Kiro Architecture Review Board)
 **Status**: Active Development
 **Test Coverage**: 537 tests passing
-**Latest Review**: [Architecture Review Board Report](../.kiro/ARCHITECTURE_REVIEW_BOARD_REPORT.md) - 42 recommendations from 11 agents
+**Latest Review**: [Architecture Review Board Report](../.kiro/ARCHITECTURE_REVIEW_BOARD_REPORT.md) - 53 recommendations from 13 agents (includes Kiroween + Sonrai)
 
 ---
 
@@ -32,7 +33,34 @@
 
 ## 🔥 NOW - Current Sprint
 
-### Sprint 3 Goal
+### 🚨 IMMEDIATE PRIORITY: Kiroween Submission Sprint
+**HARD DEADLINE: December 5, 2025 @ 4:00pm CST (7 DAYS REMAINING)**
+
+**Sprint Goal:** Complete hackathon submission with comprehensive Kiro usage documentation
+
+**Sprint Duration:** 7 days
+**Estimated Effort:** 24-31 hours
+**Review Source:** [Architecture Review Board Report](../.kiro/ARCHITECTURE_REVIEW_BOARD_REPORT.md) - Kiroween Submission Agent
+
+**⚠️ THIS TAKES ABSOLUTE PRIORITY OVER ALL OTHER WORK**
+
+| ID | Priority | Title | Estimate | Status |
+|----|----------|-------|----------|--------|
+| KIRO-001 | P0 | Create evidence directory | S (2-3h) | 📋 Ready |
+| KIRO-002 | P0 | Write comprehensive Kiro usage document | L (8-10h) | 📋 Ready |
+| KIRO-003 | P0 | Create 3-minute demo video | L (10-12h) | 📋 Ready |
+| KIRO-004 | P0 | Prepare submission package | M (4-6h) | 📋 Ready |
+| SONRAI-001 | P0 | Rotate API tokens before submission | S (1h) | 📋 Ready |
+
+**Timeline:**
+- Days 1-2 (Nov 28-29): Evidence collection (KIRO-001)
+- Days 3-4 (Nov 30 - Dec 1): Content creation (KIRO-002)
+- Days 5-6 (Dec 2-3): Video production (KIRO-003)
+- Day 7 (Dec 4-5): Final submission (KIRO-004, SONRAI-001)
+
+---
+
+### Sprint 3 Goal (After Kiroween)
 **"Enable External Contributions & Developer Experience"**
 
 Focus: Based on Architecture Review Board recommendations, prioritize developer onboarding and project management infrastructure to enable external contributions.
@@ -43,7 +71,7 @@ Focus: Based on Architecture Review Board recommendations, prioritize developer 
 
 ---
 
-### Active Work - Architecture Review Board P0 Items
+### Active Work - Architecture Review Board P0 Items (Post-Kiroween)
 
 | ID | Priority | Title | Agent | Estimate | Status |
 |----|----------|-------|-------|----------|--------|
@@ -168,6 +196,17 @@ Focus: Based on Architecture Review Board recommendations, prioritize developer 
 ---
 
 ## 📦 BACKLOG - Sprint 6+: Future Work
+
+### Epic: Sonrai Branding & Integration (P1)
+
+**Why**: Enhance Sonrai brand visibility and complete integration features for Kiroween submission
+
+| ID | Story | Acceptance Criteria | Estimate | Agent |
+|----|-------|---------------------|----------|-------|
+| SONRAI-001 | Rotate API tokens before Kiroween submission | Generate new token, update .env, test connectivity, document rotation date | S (1h) | Sonrai |
+| SONRAI-002 | Add Sonrai branding to game | Add stacked logo to pause menu, splash screen, "Powered by Sonrai Security" to UI, about screen attribution. Use assets: `Sonrai logo_stacked_purple-black.png` or `sonrai_logo.png`. Ensure brand consistency and proper logo placement | M (4-6h) | Sonrai |
+| SONRAI-003 | Complete JIT Access Quest | Finish design.md, create tasks.md, implement JIT permission grant workflow, integrate with real Sonrai JIT API | L (8-10h) | Sonrai |
+| SONRAI-004 | Document API token rotation process | Create rotation schedule, document rotation procedure, add to security documentation, set calendar reminders | S (2-3h) | Sonrai |
 
 ### Epic: Architecture Improvements (P2)
 
@@ -402,20 +441,23 @@ Q1 2025
 ## 📋 Architecture Review Board Summary
 
 **Review Date:** November 28, 2024
-**Agents:** 11 specialized agents
-**Total Recommendations:** 42 items
+**Agents:** 13 specialized agents (includes Kiroween Submission + Sonrai Integration)
+**Total Recommendations:** 53 items
 **Project Health:** 7.5/10
 
 **Key Findings:**
 - ✅ Strong foundation: Production-ready code, comprehensive testing, excellent docs
+- ✅ Real Sonrai API integration: 5 queries, 2 mutations, production-ready
+- ✅ Kiroween ready: Strong category fit (Resurrection), comprehensive Kiro usage
 - ⚠️ Needs improvement: Code organization, developer onboarding, operational maturity
+- 🚨 Hard deadline: Kiroween submission Dec 5, 2025 (7 days)
 
 **Priority Distribution:**
-- **P0 Critical:** 6 items (Developer experience, Security, Operations, UX)
-- **P1 High:** 19 items (Architecture, Testing, Security, Operations, UX, DevOps)
-- **P2 Medium:** 17 items (Documentation, Standards, Product vision)
+- **P0 Critical:** 11 items (Kiroween submission, Sonrai token rotation, Developer experience, Security, Operations, UX)
+- **P1 High:** 21 items (Architecture, Testing, Security, Operations, UX, DevOps, Sonrai branding)
+- **P2 Medium:** 21 items (Documentation, Standards, Product vision, Sonrai enhancements)
 
-**Sprint Plan:** 4 sprints (8 weeks) to address all P0/P1 items
+**Sprint Plan:** Immediate Kiroween sprint (7 days), then 4-5 sprints (8-10 weeks) to address all P0/P1 items
 
 See [full report](../.kiro/ARCHITECTURE_REVIEW_BOARD_REPORT.md) for detailed recommendations from each agent.
 
