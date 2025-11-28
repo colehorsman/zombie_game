@@ -23,7 +23,8 @@ class Level:
     time_taken: float = 0.0
     score_earned: int = 0
     boss_defeated: bool = False
-    is_completed: bool = False  # Renamed from 'completed' for consistency with Door.is_completed
+    is_completed: bool = False  # True when level has been beaten
+    is_unlocked: bool = False   # True when level is available to play
 
 
 class LevelManager:
@@ -88,6 +89,10 @@ class LevelManager:
 
             if not self.levels:
                 raise ValueError("No valid levels loaded from CSV")
+
+            # First level is always unlocked
+            if self.levels:
+                self.levels[0].is_unlocked = True
 
             logger.info(f"Loaded {len(self.levels)} levels from {self.csv_path}")
 
