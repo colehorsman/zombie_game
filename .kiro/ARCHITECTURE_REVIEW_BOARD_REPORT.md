@@ -10,6 +10,14 @@
 
 ## 📝 Recent Updates
 
+**November 28, 2024 - UX Recommendations Deferred:**
+- ⏸️ **Deferred:** UX-001 (Add Interactive Tutorial) - Needs user testing feedback to design properly
+- ⏸️ **Deferred:** UX-002 (Add Quest Objective UI) - Will design based on testing feedback
+- **Rationale:** User testing game at AWS re:Invent this afternoon. Tutorial and objective UI design should be informed by real user feedback rather than assumptions. This is a strategic decision to ensure UX improvements are data-driven.
+- **Agent Score:** UX/Design remains at 6.0/10 (no change - deferrals are strategic, not failures)
+- **Overall Score:** Remains at 7.9/10
+- **Days to Deadline:** 7 days remaining (Dec 5, 2025 @ 4:00pm CST)
+
 **November 28, 2024 - Developer Experience Sprint Completion:**
 - ✅ **Completed:** SEC-001 (Audit API error handling - sanitized all API response logging)
 - ✅ **Completed:** DEVEX-001 (Create CONTRIBUTING.md - comprehensive guide with quick start)
@@ -22,9 +30,8 @@
   - DevEx: 6.0 → 7.5 (+1.5 for both CONTRIBUTING.md and TROUBLESHOOTING.md)
   - Sonrai Integration: 8.5 → 9.0 (from previous update)
   - Kiroween Submission: 9.0 → 9.5 (from previous update)
-- **Overall Score:** 7.6 → 7.8
+- **Overall Score:** 7.6 → 7.9
 - **Reason:** Major developer experience improvements (CONTRIBUTING.md + TROUBLESHOOTING.md) and security hardening (API error sanitization) significantly improve project accessibility and security posture
-- **Days to Deadline:** 7 days remaining (Dec 5, 2025 @ 4:00pm CST)
 - **Status Note:** Developer onboarding now complete, enabling external contributions. Security audit complete, protecting API credentials.
 
 ---
@@ -242,11 +249,21 @@
 - 🔴 **Unclear objectives**
 - 🔴 **No visual feedback**
 
+**Recent Decisions:**
+- ⏸️ **UX-001 & UX-002 DEFERRED** - Strategic decision to gather user testing feedback at AWS re:Invent before designing tutorial and objective UI. This ensures UX improvements are data-driven rather than assumption-based.
+
 **Recommendations:**
 
-**P0 - Critical:**
-1. **[UX-001] Add interactive tutorial** (L: 2-3 days)
-2. **[UX-002] Add quest objective UI** (M: 4-6 hours)
+**P0 - Critical (DEFERRED pending user testing):**
+1. ⏸️ **[UX-001] Add interactive tutorial** (L: 2-3 days) - **DEFERRED**
+   - Status: Awaiting user testing feedback from re:Invent
+   - Rationale: Tutorial design should be informed by real user behavior
+   - Next: Design based on testing insights
+
+2. ⏸️ **[UX-002] Add quest objective UI** (M: 4-6 hours) - **DEFERRED**
+   - Status: Awaiting user testing feedback from re:Invent
+   - Rationale: Objective UI should address actual user confusion points
+   - Next: Design based on testing insights
 
 **P1 - High Priority:**
 3. **[UX-003] Add visual feedback** (M: 6-8 hours)
@@ -633,14 +650,15 @@
 
 ### By Priority
 
-**P0 - CRITICAL (6 items remaining, 22-29 hours) - INCLUDES KIROWEEN DEADLINE:**
+**P0 - CRITICAL (4 items remaining, 22-29 hours) - INCLUDES KIROWEEN DEADLINE:**
 - ⏸️ **KIRO-001** (DEFERRED), ⏸️ **KIRO-002** (DEFERRED), **KIRO-003, KIRO-004** (Kiroween submission - DUE DEC 5)
 - ✅ **SONRAI-001** (COMPLETE - Rotate API tokens)
 - ✅ **SEC-001** (COMPLETE - Audit API error handling)
 - ✅ **DEVEX-001** (COMPLETE - Create CONTRIBUTING.md)
 - ✅ **DEVEX-002** (COMPLETE - Create TROUBLESHOOTING.md)
 - ✅ **OPS-001** (COMPLETE - Document deployment process)
-- UX-001, UX-002
+- ⏸️ **UX-001** (DEFERRED - awaiting user testing feedback)
+- ⏸️ **UX-002** (DEFERRED - awaiting user testing feedback)
 
 **P1 - High Priority (21 items, 103-129 hours):**
 - ARCH-001, ARCH-002, QA-001, QA-002, SEC-002, SEC-003
@@ -655,7 +673,7 @@
 - STD-001, STD-002, STD-003, VISION-003, PM-003
 - SONRAI-005, SONRAI-006
 
-**Total: 53 recommendations (5 complete, 2 in progress), 197-249 hours remaining (5-6 sprints)**
+**Total: 53 recommendations (5 complete, 4 deferred, 44 remaining), 197-249 hours remaining (5-6 sprints)**
 
 **⚠️ NOTE:** Kiroween submission tasks (KIRO-001 through KIRO-004) have HARD DEADLINE of December 5, 2025 (7 days remaining) and take absolute priority over all other work.
 
@@ -665,6 +683,12 @@
 - DEVEX-001 (CONTRIBUTING.md)
 - DEVEX-002 (TROUBLESHOOTING.md)
 - OPS-001 (DEPLOYMENT.md)
+
+**⏸️ DEFERRED (Strategic - awaiting user testing feedback):**
+- KIRO-001 (Evidence collection - user testing at re:Invent)
+- KIRO-002 (Kiro usage write-up - after testing)
+- UX-001 (Interactive tutorial - needs user feedback)
+- UX-002 (Quest objective UI - needs user feedback)
 
 ---
 
