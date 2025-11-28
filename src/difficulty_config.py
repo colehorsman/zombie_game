@@ -8,11 +8,11 @@ from typing import Dict
 class EnvironmentDifficulty:
     """Difficulty settings for a specific environment type."""
 
-    environment: str          # "sandbox", "staging", etc.
-    zombie_hp: int           # Base zombie health points
-    reveal_radius: int       # How close player must be to see zombies (pixels)
-    approvals_needed: int    # Approval collectibles needed to quarantine
-    change_delay: float      # Delay in seconds after hit before quarantine
+    environment: str  # "sandbox", "staging", etc.
+    zombie_hp: int  # Base zombie health points
+    reveal_radius: int  # How close player must be to see zombies (pixels)
+    approvals_needed: int  # Approval collectibles needed to quarantine
+    change_delay: float  # Delay in seconds after hit before quarantine
     boss_hp_multiplier: int  # Boss health = zombie_hp * multiplier
 
     # Visual indicators
@@ -35,7 +35,6 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
         uses_change_delay=False,
         uses_reduced_visibility=False,
     ),
-
     "staging": EnvironmentDifficulty(
         environment="staging",
         zombie_hp=3,
@@ -47,7 +46,6 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
         uses_change_delay=False,
         uses_reduced_visibility=False,
     ),
-
     "automation": EnvironmentDifficulty(
         environment="automation",
         zombie_hp=4,
@@ -59,7 +57,6 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
         uses_change_delay=False,
         uses_reduced_visibility=False,
     ),
-
     "webapp": EnvironmentDifficulty(
         environment="webapp",
         zombie_hp=4,
@@ -71,7 +68,6 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
         uses_change_delay=False,
         uses_reduced_visibility=True,
     ),
-
     "production-data": EnvironmentDifficulty(
         environment="production-data",
         zombie_hp=5,
@@ -83,7 +79,6 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
         uses_change_delay=True,
         uses_reduced_visibility=True,
     ),
-
     "production": EnvironmentDifficulty(
         environment="production",
         zombie_hp=6,
@@ -95,7 +90,6 @@ ENVIRONMENT_DIFFICULTY: Dict[str, EnvironmentDifficulty] = {
         uses_change_delay=True,
         uses_reduced_visibility=True,
     ),
-
     "org": EnvironmentDifficulty(
         environment="org",
         zombie_hp=7,
@@ -178,9 +172,9 @@ def get_boss_hp(environment_type: str, base_zombie_hp: int = None) -> int:
 
 # Visual feedback colors for different states
 APPROVAL_COLORS = {
-    "locked": (220, 20, 20),      # Red - needs approvals
-    "approved": (20, 220, 20),    # Green - approved, can quarantine
-    "pending": (220, 220, 20),    # Yellow - change window pending
+    "locked": (220, 20, 20),  # Red - needs approvals
+    "approved": (20, 220, 20),  # Green - approved, can quarantine
+    "pending": (220, 220, 20),  # Yellow - change window pending
 }
 
 # Status text templates

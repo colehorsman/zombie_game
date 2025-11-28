@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from arcade_results_controller import (
     ArcadeResultsController,
     ArcadeResultsAction,
-    ArcadeStatsSnapshot
+    ArcadeStatsSnapshot,
 )
 
 
@@ -22,7 +22,7 @@ def stats_with_queue():
         highest_combo=8,
         powerups_collected=5,
         eliminations_per_second=0.83,
-        queue_size=42
+        queue_size=42,
     )
 
 
@@ -34,7 +34,7 @@ def stats_empty_queue():
         highest_combo=0,
         powerups_collected=0,
         eliminations_per_second=0.0,
-        queue_size=0
+        queue_size=0,
     )
 
 

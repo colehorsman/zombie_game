@@ -21,12 +21,12 @@ class ComboTracker:
     def add_elimination(self) -> None:
         """
         Add an elimination to the combo.
-        
+
         Resets the combo timer to 3 seconds.
         """
         self.combo_count += 1
         self.combo_timer = self.combo_window
-        
+
         # Track highest combo
         if self.combo_count > self.highest_combo:
             self.highest_combo = self.combo_count
@@ -35,13 +35,13 @@ class ComboTracker:
     def update(self, delta_time: float) -> None:
         """
         Update the combo timer.
-        
+
         Args:
             delta_time: Time elapsed since last frame
         """
         if self.combo_count > 0:
             self.combo_timer -= delta_time
-            
+
             # Combo expired
             if self.combo_timer <= 0:
                 logger.info(f"💥 Combo expired at {self.combo_count}x")
@@ -55,7 +55,7 @@ class ComboTracker:
     def get_combo_multiplier(self) -> float:
         """
         Get current combo multiplier.
-        
+
         Returns:
             1.0 for combos < 5, 1.5 for combos >= 5
         """

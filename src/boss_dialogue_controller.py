@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class BossDialogueContent:
     """Content for a boss dialogue screen."""
+
     title: str
     description: str
     how_attacked: list
@@ -26,7 +27,7 @@ class BossDialogueContent:
             how_attacked=data.get("how_attacked", []),
             victims=data.get("victims", ""),
             prevention=data.get("prevention", []),
-            mechanic=data.get("mechanic", "")
+            mechanic=data.get("mechanic", ""),
         )
 
 

@@ -12,11 +12,12 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Level:
     """Represents a single level (AWS account) in the game."""
-    level_number: int          # 1-7
-    account_id: str           # AWS account number
-    account_name: str         # "MyHealth - Sandbox"
-    environment_type: str     # "sandbox", "staging", "production", etc
-    order: int                # Sort order (same as level_number for now)
+
+    level_number: int  # 1-7
+    account_id: str  # AWS account number
+    account_name: str  # "MyHealth - Sandbox"
+    environment_type: str  # "sandbox", "staging", "production", etc
+    order: int  # Sort order (same as level_number for now)
 
     # Stats (populated during gameplay)
     zombies_eliminated: int = 0
@@ -24,7 +25,7 @@ class Level:
     score_earned: int = 0
     boss_defeated: bool = False
     is_completed: bool = False  # True when level has been beaten
-    is_unlocked: bool = False   # True when level is available to play
+    is_unlocked: bool = False  # True when level is available to play
 
 
 class LevelManager:
@@ -50,7 +51,9 @@ class LevelManager:
         self._load_levels_from_csv()
 
         logger.info(f"LevelManager initialized with {len(self.levels)} levels")
-        logger.info(f"Level progression: {' → '.join([l.environment_type for l in self.levels])}")
+        logger.info(
+            f"Level progression: {' → '.join([l.environment_type for l in self.levels])}"
+        )
 
     def _load_levels_from_csv(self) -> None:
         """
@@ -66,18 +69,18 @@ class LevelManager:
         if not csv_file.exists():
             raise FileNotFoundError(f"CSV file not found: {self.csv_path}")
 
-        with open(csv_file, 'r') as f:
+        with open(csv_file, "r") as f:
             reader = csv.DictReader(f)
             levels_data = []
 
             for row in reader:
                 try:
                     level = Level(
-                        level_number=int(row['Order']),
-                        account_id=row['Account ID'].strip(),
-                        account_name=row['Name'].strip(),
-                        environment_type=row['Environment Type'].strip(),
-                        order=int(row['Order'])
+                        level_number=int(row["Order"]),
+                        account_id=row["Account ID"].strip(),
+                        account_name=row["Name"].strip(),
+                        environment_type=row["Environment Type"].strip(),
+                        order=int(row["Order"]),
                     )
                     levels_data.append(level)
                 except (KeyError, ValueError) as e:
@@ -133,7 +136,9 @@ class LevelManager:
 
             # Advance to next level
             self.current_level_index += 1
-            logger.info(f"Advanced to level {self.current_level_index + 1}: {self.get_current_level().environment_type}")
+            logger.info(
+                f"Advanced to level {self.current_level_index + 1}: {self.get_current_level().environment_type}"
+            )
             return True
         else:
             logger.info("Already at final level")
@@ -178,7 +183,9 @@ class LevelManager:
             "levels_completed": levels_completed,
         }
 
-    def complete_current_level(self, zombies: int, time: float, score: int, boss_defeated: bool = False) -> None:
+    def complete_current_level(
+        self, zombies: int, time: float, score: int, boss_defeated: bool = False
+    ) -> None:
         """
         Mark current level as complete and record stats.
 
@@ -195,8 +202,12 @@ class LevelManager:
         current.boss_defeated = boss_defeated
         current.is_completed = True
 
-        logger.info(f"Level {current.level_number} ({current.environment_type}) completed!")
-        logger.info(f"  Zombies: {zombies}, Time: {time:.1f}s, Score: {score}, Boss: {boss_defeated}")
+        logger.info(
+            f"Level {current.level_number} ({current.environment_type}) completed!"
+        )
+        logger.info(
+            f"  Zombies: {zombies}, Time: {time:.1f}s, Score: {score}, Boss: {boss_defeated}"
+        )
 
     def reset_progress(self) -> None:
         """Reset all progress back to level 1."""

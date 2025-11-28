@@ -36,7 +36,7 @@ class SaveManager:
         completed_levels: List[str],
         unlocked_levels: List[str],
         quarantined_identities: Set[str],
-        blocked_third_parties: Set[str]
+        blocked_third_parties: Set[str],
     ) -> bool:
         """
         Save current game state to disk.
@@ -65,27 +65,24 @@ class SaveManager:
                     "score": player_score,
                     "eliminations": player_eliminations,
                     "damage_multiplier": damage_multiplier,
-                    "position": {
-                        "x": player_position.x,
-                        "y": player_position.y
-                    }
+                    "position": {"x": player_position.x, "y": player_position.y},
                 },
                 "game_state": {
                     "status": game_status.name,
                     "current_level": current_level,
-                    "play_time": play_time
+                    "play_time": play_time,
                 },
                 "progress": {
                     "completed_levels": completed_levels,
-                    "unlocked_levels": unlocked_levels
+                    "unlocked_levels": unlocked_levels,
                 },
                 "quarantined_identities": list(quarantined_identities),
-                "blocked_third_parties": list(blocked_third_parties)
+                "blocked_third_parties": list(blocked_third_parties),
             }
 
             # Write to temporary file first, then rename (atomic operation)
-            temp_file = self.save_file.with_suffix('.tmp')
-            with open(temp_file, 'w') as f:
+            temp_file = self.save_file.with_suffix(".tmp")
+            with open(temp_file, "w") as f:
                 json.dump(save_data, f, indent=2)
 
             # Atomic rename
@@ -110,18 +107,24 @@ class SaveManager:
                 logger.info("No save file found, starting new game")
                 return None
 
-            with open(self.save_file, 'r') as f:
+            with open(self.save_file, "r") as f:
                 save_data = json.load(f)
 
             # Version check
             if save_data.get("version") != self.version:
-                logger.warning(f"Save file version mismatch (expected {self.version}, got {save_data.get('version')})")
+                logger.warning(
+                    f"Save file version mismatch (expected {self.version}, got {save_data.get('version')})"
+                )
                 # Could implement migration logic here if needed
 
             logger.info(f"Game loaded successfully from {self.save_file}")
             logger.info(f"Last saved: {save_data.get('last_saved')}")
-            logger.info(f"Quarantined identities: {len(save_data.get('quarantined_identities', []))}")
-            logger.info(f"Completed levels: {len(save_data.get('progress', {}).get('completed_levels', []))}")
+            logger.info(
+                f"Quarantined identities: {len(save_data.get('quarantined_identities', []))}"
+            )
+            logger.info(
+                f"Completed levels: {len(save_data.get('progress', {}).get('completed_levels', []))}"
+            )
 
             return save_data
 
@@ -169,7 +172,7 @@ class SaveManager:
             if not self.save_file.exists():
                 return None
 
-            with open(self.save_file, 'r') as f:
+            with open(self.save_file, "r") as f:
                 save_data = json.load(f)
 
             return {
@@ -177,7 +180,9 @@ class SaveManager:
                 "version": save_data.get("version"),
                 "score": save_data.get("player", {}).get("score", 0),
                 "eliminations": save_data.get("player", {}).get("eliminations", 0),
-                "completed_levels": len(save_data.get("progress", {}).get("completed_levels", []))
+                "completed_levels": len(
+                    save_data.get("progress", {}).get("completed_levels", [])
+                ),
             }
         except Exception as e:
             logger.error(f"Failed to get save info: {e}")

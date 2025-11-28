@@ -172,12 +172,12 @@ class TestPowerUpCollision:
     def test_get_bounds_includes_bounce_offset(self, mock_pygame):
         """Test that bounds include bounce animation offset."""
         powerup = PowerUp(Vector2(100, 200), PowerUpType.STAR_POWER)
-        
+
         # Set bounce offset to known value
         powerup.bounce_offset = 1.57  # pi/2, sin = 1
-        
+
         bounds = powerup.get_bounds()
-        
+
         # Y position should be affected by bounce (sin(pi/2 * 2) * 5 = 0)
         assert bounds.x == 100
         # Y will vary based on bounce calculation
@@ -192,7 +192,7 @@ class TestPowerUpRendering:
         powerup.collected = True
 
         screen = pygame.Surface((800, 600))
-        
+
         # Should not raise exception and should return early
         powerup.render(screen, 0, 0)
 
@@ -202,7 +202,7 @@ class TestPowerUpRendering:
         powerup.collected = False
 
         screen = pygame.Surface((800, 600))
-        
+
         # Should not raise exception
         powerup.render(screen, 0, 0)
 
@@ -231,8 +231,8 @@ class TestPowerUpManager:
         manager.activate(powerup)
 
         assert PowerUpType.STAR_POWER in manager.active_effects
-        assert manager.active_effects[PowerUpType.STAR_POWER]['time_remaining'] == 10.0
-        assert manager.active_effects[PowerUpType.STAR_POWER]['value'] == 1.0
+        assert manager.active_effects[PowerUpType.STAR_POWER]["time_remaining"] == 10.0
+        assert manager.active_effects[PowerUpType.STAR_POWER]["value"] == 1.0
 
     def test_activate_does_not_add_instant_effect(self, mock_pygame):
         """Test that instant power-ups are not added to active effects."""
@@ -250,11 +250,14 @@ class TestPowerUpManager:
         powerup = PowerUp(Vector2(0, 0), PowerUpType.STAR_POWER)
         manager.activate(powerup)
 
-        initial_time = manager.active_effects[PowerUpType.STAR_POWER]['time_remaining']
-        
+        initial_time = manager.active_effects[PowerUpType.STAR_POWER]["time_remaining"]
+
         manager.update(1.0)  # 1 second
 
-        assert manager.active_effects[PowerUpType.STAR_POWER]['time_remaining'] == initial_time - 1.0
+        assert (
+            manager.active_effects[PowerUpType.STAR_POWER]["time_remaining"]
+            == initial_time - 1.0
+        )
 
     def test_update_removes_expired_effects(self, mock_pygame):
         """Test that expired effects are removed."""
@@ -391,7 +394,11 @@ class TestSpawnRandomPowerups:
         powerups = spawn_random_powerups(1000, 600, count=20, arcade_mode=True)
 
         # In arcade mode, should only get LASER_BEAM, BURST_SHOT, or STAR_POWER
-        arcade_types = {PowerUpType.LASER_BEAM, PowerUpType.BURST_SHOT, PowerUpType.STAR_POWER}
+        arcade_types = {
+            PowerUpType.LASER_BEAM,
+            PowerUpType.BURST_SHOT,
+            PowerUpType.STAR_POWER,
+        }
         for powerup in powerups:
             assert powerup.powerup_type in arcade_types
 

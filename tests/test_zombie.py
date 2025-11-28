@@ -14,9 +14,9 @@ class TestZombieInitialization:
             identity_id="test-123",
             identity_name="test-user-1",
             position=Vector2(100, 200),
-            account="123456789012"
+            account="123456789012",
         )
-        
+
         assert zombie.identity_id == "test-123"
         assert zombie.identity_name == "test-user-1"
         assert zombie.position.x == 100
@@ -29,9 +29,9 @@ class TestZombieInitialization:
             identity_id="test-123",
             identity_name="test-user-1",
             position=Vector2(0, 0),
-            account="123456789012"
+            account="123456789012",
         )
-        
+
         assert zombie.health > 0
         assert zombie.max_health > 0
         assert zombie.health == zombie.max_health
@@ -46,12 +46,12 @@ class TestZombieDamage:
             identity_id="test-123",
             identity_name="test-user-1",
             position=Vector2(0, 0),
-            account="123456789012"
+            account="123456789012",
         )
         initial_health = zombie.health
-        
+
         zombie.take_damage(1)
-        
+
         assert zombie.health == initial_health - 1
 
     def test_zombie_dies_at_zero_health(self):
@@ -60,12 +60,12 @@ class TestZombieDamage:
             identity_id="test-123",
             identity_name="test-user-1",
             position=Vector2(0, 0),
-            account="123456789012"
+            account="123456789012",
         )
-        
+
         # Deal enough damage to kill zombie
         zombie.take_damage(zombie.health)
-        
+
         assert zombie.health <= 0
         # Zombies don't have is_dead attribute - health <= 0 indicates death
 
@@ -79,14 +79,14 @@ class TestZombieMovement:
             identity_id="test-123",
             identity_name="test-user-1",
             position=Vector2(0, 0),
-            account="123456789012"
+            account="123456789012",
         )
-        
+
         # Verify zombie has velocity attribute
-        assert hasattr(zombie, 'velocity')
-        assert hasattr(zombie.velocity, 'x')
-        assert hasattr(zombie.velocity, 'y')
-        
+        assert hasattr(zombie, "velocity")
+        assert hasattr(zombie.velocity, "x")
+        assert hasattr(zombie.velocity, "y")
+
         # Verify velocity can be set
         zombie.velocity = Vector2(100, 0)
         assert zombie.velocity.x == 100

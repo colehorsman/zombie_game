@@ -25,8 +25,7 @@ def check_collision(projectile: Projectile, zombie: Zombie) -> bool:
 
 
 def check_projectile_zombie_collisions(
-    projectiles: List[Projectile],
-    zombies: List[Zombie]
+    projectiles: List[Projectile], zombies: List[Zombie]
 ) -> List[Tuple[Projectile, Zombie]]:
     """
     Check for collisions between all projectiles and zombies.
@@ -135,9 +134,7 @@ class SpatialGrid:
 
 
 def check_collisions_with_spatial_grid(
-    projectiles: List[Projectile],
-    zombies: List[Zombie],
-    grid: SpatialGrid
+    projectiles: List[Projectile], zombies: List[Zombie], grid: SpatialGrid
 ) -> List[Tuple[Projectile, Zombie]]:
     """
     Check for collisions using spatial partitioning for better performance.
@@ -155,9 +152,9 @@ def check_collisions_with_spatial_grid(
     for zombie in zombies:
         # Check if it's being eliminated (quarantined for zombies, blocked for 3rd parties)
         is_being_eliminated = False
-        if hasattr(zombie, 'is_quarantining'):
+        if hasattr(zombie, "is_quarantining"):
             is_being_eliminated = zombie.is_quarantining
-        elif hasattr(zombie, 'is_blocking'):
+        elif hasattr(zombie, "is_blocking"):
             is_being_eliminated = zombie.is_blocking
 
         if not is_being_eliminated:
@@ -172,9 +169,9 @@ def check_collisions_with_spatial_grid(
         for zombie in nearby_zombies:
             # Check if it's being eliminated (quarantined for zombies, blocked for 3rd parties)
             is_being_eliminated = False
-            if hasattr(zombie, 'is_quarantining'):
+            if hasattr(zombie, "is_quarantining"):
                 is_being_eliminated = zombie.is_quarantining
-            elif hasattr(zombie, 'is_blocking'):
+            elif hasattr(zombie, "is_blocking"):
                 is_being_eliminated = zombie.is_blocking
 
             if is_being_eliminated:

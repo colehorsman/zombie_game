@@ -10,7 +10,9 @@ from models import Vector2
 class ThirdParty:
     """Represents a 3rd party with access to AWS accounts (e.g., Cloudflare, Datadog)."""
 
-    def __init__(self, name: str, account: str, position: Vector2, third_party_id: str = None):
+    def __init__(
+        self, name: str, account: str, position: Vector2, third_party_id: str = None
+    ):
         """
         Initialize a third party entity.
 
@@ -55,7 +57,9 @@ class ThirdParty:
 
         # Protection status (for Sonrai 3rd party)
         self.is_protected = self._check_if_protected()
-        self.protection_reason = "Sonrai Security Platform" if self.is_protected else None
+        self.protection_reason = (
+            "Sonrai Security Platform" if self.is_protected else None
+        )
 
         # Visual
         self.sprite = self._create_sprite()
@@ -63,20 +67,25 @@ class ThirdParty:
     def _check_if_protected(self) -> bool:
         """
         Check if this third party should be protected.
-        
+
         Returns:
             True if this is Sonrai (our security platform), False otherwise
         """
         import logging
+
         logger = logging.getLogger(__name__)
-        
+
         # Protect Sonrai third party - it's our security platform!
         sonrai_names = ["sonrai", "sonrai security"]
-        is_protected = any(sonrai_name in self.name.lower() for sonrai_name in sonrai_names)
-        
+        is_protected = any(
+            sonrai_name in self.name.lower() for sonrai_name in sonrai_names
+        )
+
         # Debug: log all third party names to see what we're checking
-        logger.info(f"Checking protection for third party: '{self.name}' -> {is_protected}")
-        
+        logger.info(
+            f"Checking protection for third party: '{self.name}' -> {is_protected}"
+        )
+
         return is_protected
 
     def _create_sprite(self) -> pygame.Surface:
@@ -89,14 +98,14 @@ class ThirdParty:
         sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
 
         # Corporate professional color palette (not zombie-like)
-        SUIT_BLUE = (40, 60, 100)        # Dark blue suit
-        SUIT_LIGHT = (60, 90, 140)       # Light blue
-        TIE_RED = (180, 40, 40)          # Red tie
-        SKIN = (220, 180, 140)           # Skin tone
+        SUIT_BLUE = (40, 60, 100)  # Dark blue suit
+        SUIT_LIGHT = (60, 90, 140)  # Light blue
+        TIE_RED = (180, 40, 40)  # Red tie
+        SKIN = (220, 180, 140)  # Skin tone
         BRIEFCASE_BROWN = (100, 70, 40)  # Brown briefcase
-        GOLD = (255, 215, 0)             # Gold watch/details
-        BLACK = (0, 0, 0)                # Outlines
-        WHITE = (255, 255, 255)          # Shirt
+        GOLD = (255, 215, 0)  # Gold watch/details
+        BLACK = (0, 0, 0)  # Outlines
+        WHITE = (255, 255, 255)  # Shirt
 
         # Sonrai gets special black outfit
         suit_color = BLACK if self.is_protected else SUIT_BLUE
@@ -153,13 +162,14 @@ class ThirdParty:
         # Add Sonrai logo on shirt if this is Sonrai (draw LAST so nothing covers it)
         if self.is_protected:
             import logging
+
             logger = logging.getLogger(__name__)
             # Debug: log to confirm this code is running
             logger.info(f"Drawing Sonrai badge for protected third party: {self.name}")
 
             try:
                 # Load and scale Sonrai logo - fit it ONLY on the shirt (not pants)
-                logo = pygame.image.load('assets/sonrai_logo.png')
+                logo = pygame.image.load("assets/sonrai_logo.png")
                 # Scale to fit on shirt, make it bold and visible (14x14 pixels)
                 logo_scaled = pygame.transform.scale(logo, (14, 14))
                 # Position centered on chest area where tie would be
@@ -173,7 +183,9 @@ class ThirdParty:
                 badge_size = 14
                 badge_x = (self.width // 2) - (badge_size // 2)
                 badge_rect = pygame.Rect(badge_x, 18, badge_size, badge_size)
-                pygame.draw.rect(sprite, (160, 60, 240), badge_rect)  # Purple background
+                pygame.draw.rect(
+                    sprite, (160, 60, 240), badge_rect
+                )  # Purple background
                 pygame.draw.rect(sprite, BLACK, badge_rect, 2)  # Thicker black border
 
                 # Draw "S" in white (bigger and bolder)
@@ -183,7 +195,7 @@ class ThirdParty:
 
         return sprite
 
-    def update(self, delta_time: float, game_map: Optional['GameMap'] = None) -> None:
+    def update(self, delta_time: float, game_map: Optional["GameMap"] = None) -> None:
         """
         Update 3rd party movement (pace back and forth along wall).
 
@@ -197,13 +209,17 @@ class ThirdParty:
             if self.flash_timer <= 0:
                 self.is_flashing = False
                 self.flash_timer = 0.0
-        
+
         # If we have patrol bounds, pace back and forth along the wall
-        if hasattr(self, 'patrol_axis') and hasattr(self, 'patrol_min') and hasattr(self, 'patrol_max'):
+        if (
+            hasattr(self, "patrol_axis")
+            and hasattr(self, "patrol_min")
+            and hasattr(self, "patrol_max")
+        ):
             # Patrol back and forth along assigned wall segment
             self.patrol_timer += delta_time
 
-            if self.patrol_axis == 'horizontal':
+            if self.patrol_axis == "horizontal":
                 # Move horizontally (top or bottom wall)
                 self.velocity.x = self.move_speed * self.patrol_direction
                 self.velocity.y = 0
@@ -246,8 +262,12 @@ class ThirdParty:
         # Basic boundary check if map provided
         if game_map:
             # Keep in map bounds
-            self.position.x = max(0, min(self.position.x, game_map.map_width - self.width))
-            self.position.y = max(0, min(self.position.y, game_map.map_height - self.height))
+            self.position.x = max(
+                0, min(self.position.x, game_map.map_width - self.width)
+            )
+            self.position.y = max(
+                0, min(self.position.y, game_map.map_height - self.height)
+            )
 
     def get_bounds(self) -> pygame.Rect:
         """
@@ -257,10 +277,7 @@ class ThirdParty:
             Pygame Rect representing the 3rd party's bounds
         """
         return pygame.Rect(
-            int(self.position.x),
-            int(self.position.y),
-            self.width,
-            self.height
+            int(self.position.x), int(self.position.y), self.width, self.height
         )
 
     def take_damage(self, damage: int) -> bool:
@@ -274,11 +291,11 @@ class ThirdParty:
             True if the entity is eliminated (health reaches 0), False otherwise
         """
         self.health = max(0, self.health - damage)
-        
+
         # Trigger flash effect
         self.is_flashing = True
         self.flash_timer = 0.1  # Flash for 0.1 seconds
-        
+
         return self.health == 0
 
     def interact(self) -> str:

@@ -113,8 +113,5 @@ class Hacker:
             Rectangle representing hacker's position and size
         """
         return pygame.Rect(
-            int(self.position.x),
-            int(self.position.y),
-            self.width,
-            self.height
+            int(self.position.x), int(self.position.y), self.width, self.height
         )

@@ -13,9 +13,9 @@ class TestProjectileInitialization:
         projectile = Projectile(
             position=Vector2(100, 200),
             direction=Vector2(1, 0),  # Right direction
-            damage=1
+            damage=1,
         )
-        
+
         assert projectile.position.x == 100
         assert projectile.position.y == 200
         assert projectile.velocity.x == 400  # Speed is 400 pixels/sec
@@ -31,11 +31,11 @@ class TestProjectileMovement:
         projectile = Projectile(
             position=Vector2(0, 100),
             direction=Vector2(1, 0),  # Right direction (normalized to speed 400)
-            damage=1
+            damage=1,
         )
-        
+
         projectile.update(delta_time=1.0)  # 1 second
-        
+
         assert projectile.position.x == 400  # Speed is 400 pixels/sec
         assert projectile.position.y == 100
 
@@ -44,13 +44,14 @@ class TestProjectileMovement:
         projectile = Projectile(
             position=Vector2(0, 0),
             direction=Vector2(1, 1),  # Diagonal (will be normalized)
-            damage=1
+            damage=1,
         )
-        
+
         projectile.update(delta_time=1.0)
-        
+
         # Diagonal at speed 400: each component is 400/sqrt(2) ≈ 283
         import math
+
         expected = 400 / math.sqrt(2)
         assert abs(projectile.position.x - expected) < 1
         assert abs(projectile.position.y - expected) < 1
@@ -60,12 +61,12 @@ class TestProjectileMovement:
         projectile = Projectile(
             position=Vector2(0, 0),
             direction=Vector2(1, 0),  # Right at speed 400
-            damage=1
+            damage=1,
         )
-        
+
         # Move in small increments
         projectile.update(delta_time=0.1)  # 0.1 seconds
         assert abs(projectile.position.x - 40) < 1  # 400 * 0.1 = 40
-        
+
         projectile.update(delta_time=0.1)
         assert abs(projectile.position.x - 80) < 1  # 400 * 0.2 = 80

@@ -19,8 +19,7 @@ from save_manager import SaveManager
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -38,28 +37,33 @@ def load_configuration() -> dict:
     load_dotenv()
 
     config = {
-        'api_url': os.getenv('SONRAI_API_URL'),
-        'org_id': os.getenv('SONRAI_ORG_ID'),
-        'api_token': os.getenv('SONRAI_API_TOKEN'),
-        'game_width': int(os.getenv('GAME_WIDTH', '1280')),  # Base rendering resolution
-        'game_height': int(os.getenv('GAME_HEIGHT', '720')),
-        'fullscreen': os.getenv('FULLSCREEN', 'false').lower() == 'true',  # Fullscreen mode
-        'target_fps': int(os.getenv('TARGET_FPS', '60')),
-        'max_zombies': int(os.getenv('MAX_ZOMBIES', '1000'))  # Default to 1000 to capture all API zombies
+        "api_url": os.getenv("SONRAI_API_URL"),
+        "org_id": os.getenv("SONRAI_ORG_ID"),
+        "api_token": os.getenv("SONRAI_API_TOKEN"),
+        "game_width": int(os.getenv("GAME_WIDTH", "1280")),  # Base rendering resolution
+        "game_height": int(os.getenv("GAME_HEIGHT", "720")),
+        "fullscreen": os.getenv("FULLSCREEN", "false").lower()
+        == "true",  # Fullscreen mode
+        "target_fps": int(os.getenv("TARGET_FPS", "60")),
+        "max_zombies": int(
+            os.getenv("MAX_ZOMBIES", "1000")
+        ),  # Default to 1000 to capture all API zombies
     }
 
     # Validate required configuration
-    if not config['api_url']:
+    if not config["api_url"]:
         raise ValueError("SONRAI_API_URL is required in .env file")
-    if not config['org_id']:
+    if not config["org_id"]:
         raise ValueError("SONRAI_ORG_ID is required in .env file")
-    if not config['api_token']:
+    if not config["api_token"]:
         raise ValueError("SONRAI_API_TOKEN is required in .env file")
 
     return config
 
 
-def calculate_scaled_dimensions(game_width: int, game_height: int, display_width: int, display_height: int) -> tuple[int, int, int, int]:
+def calculate_scaled_dimensions(
+    game_width: int, game_height: int, display_width: int, display_height: int
+) -> tuple[int, int, int, int]:
     """
     Calculate scaled dimensions with aspect ratio preservation (letterboxing/pillarboxing).
 
@@ -91,7 +95,9 @@ def calculate_scaled_dimensions(game_width: int, game_height: int, display_width
     return scaled_width, scaled_height, offset_x, offset_y
 
 
-def initialize_pygame(width: int, height: int, fullscreen: bool = False) -> tuple[pygame.Surface, pygame.Surface]:
+def initialize_pygame(
+    width: int, height: int, fullscreen: bool = False
+) -> tuple[pygame.Surface, pygame.Surface]:
     """
     Initialize Pygame and create the game window with display scaling.
 
@@ -110,7 +116,7 @@ def initialize_pygame(width: int, height: int, fullscreen: bool = False) -> tupl
     """
     try:
         pygame.init()
-        
+
         # Initialize controller detection EARLY (before any other initialization)
         pygame.joystick.init()
         controller_count = pygame.joystick.get_count()
@@ -128,10 +134,11 @@ def initialize_pygame(width: int, height: int, fullscreen: bool = False) -> tupl
             # Get native screen resolution
             display_info = pygame.display.Info()
             display = pygame.display.set_mode(
-                (display_info.current_w, display_info.current_h),
-                pygame.FULLSCREEN
+                (display_info.current_w, display_info.current_h), pygame.FULLSCREEN
             )
-            logger.info(f"Fullscreen mode: {display_info.current_w}x{display_info.current_h}")
+            logger.info(
+                f"Fullscreen mode: {display_info.current_w}x{display_info.current_h}"
+            )
         else:
             # Windowed mode - make it resizable for macOS menu options
             display = pygame.display.set_mode((width, height), pygame.RESIZABLE)
@@ -148,7 +155,13 @@ def initialize_pygame(width: int, height: int, fullscreen: bool = False) -> tupl
         raise RuntimeError(f"Failed to initialize Pygame: {e}")
 
 
-def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761", filter_test_users: bool = True, max_zombies: int = 1000, quarantined_identities: set = None) -> List[Zombie]:
+def fetch_zombies(
+    api_client: SonraiAPIClient,
+    aws_account: str = "577945324761",
+    filter_test_users: bool = True,
+    max_zombies: int = 1000,
+    quarantined_identities: set = None,
+) -> List[Zombie]:
     """
     Fetch unused identities from Sonrai API and create zombie entities.
 
@@ -169,8 +182,12 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
         if quarantined_identities is None:
             quarantined_identities = set()
 
-        logger.info(f"Fetching unused identities from Sonrai API for account {aws_account}...")
-        identities = api_client.fetch_unused_identities(limit=1000, scope=None, days_since_login="0", filter_account=aws_account)
+        logger.info(
+            f"Fetching unused identities from Sonrai API for account {aws_account}..."
+        )
+        identities = api_client.fetch_unused_identities(
+            limit=1000, scope=None, days_since_login="0", filter_account=aws_account
+        )
 
         logger.info(f"Received {len(identities)} total identities from API")
 
@@ -181,16 +198,24 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
         # Filter out quarantined identities (from save file)
         if quarantined_identities:
             before_filter = len(identities)
-            identities = [i for i in identities if i.identity_id not in quarantined_identities]
+            identities = [
+                i for i in identities if i.identity_id not in quarantined_identities
+            ]
             filtered_count = before_filter - len(identities)
             if filtered_count > 0:
-                logger.info(f"Filtered out {filtered_count} quarantined identities from save file")
+                logger.info(
+                    f"Filtered out {filtered_count} quarantined identities from save file"
+                )
 
         # Filter for test-user identities if requested
         if filter_test_users:
             before_filter = len(identities)
-            identities = [i for i in identities if 'test-user' in i.identity_name.lower()]
-            logger.info(f"Filtered from {before_filter} to {len(identities)} test-user identities")
+            identities = [
+                i for i in identities if "test-user" in i.identity_name.lower()
+            ]
+            logger.info(
+                f"Filtered from {before_filter} to {len(identities)} test-user identities"
+            )
 
         if not identities:
             logger.warning("No test-user identities found after filtering")
@@ -198,11 +223,15 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
 
         # Limit to max_zombies for better gameplay
         if len(identities) > max_zombies:
-            logger.info(f"Would limit from {len(identities)} to {max_zombies} zombies, but applying limit...")
+            logger.info(
+                f"Would limit from {len(identities)} to {max_zombies} zombies, but applying limit..."
+            )
             identities = identities[:max_zombies]
             logger.info(f"Limited to {max_zombies} zombies for optimal gameplay")
         else:
-            logger.info(f"Using all {len(identities)} identities (under max_zombies limit of {max_zombies})")
+            logger.info(
+                f"Using all {len(identities)} identities (under max_zombies limit of {max_zombies})"
+            )
 
         # Create zombie entities (one-to-one mapping)
         zombies = []
@@ -213,7 +242,7 @@ def fetch_zombies(api_client: SonraiAPIClient, aws_account: str = "577945324761"
                 identity_name=identity.identity_name,
                 position=Vector2(0, 0),
                 account=aws_account,
-                scope=identity.scope  # Pass scope from API
+                scope=identity.scope,  # Pass scope from API
             )
             zombies.append(zombie)
 
@@ -243,11 +272,9 @@ def main():
     try:
         # Initialize Pygame with fullscreen support
         display, game_surface = initialize_pygame(
-            config['game_width'],
-            config['game_height'],
-            config['fullscreen']
+            config["game_width"], config["game_height"], config["fullscreen"]
         )
-        is_fullscreen = config['fullscreen']
+        is_fullscreen = config["fullscreen"]
 
     except RuntimeError as e:
         print(f"\n❌ Pygame Initialization Error: {e}")
@@ -275,9 +302,9 @@ def main():
         # Initialize Sonrai API client
         logger.info("Initializing Sonrai API client...")
         api_client = SonraiAPIClient(
-            api_url=config['api_url'],
-            org_id=config['org_id'],
-            api_token=config['api_token']
+            api_url=config["api_url"],
+            org_id=config["org_id"],
+            api_token=config["api_token"],
         )
 
         # Authenticate
@@ -295,7 +322,9 @@ def main():
 
         # Log account information
         logger.info(f"Found {len(account_data)} AWS accounts:")
-        for account, count in sorted(account_data.items(), key=lambda x: x[1], reverse=True):
+        for account, count in sorted(
+            account_data.items(), key=lambda x: x[1], reverse=True
+        ):
             logger.info(f"  {account}: {count} zombies")
 
         # Initialize level manager
@@ -309,29 +338,39 @@ def main():
 
         # Fetch 3rd party access information (MyHealth organization)
         logger.info("Fetching 3rd party access from Sonrai API...")
-        third_party_data = api_client.fetch_third_parties_by_account(root_scope="aws/r-ipxz")
+        third_party_data = api_client.fetch_third_parties_by_account(
+            root_scope="aws/r-ipxz"
+        )
         logger.info(f"Found 3rd parties in {len(third_party_data)} accounts")
         for account, parties in third_party_data.items():
             if parties:
-                logger.info(f"  Account {account}: {len(parties)} 3rd parties - {', '.join([p['name'] for p in parties[:3]])}{'...' if len(parties) > 3 else ''}")
+                logger.info(
+                    f"  Account {account}: {len(parties)} 3rd parties - {', '.join([p['name'] for p in parties[:3]])}{'...' if len(parties) > 3 else ''}"
+                )
 
         # Fetch zombies from ALL AWS accounts (for level loading)
         all_zombies = []
         for account_num, zombie_count in account_data.items():
             if zombie_count > 0:
-                logger.info(f"Fetching {zombie_count} zombies from account {account_num}...")
+                logger.info(
+                    f"Fetching {zombie_count} zombies from account {account_num}..."
+                )
                 try:
                     account_zombies = fetch_zombies(
                         api_client,
                         aws_account=account_num,
                         filter_test_users=False,
                         max_zombies=zombie_count,  # Fetch exact number for this account
-                        quarantined_identities=quarantined_identities  # Filter out quarantined identities
+                        quarantined_identities=quarantined_identities,  # Filter out quarantined identities
                     )
                     all_zombies.extend(account_zombies)
-                    logger.info(f"  -> Added {len(account_zombies)} zombies from account {account_num}")
+                    logger.info(
+                        f"  -> Added {len(account_zombies)} zombies from account {account_num}"
+                    )
                 except Exception as e:
-                    logger.warning(f"  -> Failed to fetch zombies from account {account_num}: {e}")
+                    logger.warning(
+                        f"  -> Failed to fetch zombies from account {account_num}: {e}"
+                    )
                     continue
 
         zombies = all_zombies
@@ -356,11 +395,11 @@ def main():
     game_engine = GameEngine(
         api_client=api_client,
         zombies=zombies,  # All zombies (will be filtered by level when entering levels)
-        screen_width=config['game_width'],
-        screen_height=config['game_height'],
+        screen_width=config["game_width"],
+        screen_height=config["game_height"],
         account_data=account_data,
         third_party_data=third_party_data,
-        level_manager=level_manager
+        level_manager=level_manager,
     )
 
     # Restore game state from save file (if exists)
@@ -384,7 +423,7 @@ def main():
 
     while game_engine.is_running():
         # Calculate delta time
-        delta_time = clock.tick(config['target_fps']) / 1000.0
+        delta_time = clock.tick(config["target_fps"]) / 1000.0
 
         # Handle input
         events = pygame.event.get()
@@ -394,20 +433,22 @@ def main():
             if event.type == pygame.KEYDOWN:
                 # Check for fullscreen toggle keys
                 is_toggle = (
-                    event.key == pygame.K_F11 or  # F11
-                    event.key == pygame.K_f or     # F key
-                    (event.key == pygame.K_f and (event.mod & pygame.KMOD_META))  # CMD+F on macOS
+                    event.key == pygame.K_F11  # F11
+                    or event.key == pygame.K_f  # F key
+                    or (
+                        event.key == pygame.K_f and (event.mod & pygame.KMOD_META)
+                    )  # CMD+F on macOS
                 )
 
                 if is_toggle:
                     is_fullscreen = not is_fullscreen
-                    logger.info(f"Fullscreen toggle detected! Switching to: {'FULLSCREEN' if is_fullscreen else 'WINDOWED'}")
+                    logger.info(
+                        f"Fullscreen toggle detected! Switching to: {'FULLSCREEN' if is_fullscreen else 'WINDOWED'}"
+                    )
 
                     # Recreate display with new mode
                     display, game_surface = initialize_pygame(
-                        config['game_width'],
-                        config['game_height'],
-                        is_fullscreen
+                        config["game_width"], config["game_height"], is_fullscreen
                     )
                     # Update renderer with new game surface
                     renderer.screen = game_surface
@@ -434,11 +475,11 @@ def main():
         renderer.render_background(game_map)
 
         # Render doors (if using map mode)
-        if game_map and hasattr(game_map, 'doors'):
+        if game_map and hasattr(game_map, "doors"):
             renderer.render_doors(game_map.doors, game_map)
 
         # Render collectibles (if using map mode)
-        if game_map and hasattr(game_map, 'collectibles'):
+        if game_map and hasattr(game_map, "collectibles"):
             renderer.render_collectibles(game_map.collectibles, game_map)
 
         # Render powerups (AWS-themed power-ups)
@@ -448,13 +489,15 @@ def main():
 
         # Update renderer scroll (classic mode only)
         if not game_map:
-            renderer.update_scroll(game_engine.get_scroll_offset() - renderer.scroll_offset)
+            renderer.update_scroll(
+                game_engine.get_scroll_offset() - renderer.scroll_offset
+            )
 
         # Render game entities
         zombies = game_engine.get_zombies()
         renderer.render_zombies(zombies, game_map)
         renderer.render_zombie_labels(zombies, game_map)
-        
+
         # Render health bars for zombies
         for zombie in zombies:
             renderer.render_health_bar(zombie, game_map)
@@ -463,14 +506,14 @@ def main():
         third_parties = game_engine.get_third_parties()
         renderer.render_third_parties(third_parties, game_map)
         renderer.render_third_party_labels(third_parties, game_map)
-        
+
         # Render health bars for 3rd parties
         for third_party in third_parties:
             renderer.render_health_bar(third_party, game_map)
-        
+
         # Get game state for shield animation
         game_state = game_engine.get_game_state()
-        
+
         # Render purple shields for protected 3rd parties
         for third_party in third_parties:
             if third_party.is_protected:
@@ -503,7 +546,9 @@ def main():
             # Render service nodes (Bedrock icons)
             service_nodes = game_engine.get_service_nodes()
             if service_nodes:
-                renderer.render_service_nodes(service_nodes, game_map, game_state.play_time)
+                renderer.render_service_nodes(
+                    service_nodes, game_map, game_state.play_time
+                )
 
             # Render hacker character
             hacker = game_engine.get_hacker()
@@ -514,7 +559,9 @@ def main():
             active_quest = game_engine.get_active_quest()
             if active_quest:
                 # Render countdown timer
-                renderer.render_race_timer(active_quest.time_remaining, active_quest.status)
+                renderer.render_race_timer(
+                    active_quest.time_remaining, active_quest.status
+                )
 
                 # Render quest warning message
                 if game_state.quest_message and game_state.quest_message_timer > 0:
@@ -522,20 +569,26 @@ def main():
 
             # Render service hint
             if game_state.service_hint_message and game_state.service_hint_timer > 0:
-                renderer.render_service_hint(game_state.service_hint_message, game_state.service_hint_timer)
+                renderer.render_service_hint(
+                    game_state.service_hint_message, game_state.service_hint_timer
+                )
 
         # Render JIT Access Quest elements
-        if game_state.status == GameStatus.PLAYING and game_state.jit_quest and game_state.jit_quest.active:
+        if (
+            game_state.status == GameStatus.PLAYING
+            and game_state.jit_quest
+            and game_state.jit_quest.active
+        ):
             # Render auditor
             auditor = game_engine.auditor
             if auditor:
                 renderer.render_auditor(auditor, game_map)
-            
+
             # Render admin roles
             admin_roles = game_engine.admin_roles
             if admin_roles:
                 renderer.render_admin_roles(admin_roles, game_map, game_state.play_time)
-            
+
             # Render JIT quest messages
             renderer.render_jit_quest_message(game_state.jit_quest)
 
@@ -552,25 +605,32 @@ def main():
             renderer.render_boss_dialogue(game_engine.boss_dialogue_content)
 
         # Render congratulations message if present
-        if game_state.status == GameStatus.PAUSED and game_state.congratulations_message:
+        if (
+            game_state.status == GameStatus.PAUSED
+            and game_state.congratulations_message
+        ):
             renderer.render_message_bubble(game_state.congratulations_message)
 
         # Scale and display game surface with aspect ratio preservation
         if is_fullscreen or display.get_size() != game_surface.get_size():
             # Calculate scaled dimensions with letterboxing/pillarboxing
             display_width, display_height = display.get_size()
-            scaled_width, scaled_height, offset_x, offset_y = calculate_scaled_dimensions(
-                config['game_width'],
-                config['game_height'],
-                display_width,
-                display_height
+            scaled_width, scaled_height, offset_x, offset_y = (
+                calculate_scaled_dimensions(
+                    config["game_width"],
+                    config["game_height"],
+                    display_width,
+                    display_height,
+                )
             )
 
             # Clear display (black background for letterboxing)
             display.fill((0, 0, 0))
 
             # Scale game surface and blit to display
-            scaled_surface = pygame.transform.scale(game_surface, (scaled_width, scaled_height))
+            scaled_surface = pygame.transform.scale(
+                game_surface, (scaled_width, scaled_height)
+            )
             display.blit(scaled_surface, (offset_x, offset_y))
         else:
             # Windowed mode at native resolution - direct blit

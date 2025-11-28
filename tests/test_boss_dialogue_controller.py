@@ -16,17 +16,10 @@ def sample_dialogue_data():
     return {
         "title": "🕷️ TEST BOSS APPEARS! 🕷️",
         "description": "This is a test boss for unit testing.",
-        "how_attacked": [
-            "Attack method 1",
-            "Attack method 2",
-            "Attack method 3"
-        ],
+        "how_attacked": ["Attack method 1", "Attack method 2", "Attack method 3"],
         "victims": "Test Corp, Example Inc",
-        "prevention": [
-            "Prevention tip 1",
-            "Prevention tip 2"
-        ],
-        "mechanic": "Defeat the test boss to pass the test!"
+        "prevention": ["Prevention tip 1", "Prevention tip 2"],
+        "mechanic": "Defeat the test boss to pass the test!",
     }
 
 
@@ -175,7 +168,7 @@ class TestBossDialogueController:
             "how_attacked": [],
             "victims": "",
             "prevention": [],
-            "mechanic": ""
+            "mechanic": "",
         }
         controller.show(new_data)
 

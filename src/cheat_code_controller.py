@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class CheatCodeAction(Enum):
     """Actions that can be triggered by cheat codes."""
+
     NONE = auto()
     UNLOCK_ALL_LEVELS = auto()
     SKIP_LEVEL = auto()
@@ -23,6 +24,7 @@ class CheatCodeAction(Enum):
 @dataclass
 class CheatCodeResult:
     """Result of processing a key input for cheat codes."""
+
     action: CheatCodeAction
     message: Optional[str] = None
 
@@ -40,15 +42,32 @@ class CheatCodeController:
     """
 
     # Cheat code definitions
-    UNLOCK_CODE = [pygame.K_u, pygame.K_n, pygame.K_l, pygame.K_o, pygame.K_c, pygame.K_k]
+    UNLOCK_CODE = [
+        pygame.K_u,
+        pygame.K_n,
+        pygame.K_l,
+        pygame.K_o,
+        pygame.K_c,
+        pygame.K_k,
+    ]
     SKIP_CODE = [pygame.K_s, pygame.K_k, pygame.K_i, pygame.K_p]
     KONAMI_CODE = [
-        pygame.K_UP, pygame.K_UP, pygame.K_DOWN, pygame.K_DOWN,
-        pygame.K_LEFT, pygame.K_RIGHT, pygame.K_LEFT, pygame.K_RIGHT
+        pygame.K_UP,
+        pygame.K_UP,
+        pygame.K_DOWN,
+        pygame.K_DOWN,
+        pygame.K_LEFT,
+        pygame.K_RIGHT,
+        pygame.K_LEFT,
+        pygame.K_RIGHT,
     ]
     ARCADE_CODE = [
-        pygame.K_UP, pygame.K_UP, pygame.K_DOWN, pygame.K_DOWN,
-        pygame.K_a, pygame.K_b
+        pygame.K_UP,
+        pygame.K_UP,
+        pygame.K_DOWN,
+        pygame.K_DOWN,
+        pygame.K_a,
+        pygame.K_b,
     ]
 
     # Timeout for resetting input sequences (seconds)
@@ -70,7 +89,9 @@ class CheatCodeController:
         # State
         self.unlock_enabled: bool = False
 
-    def process_key(self, key: int, current_time: Optional[float] = None) -> CheatCodeResult:
+    def process_key(
+        self, key: int, current_time: Optional[float] = None
+    ) -> CheatCodeResult:
         """
         Process a key press and check for cheat code activation.
 
@@ -114,7 +135,7 @@ class CheatCodeController:
             logger.info("🔓 CHEAT: All levels unlocked!")
             return CheatCodeResult(
                 action=CheatCodeAction.UNLOCK_ALL_LEVELS,
-                message="🔓 CHEAT ACTIVATED\n\nAll Levels Unlocked!\n\nPress ESC to continue"
+                message="🔓 CHEAT ACTIVATED\n\nAll Levels Unlocked!\n\nPress ESC to continue",
             )
 
         # Check SKIP code
@@ -123,7 +144,7 @@ class CheatCodeController:
             logger.info("🔓 CHEAT: Skip level activated!")
             return CheatCodeResult(
                 action=CheatCodeAction.SKIP_LEVEL,
-                message=None  # Message handled by GameEngine based on current level
+                message=None,  # Message handled by GameEngine based on current level
             )
 
         # Check Konami code
@@ -132,7 +153,7 @@ class CheatCodeController:
             logger.info("🎮 KONAMI CODE ACTIVATED!")
             return CheatCodeResult(
                 action=CheatCodeAction.SPAWN_BOSS,
-                message=None  # Boss spawn handled by GameEngine
+                message=None,  # Boss spawn handled by GameEngine
             )
 
         # Check Arcade code
@@ -141,7 +162,7 @@ class CheatCodeController:
             logger.info("🎮 ARCADE CODE ACTIVATED!")
             return CheatCodeResult(
                 action=CheatCodeAction.START_ARCADE,
-                message=None  # Arcade start handled by GameEngine
+                message=None,  # Arcade start handled by GameEngine
             )
 
         return CheatCodeResult(action=CheatCodeAction.NONE)

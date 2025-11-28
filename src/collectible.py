@@ -36,10 +36,10 @@ class Collectible:
         sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
 
         # Purple question block colors
-        BLOCK_PURPLE = (120, 80, 160)     # Main block color
-        BLOCK_LIGHT = (160, 120, 200)     # Highlights
-        BLOCK_DARK = (80, 50, 110)        # Shadows
-        QUESTION_COLOR = (255, 153, 0)    # AWS Orange question mark
+        BLOCK_PURPLE = (120, 80, 160)  # Main block color
+        BLOCK_LIGHT = (160, 120, 200)  # Highlights
+        BLOCK_DARK = (80, 50, 110)  # Shadows
+        QUESTION_COLOR = (255, 153, 0)  # AWS Orange question mark
         BLACK = (0, 0, 0)
 
         # Main block body
@@ -50,8 +50,20 @@ class Collectible:
         pygame.draw.line(sprite, BLOCK_LIGHT, (0, 0), (0, self.height - 1), 2)
 
         # Bottom and right shadows
-        pygame.draw.line(sprite, BLOCK_DARK, (0, self.height - 1), (self.width - 1, self.height - 1), 2)
-        pygame.draw.line(sprite, BLOCK_DARK, (self.width - 1, 0), (self.width - 1, self.height - 1), 2)
+        pygame.draw.line(
+            sprite,
+            BLOCK_DARK,
+            (0, self.height - 1),
+            (self.width - 1, self.height - 1),
+            2,
+        )
+        pygame.draw.line(
+            sprite,
+            BLOCK_DARK,
+            (self.width - 1, 0),
+            (self.width - 1, self.height - 1),
+            2,
+        )
 
         # Question mark (simplified pixel art)
         # Top curve of ?
@@ -78,7 +90,7 @@ class Collectible:
             int(self.position.x),
             int(self.position.y + self.bounce_offset),
             self.width,
-            self.height
+            self.height,
         )
 
     def check_collision(self, player_bounds: pygame.Rect) -> bool:
@@ -117,7 +129,14 @@ class Collectible:
         if not self.collected:
             # Gentle bobbing animation like Mario coins
             self.animation_timer += delta_time * 3  # Speed of animation
-            self.bounce_offset = int(2 * (0.5 + 0.5 * pygame.math.Vector2(0, 1).rotate(self.animation_timer * 180).y))
+            self.bounce_offset = int(
+                2
+                * (
+                    0.5
+                    + 0.5
+                    * pygame.math.Vector2(0, 1).rotate(self.animation_timer * 180).y
+                )
+            )
 
     def render(self, screen: pygame.Surface, camera_x: float, camera_y: float) -> None:
         """

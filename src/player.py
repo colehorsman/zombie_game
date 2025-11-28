@@ -12,7 +12,13 @@ logger = logging.getLogger(__name__)
 class Player:
     """Represents the controllable Mega Man-style character."""
 
-    def __init__(self, position: Vector2, map_width: Optional[int] = None, map_height: Optional[int] = None, game_map: Optional['GameMap'] = None):
+    def __init__(
+        self,
+        position: Vector2,
+        map_width: Optional[int] = None,
+        map_height: Optional[int] = None,
+        game_map: Optional["GameMap"] = None,
+    ):
         """
         Initialize the player.
 
@@ -38,20 +44,20 @@ class Player:
         self.move_speed = 120.0  # Current movement speed
         self.base_jump_speed = 600.0  # Base jump velocity for platformer
         self.jump_speed = 600.0  # Current jump velocity
-        self.gravity = 1200.0    # Gravity acceleration (pixels/s²) for platformer
+        self.gravity = 1200.0  # Gravity acceleration (pixels/s²) for platformer
         self.max_fall_speed = 600.0  # Terminal velocity
-        
+
         # Ground detection for platformer mode
         self.on_ground = False
         if map_height:
             ground_tiles = 8  # Number of ground tiles
-            tile_size = 16    # Tile size in pixels
+            tile_size = 16  # Tile size in pixels
             tiles_high = map_height // tile_size
             ground_start_tile = tiles_high - ground_tiles
             self.ground_y = (ground_start_tile * tile_size) - self.height
         else:
             self.ground_y = 500
-        
+
         # Crouching state
         self.is_crouching = False
 
@@ -87,23 +93,23 @@ class Player:
         sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
 
         # re:Invent survivor color palette
-        HAIR_BROWN = (80, 50, 30)        # Dark brown hair
-        SKIN = (220, 180, 140)           # Skin tone
-        DARK_SKIN = (180, 140, 100)      # Shadow on skin
-        PURPLE = (120, 60, 180)          # re:Invent purple shirt
-        DARK_PURPLE = (80, 40, 120)      # Purple shadows
-        LIGHT_PURPLE = (160, 100, 220)   # Purple highlights
-        CAP_PURPLE = (100, 50, 160)      # Purple baseball cap
-        CAP_DARK = (70, 35, 110)         # Cap shadows
-        PANTS_BLACK = (40, 40, 40)       # Black pants
-        DARK_PANTS = (25, 25, 25)        # Pants shadows
-        BOOTS_BLACK = (30, 30, 30)       # Black boots
-        BACKPACK_GREY = (90, 90, 80)     # Grey backpack
-        DARK_GREY = (60, 60, 55)         # Backpack shadows
-        GUN_METAL = (100, 100, 100)      # Metallic gun
-        DARK_METAL = (60, 60, 60)        # Gun shadows
-        BLACK = (0, 0, 0)                # Outlines
-        RED = (150, 30, 30)              # Blood stains
+        HAIR_BROWN = (80, 50, 30)  # Dark brown hair
+        SKIN = (220, 180, 140)  # Skin tone
+        DARK_SKIN = (180, 140, 100)  # Shadow on skin
+        PURPLE = (120, 60, 180)  # re:Invent purple shirt
+        DARK_PURPLE = (80, 40, 120)  # Purple shadows
+        LIGHT_PURPLE = (160, 100, 220)  # Purple highlights
+        CAP_PURPLE = (100, 50, 160)  # Purple baseball cap
+        CAP_DARK = (70, 35, 110)  # Cap shadows
+        PANTS_BLACK = (40, 40, 40)  # Black pants
+        DARK_PANTS = (25, 25, 25)  # Pants shadows
+        BOOTS_BLACK = (30, 30, 30)  # Black boots
+        BACKPACK_GREY = (90, 90, 80)  # Grey backpack
+        DARK_GREY = (60, 60, 55)  # Backpack shadows
+        GUN_METAL = (100, 100, 100)  # Metallic gun
+        DARK_METAL = (60, 60, 60)  # Gun shadows
+        BLACK = (0, 0, 0)  # Outlines
+        RED = (150, 30, 30)  # Blood stains
 
         # Baseball cap
         # Cap crown (rounded top)
@@ -155,7 +161,7 @@ class Player:
 
         # Shirt details/highlights
         pygame.draw.rect(sprite, LIGHT_PURPLE, (12, 18, 12, 4))  # Chest highlight
-        pygame.draw.rect(sprite, DARK_PURPLE, (14, 24, 8, 4))     # Shadow area
+        pygame.draw.rect(sprite, DARK_PURPLE, (14, 24, 8, 4))  # Shadow area
 
         # Collar detail
         pygame.draw.rect(sprite, DARK_PURPLE, (14, 16, 8, 2))
@@ -195,13 +201,13 @@ class Player:
         pygame.draw.line(sprite, (80, 80, 80), (38, 22), (38, 27), 1)
 
         # Energy core (glowing cyan center - classic raygun look) - brighter
-        pygame.draw.circle(sprite, (0, 255, 255), (32, 25), 3)    # Bright cyan core
+        pygame.draw.circle(sprite, (0, 255, 255), (32, 25), 3)  # Bright cyan core
         pygame.draw.circle(sprite, (150, 255, 255), (32, 25), 2)  # Inner glow
         pygame.draw.circle(sprite, (255, 255, 255), (32, 25), 1)  # White hot center
 
         # Muzzle opening (orange glow - ready to fire)
         pygame.draw.rect(sprite, (255, 150, 50), (39, 23, 2, 4))  # Orange glow
-        pygame.draw.rect(sprite, (255, 200, 100), (40, 24, 1, 2)) # Bright center
+        pygame.draw.rect(sprite, (255, 200, 100), (40, 24, 1, 2))  # Bright center
 
         # Legs/pants - black pants
         # Left leg
@@ -291,7 +297,7 @@ class Player:
         self.move_speed = self.base_move_speed * multiplier
         self.jump_speed = self.base_jump_speed * multiplier
 
-    def fire_projectile(self) -> 'Projectile':
+    def fire_projectile(self) -> "Projectile":
         """
         Create a projectile at the player's current position, firing in facing direction.
 
@@ -312,7 +318,9 @@ class Player:
 
         projectile_pos = Vector2(projectile_x, projectile_y)
 
-        print(f"DEBUG: Firing projectile at ({projectile_pos.x}, {projectile_pos.y}) facing {self.facing_direction.x}, {self.facing_direction.y}")
+        print(
+            f"DEBUG: Firing projectile at ({projectile_pos.x}, {projectile_pos.y}) facing {self.facing_direction.x}, {self.facing_direction.y}"
+        )
 
         return Projectile(projectile_pos, self.facing_direction)
 
@@ -350,7 +358,7 @@ class Player:
                 self.on_ground = True
             else:
                 # Check if landing on a platform
-                if self.game_map is not None and hasattr(self.game_map, 'tile_map'):
+                if self.game_map is not None and hasattr(self.game_map, "tile_map"):
                     # Check tile below player's feet
                     feet_x = int(self.position.x + self.width // 2)
                     feet_y = int(next_y + self.height)
@@ -361,10 +369,12 @@ class Player:
                     tile_y = feet_y // tile_size
 
                     # Check if moving downward and tile below is solid (platform)
-                    if (self.velocity.y > 0 and
-                        0 <= tile_x < self.game_map.tiles_wide and
-                        0 <= tile_y < self.game_map.tiles_high and
-                        self.game_map.tile_map[tile_y][tile_x] == 1):
+                    if (
+                        self.velocity.y > 0
+                        and 0 <= tile_x < self.game_map.tiles_wide
+                        and 0 <= tile_y < self.game_map.tiles_high
+                        and self.game_map.tile_map[tile_y][tile_x] == 1
+                    ):
                         # Landing on platform - snap to platform top
                         platform_top_y = tile_y * tile_size - self.height
                         self.position.y = platform_top_y
@@ -377,9 +387,11 @@ class Player:
                         head_tile_x = head_x // tile_size
                         head_tile_y = head_y // tile_size
 
-                        if (0 <= head_tile_x < self.game_map.tiles_wide and
-                            0 <= head_tile_y < self.game_map.tiles_high and
-                            self.game_map.tile_map[head_tile_y][head_tile_x] == 1):
+                        if (
+                            0 <= head_tile_x < self.game_map.tiles_wide
+                            and 0 <= head_tile_y < self.game_map.tiles_high
+                            and self.game_map.tile_map[head_tile_y][head_tile_x] == 1
+                        ):
                             # Hit ceiling - stop upward movement
                             self.velocity.y = 0
                         else:
@@ -400,7 +412,7 @@ class Player:
             can_move_x = self._can_move_to(next_x, self.position.y)
             if can_move_x:
                 self.position.x = next_x
-            
+
             # In top-down mode, check vertical movement independently
             if not is_platformer_mode:
                 can_move_y = self._can_move_to(self.position.x, next_y)
@@ -431,22 +443,27 @@ class Player:
         # but allow movement in hallways
         check_points = [
             (x + self.width // 2, y + self.height // 2),  # Center (most important)
-            (x + 5, y + self.height // 2),                 # Left edge center
-            (x + self.width - 5, y + self.height // 2),   # Right edge center
-            (x + self.width // 2, y + 5),                  # Top edge center
-            (x + self.width // 2, y + self.height - 5),   # Bottom edge center
+            (x + 5, y + self.height // 2),  # Left edge center
+            (x + self.width - 5, y + self.height // 2),  # Right edge center
+            (x + self.width // 2, y + 5),  # Top edge center
+            (x + self.width // 2, y + self.height - 5),  # Bottom edge center
         ]
-        
+
         # Count how many points are walkable
-        walkable_count = sum(1 for check_x, check_y in check_points 
-                           if self.game_map.is_walkable(int(check_x), int(check_y)))
-        
+        walkable_count = sum(
+            1
+            for check_x, check_y in check_points
+            if self.game_map.is_walkable(int(check_x), int(check_y))
+        )
+
         # Require at least 3 out of 5 points to be walkable (prevents going through walls)
         # Center point is most important - if center is walkable, allow movement
-        center_walkable = self.game_map.is_walkable(int(check_points[0][0]), int(check_points[0][1]))
+        center_walkable = self.game_map.is_walkable(
+            int(check_points[0][0]), int(check_points[0][1])
+        )
         if center_walkable and walkable_count >= 2:
             return True
-        
+
         # Otherwise require majority (3/5) to be walkable
         return walkable_count >= 3
 
@@ -458,10 +475,7 @@ class Player:
             Pygame Rect representing the player's bounds
         """
         return pygame.Rect(
-            int(self.position.x),
-            int(self.position.y),
-            self.width,
-            self.height
+            int(self.position.x), int(self.position.y), self.width, self.height
         )
 
     # ========== Health System Methods ==========
@@ -488,7 +502,9 @@ class Player:
         self.flash_timer = 0.0
         self.is_visible = True
 
-        logger.info(f"💔 Player took {amount} damage! Health: {self.current_health}/{self.max_health}")
+        logger.info(
+            f"💔 Player took {amount} damage! Health: {self.current_health}/{self.max_health}"
+        )
 
         return True
 
@@ -504,12 +520,16 @@ class Player:
         healed = self.current_health - old_health
 
         if healed > 0:
-            logger.info(f"💚 Player healed {healed} HP! Health: {self.current_health}/{self.max_health}")
+            logger.info(
+                f"💚 Player healed {healed} HP! Health: {self.current_health}/{self.max_health}"
+            )
 
     def full_heal(self) -> None:
         """Restore player to full health."""
         self.current_health = self.max_health
-        logger.info(f"💚 Player fully healed! Health: {self.current_health}/{self.max_health}")
+        logger.info(
+            f"💚 Player fully healed! Health: {self.current_health}/{self.max_health}"
+        )
 
     def update_invincibility(self, delta_time: float) -> None:
         """

@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 class PauseMenuAction(Enum):
     """Actions that can be triggered from the pause menu."""
+
     NONE = auto()
     RESUME = auto()
     START_ARCADE = auto()
@@ -28,7 +29,13 @@ class PauseMenuController:
     BASE_OPTIONS = ["Return to Game", "Return to Lobby", "Save Game", "Quit Game"]
 
     # Options with arcade mode included
-    ARCADE_OPTIONS = ["Return to Game", "🎮 Arcade Mode", "Return to Lobby", "Save Game", "Quit Game"]
+    ARCADE_OPTIONS = [
+        "Return to Game",
+        "🎮 Arcade Mode",
+        "Return to Lobby",
+        "Save Game",
+        "Quit Game",
+    ]
 
     def __init__(self):
         """Initialize the pause menu controller."""
@@ -44,7 +51,7 @@ class PauseMenuController:
             "pause": "Start",
             "lobby": "Select",
             "up": "D-Pad ↑",
-            "down": "D-Pad ↓"
+            "down": "D-Pad ↓",
         }
 
     def show(self, include_arcade_option: bool = False) -> None:
@@ -83,7 +90,9 @@ class PauseMenuController:
         old_index = self.selected_index
         self.selected_index = (self.selected_index + direction) % len(self.options)
         self.show_save_confirmation = False  # Clear save confirmation on navigation
-        logger.info(f"Menu navigation: {old_index} → {self.selected_index} ({self.options[self.selected_index]})")
+        logger.info(
+            f"Menu navigation: {old_index} → {self.selected_index} ({self.options[self.selected_index]})"
+        )
 
     def select(self) -> PauseMenuAction:
         """
@@ -96,7 +105,9 @@ class PauseMenuController:
             return PauseMenuAction.NONE
 
         selected_option = self.options[self.selected_index]
-        logger.info(f"Executing menu option: {selected_option} (index: {self.selected_index})")
+        logger.info(
+            f"Executing menu option: {selected_option} (index: {self.selected_index})"
+        )
 
         if selected_option == "Return to Game":
             self.hide()

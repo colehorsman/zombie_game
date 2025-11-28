@@ -17,10 +17,10 @@ def generate_bedrock_sprite() -> pygame.Surface:
 
     # Define hexagonal block colors (blue to purple gradient)
     colors = [
-        (0, 100, 255),    # Bright blue
-        (50, 80, 220),    # Medium blue
-        (100, 60, 200),   # Blue-purple
-        (150, 40, 180),   # Purple
+        (0, 100, 255),  # Bright blue
+        (50, 80, 220),  # Medium blue
+        (100, 60, 200),  # Blue-purple
+        (150, 40, 180),  # Purple
     ]
 
     # Draw hexagonal blocks (3x3 grid)
@@ -28,9 +28,15 @@ def generate_bedrock_sprite() -> pygame.Surface:
     spacing = 16
 
     positions = [
-        (8, 8),   (24, 8),   (40, 8),     # Top row
-        (8, 24),  (24, 24),  (40, 24),    # Middle row
-        (8, 40),  (24, 40),  (40, 40),    # Bottom row
+        (8, 8),
+        (24, 8),
+        (40, 8),  # Top row
+        (8, 24),
+        (24, 24),
+        (40, 24),  # Middle row
+        (8, 40),
+        (24, 40),
+        (40, 40),  # Bottom row
     ]
 
     for i, (x, y) in enumerate(positions):
@@ -42,7 +48,11 @@ def generate_bedrock_sprite() -> pygame.Surface:
         pygame.draw.rect(sprite, color, rect)
 
         # Add darker border for depth
-        border_color = (max(0, color[0] - 50), max(0, color[1] - 50), max(0, color[2] - 50))
+        border_color = (
+            max(0, color[0] - 50),
+            max(0, color[1] - 50),
+            max(0, color[2] - 50),
+        )
         pygame.draw.rect(sprite, border_color, rect, 2)
 
     return sprite

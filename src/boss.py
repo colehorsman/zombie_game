@@ -61,22 +61,31 @@ class Boss:
     def _create_sprite(self) -> pygame.Surface:
         """Create NES-style wizard sprite with hat and 'W' on shirt."""
         sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
-        
+
         # NES color palette
-        PURPLE = (120, 60, 180)      # Wizard robe
+        PURPLE = (120, 60, 180)  # Wizard robe
         DARK_PURPLE = (80, 40, 120)  # Shadow
-        BLUE = (60, 100, 200)        # Hat
-        DARK_BLUE = (40, 60, 150)    # Hat shadow
-        WHITE = (255, 255, 255)      # 'W' on shirt
-        BLACK = (0, 0, 0)            # Outline
-        SKIN = (255, 200, 150)       # Face/hands
-        GOLD = (255, 215, 0)         # Hat star/decoration
+        BLUE = (60, 100, 200)  # Hat
+        DARK_BLUE = (40, 60, 150)  # Hat shadow
+        WHITE = (255, 255, 255)  # 'W' on shirt
+        BLACK = (0, 0, 0)  # Outline
+        SKIN = (255, 200, 150)  # Face/hands
+        GOLD = (255, 215, 0)  # Hat star/decoration
 
         # Draw wizard body (robe)
         # Body rectangle
         body_rect = pygame.Rect(20, 30, 40, 50)
         pygame.draw.rect(sprite, DARK_PURPLE, body_rect)
-        pygame.draw.rect(sprite, PURPLE, (body_rect.x + 2, body_rect.y + 2, body_rect.width - 4, body_rect.height - 4))
+        pygame.draw.rect(
+            sprite,
+            PURPLE,
+            (
+                body_rect.x + 2,
+                body_rect.y + 2,
+                body_rect.width - 4,
+                body_rect.height - 4,
+            ),
+        )
         pygame.draw.rect(sprite, BLACK, body_rect, 2)
 
         # Draw large 'W' on shirt (centered on body)
@@ -84,19 +93,26 @@ class Boss:
         w_text = font.render("W", True, WHITE)
         w_rect = w_text.get_rect(center=(body_rect.centerx, body_rect.centery))
         # Draw black outline for 'W'
-        for dx, dy in [(1,1), (-1,-1), (1,-1), (-1,1)]:
+        for dx, dy in [(1, 1), (-1, -1), (1, -1), (-1, 1)]:
             outline = font.render("W", True, BLACK)
             sprite.blit(outline, (w_rect.x + dx, w_rect.y + dy))
         sprite.blit(w_text, w_rect)
 
         # Draw wizard hat (pointed hat on top)
         hat_points = [
-            (30, 25),   # Left base
-            (50, 25),   # Right base
-            (40, 5),    # Top point
+            (30, 25),  # Left base
+            (50, 25),  # Right base
+            (40, 5),  # Top point
         ]
         pygame.draw.polygon(sprite, DARK_BLUE, hat_points)
-        pygame.draw.polygon(sprite, BLUE, [(p[0] + 1, p[1] + 1) if i < 2 else (p[0], p[1] - 1) for i, p in enumerate(hat_points)])
+        pygame.draw.polygon(
+            sprite,
+            BLUE,
+            [
+                (p[0] + 1, p[1] + 1) if i < 2 else (p[0], p[1] - 1)
+                for i, p in enumerate(hat_points)
+            ],
+        )
         pygame.draw.polygon(sprite, BLACK, hat_points, 2)
 
         # Draw star on hat (gold star decoration)
@@ -104,6 +120,7 @@ class Boss:
         star_size = 6
         for angle in [0, 72, 144, 216, 288]:
             import math
+
             rad = math.radians(angle)
             x = star_center[0] + int(star_size * math.cos(rad))
             y = star_center[1] + int(star_size * math.sin(rad))
@@ -126,38 +143,43 @@ class Boss:
         cloud_width = 120
         cloud_height = 40
         cloud = pygame.Surface((cloud_width, cloud_height), pygame.SRCALPHA)
-        
+
         # Cloud colors (white/light gray)
         CLOUD_WHITE = (240, 240, 255)
         CLOUD_SHADOW = (200, 200, 220)
         CLOUD_OUTLINE = (180, 180, 200)
-        
+
         # Draw fluffy cloud using overlapping circles
         # Main cloud body
         center_x, center_y = cloud_width // 2, cloud_height // 2
-        
+
         # Large center circle
         pygame.draw.circle(cloud, CLOUD_SHADOW, (center_x, center_y + 5), 20)
         pygame.draw.circle(cloud, CLOUD_WHITE, (center_x, center_y), 20)
-        
+
         # Left puff
         pygame.draw.circle(cloud, CLOUD_SHADOW, (center_x - 25, center_y + 3), 18)
         pygame.draw.circle(cloud, CLOUD_WHITE, (center_x - 25, center_y - 2), 18)
-        
+
         # Right puff
         pygame.draw.circle(cloud, CLOUD_SHADOW, (center_x + 25, center_y + 3), 18)
         pygame.draw.circle(cloud, CLOUD_WHITE, (center_x + 25, center_y - 2), 18)
-        
+
         # Small puffs on edges
         pygame.draw.circle(cloud, CLOUD_WHITE, (center_x - 40, center_y), 12)
         pygame.draw.circle(cloud, CLOUD_WHITE, (center_x + 40, center_y), 12)
-        
+
         # Outline
         pygame.draw.circle(cloud, CLOUD_OUTLINE, (center_x, center_y), 20, 2)
-        
+
         return cloud
 
-    def update(self, delta_time: float, player_pos: Vector2, game_map: Optional['GameMap'] = None) -> None:
+    def update(
+        self,
+        delta_time: float,
+        player_pos: Vector2,
+        game_map: Optional["GameMap"] = None,
+    ) -> None:
         """
         Update boss AI - move toward player. Drops from cloud during entrance.
 
@@ -186,6 +208,7 @@ class Boss:
 
             # Animate cloud (bob up and down slightly)
             import math
+
             self.cloud_y_offset = math.sin(time.time() * 3.0) * 3  # Gentle bobbing
 
             # Land on ground
@@ -280,9 +303,5 @@ class Boss:
             Pygame Rect representing the boss's bounds
         """
         return pygame.Rect(
-            int(self.position.x),
-            int(self.position.y),
-            self.width,
-            self.height
+            int(self.position.x), int(self.position.y), self.width, self.height
         )
-

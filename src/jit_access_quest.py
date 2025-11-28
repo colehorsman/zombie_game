@@ -62,7 +62,7 @@ class Auditor:
             int(self.position.x - self.width // 2),
             int(self.position.y - self.height // 2),
             self.width,
-            self.height
+            self.height,
         )
 
 
@@ -101,7 +101,7 @@ class AdminRole:
             int(self.position.x - self.width // 2),
             int(self.position.y - self.height // 2),
             self.width,
-            self.height
+            self.height,
         )
 
     def apply_jit_protection(self):
@@ -111,7 +111,9 @@ class AdminRole:
         logger.info(f"Applied JIT protection to {self.permission_set.name}")
 
 
-def create_jit_quest_entities(permission_sets: list, level_width: int, ground_y: int) -> Tuple[Auditor, list]:
+def create_jit_quest_entities(
+    permission_sets: list, level_width: int, ground_y: int
+) -> Tuple[Auditor, list]:
     """
     Create auditor and admin role entities for the JIT quest.
 
@@ -131,7 +133,7 @@ def create_jit_quest_entities(permission_sets: list, level_width: int, ground_y:
     # Create admin role entities spread across the level at ground level
     admin_roles = []
     spacing = level_width // (len(permission_sets) + 1)
-    
+
     # Admin role height is 50 pixels (defined in AdminRole class)
     admin_role_height = 50
 
@@ -142,6 +144,8 @@ def create_jit_quest_entities(permission_sets: list, level_width: int, ground_y:
         y = ground_y - 16
         admin_role = AdminRole(perm_set, x, y)
         admin_roles.append(admin_role)
-        logger.info(f"Created AdminRole for {perm_set.name} at ({x}, {y}), hasJit={perm_set.has_jit}")
+        logger.info(
+            f"Created AdminRole for {perm_set.name} at ({x}, {y}), hasJit={perm_set.has_jit}"
+        )
 
     return auditor, admin_roles

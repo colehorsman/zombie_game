@@ -18,12 +18,11 @@ from zombie import Zombie
 @pytest.fixture
 def mock_pygame():
     """Mock pygame to avoid GUI dependencies."""
-    with patch('pygame.init'), \
-         patch('pygame.display.set_mode'), \
-         patch('pygame.font.Font'), \
-         patch('pygame.time.Clock'), \
-         patch('pygame.joystick.init'), \
-         patch('pygame.joystick.get_count', return_value=0):
+    with patch("pygame.init"), patch("pygame.display.set_mode"), patch(
+        "pygame.font.Font"
+    ), patch("pygame.time.Clock"), patch("pygame.joystick.init"), patch(
+        "pygame.joystick.get_count", return_value=0
+    ):
         yield
 
 
@@ -50,16 +49,16 @@ class TestLobbyInitialization:
             screen_height=720,
             use_map=True,
             account_data={},
-            third_party_data={}
+            third_party_data={},
         )
-        
+
         # Verify player spawned at center
         expected_x = engine.game_map.map_width // 2
         expected_y = engine.game_map.map_height // 2
-        
+
         assert engine.player.position.x == expected_x
         assert engine.player.position.y == expected_y
-        
+
         # Verify landing zone is also at center
         assert engine.landing_zone.x == expected_x
         assert engine.landing_zone.y == expected_y
@@ -74,9 +73,9 @@ class TestLobbyInitialization:
             screen_height=720,
             use_map=True,
             account_data={},
-            third_party_data={}
+            third_party_data={},
         )
-        
+
         assert engine.game_state.status == GameStatus.LOBBY
 
     def test_zombies_visible_in_lobby(self, mock_pygame, mock_api_client):
@@ -87,11 +86,11 @@ class TestLobbyInitialization:
                 identity_id=f"zombie-{i}",
                 identity_name=f"TestZombie{i}",
                 position=Vector2(100 + i * 50, 100),
-                account="577945324761"
+                account="577945324761",
             )
             for i in range(5)
         ]
-        
+
         engine = GameEngine(
             api_client=mock_api_client,
             zombies=zombies,
@@ -99,9 +98,9 @@ class TestLobbyInitialization:
             screen_height=720,
             use_map=True,
             account_data={"577945324761": 5},
-            third_party_data={}
+            third_party_data={},
         )
-        
+
         # Verify zombies are visible (not hidden)
         assert len(engine.zombies) == 5
         for zombie in engine.zombies:
@@ -117,13 +116,13 @@ class TestLobbyInitialization:
             screen_height=720,
             use_map=False,  # Classic mode
             account_data={},
-            third_party_data={}
+            third_party_data={},
         )
-        
+
         # Classic mode spawns at left side of screen
         assert engine.player.position.x == 50
         assert engine.player.position.y == 720 // 2 - 16
-        
+
         # Landing zone is at screen center in classic mode
         assert engine.landing_zone.x == 1280 // 2
         assert engine.landing_zone.y == 720 // 2

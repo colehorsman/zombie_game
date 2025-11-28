@@ -24,7 +24,7 @@ class TestSpatialGrid:
             identity_id="test-123",
             identity_name="test-zombie",
             position=Vector2(100, 100),
-            account="123456789012"
+            account="123456789012",
         )
         grid.add_zombie(zombie)
         # Zombie should be in the grid
@@ -41,17 +41,17 @@ class TestProjectileCollision:
             identity_id="test-123",
             identity_name="test-zombie",
             position=Vector2(100, 100),
-            account="123456789012"
+            account="123456789012",
         )
-        
+
         # Place projectile at zombie's center for guaranteed collision
         zombie_bounds = zombie.get_bounds()
         projectile = Projectile(
             position=Vector2(zombie_bounds.centerx, zombie_bounds.centery),
             direction=Vector2(1, 0),
-            damage=1
+            damage=1,
         )
-        
+
         # Check bounds overlap
         proj_bounds = projectile.get_bounds()
         assert proj_bounds.colliderect(zombie_bounds)
@@ -59,17 +59,15 @@ class TestProjectileCollision:
     def test_projectile_misses_distant_zombie(self):
         """Test that projectile far from zombie does not collide."""
         projectile = Projectile(
-            position=Vector2(100, 100),
-            direction=Vector2(1, 0),
-            damage=1
+            position=Vector2(100, 100), direction=Vector2(1, 0), damage=1
         )
         zombie = Zombie(
             identity_id="test-123",
             identity_name="test-zombie",
             position=Vector2(500, 500),
-            account="123456789012"
+            account="123456789012",
         )
-        
+
         # Check bounds don't overlap
         proj_bounds = projectile.get_bounds()
         zombie_bounds = zombie.get_bounds()

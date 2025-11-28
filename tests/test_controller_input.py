@@ -18,12 +18,11 @@ from zombie import Zombie
 @pytest.fixture
 def mock_pygame():
     """Mock pygame to avoid GUI dependencies."""
-    with patch('pygame.init'), \
-         patch('pygame.display.set_mode'), \
-         patch('pygame.font.Font'), \
-         patch('pygame.time.Clock'), \
-         patch('pygame.joystick.init'), \
-         patch('pygame.joystick.get_count', return_value=0):
+    with patch("pygame.init"), patch("pygame.display.set_mode"), patch(
+        "pygame.font.Font"
+    ), patch("pygame.time.Clock"), patch("pygame.joystick.init"), patch(
+        "pygame.joystick.get_count", return_value=0
+    ):
         yield
 
 
@@ -47,10 +46,10 @@ def game_engine(mock_pygame, mock_api_client):
         screen_height=720,
         use_map=False,
         account_data={},
-        third_party_data={}
+        third_party_data={},
     )
     engine.start()
-    
+
     # Mock a joystick so controller events are processed
     engine.joystick = Mock()
     engine.joystick.get_name.return_value = "Test Controller"
@@ -59,7 +58,7 @@ def game_engine(mock_pygame, mock_api_client):
     engine.joystick.get_numaxes.return_value = 4  # Has analog sticks
     engine.joystick.get_hat.return_value = (0, 0)  # D-pad neutral
     engine.joystick.get_axis.return_value = 0.0  # Analog sticks neutral
-    
+
     return engine
 
 
@@ -72,17 +71,13 @@ class TestControllerButtonMessageDismissal:
         game_engine.game_state.previous_status = GameStatus.PLAYING
         game_engine.game_state.status = GameStatus.PAUSED
         game_engine.game_state.congratulations_message = "Test Message"
-        
+
         # Create A button press event (button 0)
-        button_event = pygame.event.Event(
-            pygame.JOYBUTTONDOWN,
-            joy=0,
-            button=0
-        )
-        
+        button_event = pygame.event.Event(pygame.JOYBUTTONDOWN, joy=0, button=0)
+
         # Handle the input
         game_engine.handle_input([button_event])
-        
+
         # Verify message was dismissed
         assert game_engine.game_state.congratulations_message is None
         assert game_engine.game_state.status == GameStatus.PLAYING
@@ -93,17 +88,13 @@ class TestControllerButtonMessageDismissal:
         game_engine.game_state.previous_status = GameStatus.PLAYING
         game_engine.game_state.status = GameStatus.PAUSED
         game_engine.game_state.congratulations_message = "Test Message"
-        
+
         # Create B button press event (button 1)
-        button_event = pygame.event.Event(
-            pygame.JOYBUTTONDOWN,
-            joy=0,
-            button=1
-        )
-        
+        button_event = pygame.event.Event(pygame.JOYBUTTONDOWN, joy=0, button=1)
+
         # Handle the input
         game_engine.handle_input([button_event])
-        
+
         # Verify message was dismissed
         assert game_engine.game_state.congratulations_message is None
         assert game_engine.game_state.status == GameStatus.PLAYING
@@ -114,17 +105,13 @@ class TestControllerButtonMessageDismissal:
         game_engine.game_state.status = GameStatus.PLAYING
         game_engine.game_state.congratulations_message = None
         initial_projectile_count = len(game_engine.projectiles)
-        
+
         # Create A button press event (button 0)
-        button_event = pygame.event.Event(
-            pygame.JOYBUTTONDOWN,
-            joy=0,
-            button=0
-        )
-        
+        button_event = pygame.event.Event(pygame.JOYBUTTONDOWN, joy=0, button=0)
+
         # Handle the input
         game_engine.handle_input([button_event])
-        
+
         # Verify projectile was fired
         assert len(game_engine.projectiles) == initial_projectile_count + 1
 
@@ -133,21 +120,19 @@ class TestControllerButtonMessageDismissal:
         # Setup: Playing mode, no message
         game_engine.game_state.status = GameStatus.PLAYING
         game_engine.game_state.congratulations_message = None
-        
+
         # Mock player jump method
-        with patch.object(game_engine.player, 'jump') as mock_jump:
+        with patch.object(game_engine.player, "jump") as mock_jump:
             # Create B button press event (button 1)
-            button_event = pygame.event.Event(
-                pygame.JOYBUTTONDOWN,
-                joy=0,
-                button=1
-            )
-            
+            button_event = pygame.event.Event(pygame.JOYBUTTONDOWN, joy=0, button=1)
+
             # Handle the input
             game_engine.handle_input([button_event])
-            
+
             # Verify jump was called (at least once)
-            assert mock_jump.call_count >= 1, "Jump should be called when B button pressed"
+            assert (
+                mock_jump.call_count >= 1
+            ), "Jump should be called when B button pressed"
 
     def test_a_button_does_not_fire_when_message_showing(self, game_engine):
         """Test that A button dismisses message instead of firing when message is showing."""
@@ -156,17 +141,13 @@ class TestControllerButtonMessageDismissal:
         game_engine.game_state.status = GameStatus.PAUSED
         game_engine.game_state.congratulations_message = "Test Message"
         initial_projectile_count = len(game_engine.projectiles)
-        
+
         # Create A button press event (button 0)
-        button_event = pygame.event.Event(
-            pygame.JOYBUTTONDOWN,
-            joy=0,
-            button=0
-        )
-        
+        button_event = pygame.event.Event(pygame.JOYBUTTONDOWN, joy=0, button=0)
+
         # Handle the input
         game_engine.handle_input([button_event])
-        
+
         # Verify no projectile was fired (message was dismissed instead)
         assert len(game_engine.projectiles) == initial_projectile_count
         assert game_engine.game_state.congratulations_message is None
@@ -177,20 +158,16 @@ class TestControllerButtonMessageDismissal:
         game_engine.game_state.previous_status = GameStatus.PLAYING
         game_engine.game_state.status = GameStatus.PAUSED
         game_engine.game_state.congratulations_message = "Test Message"
-        
+
         # Track initial state
         initial_status = game_engine.game_state.status
-        
+
         # Create B button press event (button 1)
-        button_event = pygame.event.Event(
-            pygame.JOYBUTTONDOWN,
-            joy=0,
-            button=1
-        )
-        
+        button_event = pygame.event.Event(pygame.JOYBUTTONDOWN, joy=0, button=1)
+
         # Handle the input
         game_engine.handle_input([button_event])
-        
+
         # Verify message was dismissed (primary behavior)
         assert game_engine.game_state.congratulations_message is None
         # Verify status changed from PAUSED to PLAYING (message dismissed)
@@ -203,17 +180,13 @@ class TestControllerButtonMessageDismissal:
         game_engine.game_state.previous_status = GameStatus.PLAYING
         game_engine.game_state.status = GameStatus.PAUSED
         game_engine.game_state.congratulations_message = "Test Message"
-        
+
         # Create Start button press event (button 7)
-        button_event = pygame.event.Event(
-            pygame.JOYBUTTONDOWN,
-            joy=0,
-            button=7
-        )
-        
+        button_event = pygame.event.Event(pygame.JOYBUTTONDOWN, joy=0, button=7)
+
         # Handle the input
         game_engine.handle_input([button_event])
-        
+
         # Verify message was dismissed
         assert game_engine.game_state.congratulations_message is None
         assert game_engine.game_state.status == GameStatus.PLAYING
@@ -224,17 +197,13 @@ class TestControllerButtonMessageDismissal:
         game_engine.game_state.previous_status = GameStatus.BOSS_BATTLE
         game_engine.game_state.status = GameStatus.PAUSED
         game_engine.game_state.congratulations_message = "Boss Defeated!"
-        
+
         # Create A button press event
-        button_event = pygame.event.Event(
-            pygame.JOYBUTTONDOWN,
-            joy=0,
-            button=0
-        )
-        
+        button_event = pygame.event.Event(pygame.JOYBUTTONDOWN, joy=0, button=0)
+
         # Handle the input
         game_engine.handle_input([button_event])
-        
+
         # Verify status was restored to BOSS_BATTLE
         assert game_engine.game_state.status == GameStatus.BOSS_BATTLE
         assert game_engine.game_state.congratulations_message is None
@@ -245,17 +214,13 @@ class TestControllerButtonMessageDismissal:
         game_engine.game_state.status = GameStatus.LOBBY
         game_engine.game_state.congratulations_message = None
         initial_projectile_count = len(game_engine.projectiles)
-        
+
         # Create A button press event
-        button_event = pygame.event.Event(
-            pygame.JOYBUTTONDOWN,
-            joy=0,
-            button=0
-        )
-        
+        button_event = pygame.event.Event(pygame.JOYBUTTONDOWN, joy=0, button=0)
+
         # Handle the input
         game_engine.handle_input([button_event])
-        
+
         # Verify projectile was fired (A button works in lobby)
         assert len(game_engine.projectiles) == initial_projectile_count + 1
 
@@ -264,19 +229,15 @@ class TestControllerButtonMessageDismissal:
         # Setup: Lobby mode, no message
         game_engine.game_state.status = GameStatus.LOBBY
         game_engine.game_state.congratulations_message = None
-        
+
         # Mock player jump method
-        with patch.object(game_engine.player, 'jump') as mock_jump:
+        with patch.object(game_engine.player, "jump") as mock_jump:
             # Create B button press event
-            button_event = pygame.event.Event(
-                pygame.JOYBUTTONDOWN,
-                joy=0,
-                button=1
-            )
-            
+            button_event = pygame.event.Event(pygame.JOYBUTTONDOWN, joy=0, button=1)
+
             # Handle the input
             game_engine.handle_input([button_event])
-            
+
             # Verify jump was NOT called (B button doesn't jump in lobby)
             mock_jump.assert_not_called()
 
@@ -290,10 +251,10 @@ class TestDismissMessageMethod:
         game_engine.game_state.previous_status = GameStatus.PLAYING
         game_engine.game_state.status = GameStatus.PAUSED
         game_engine.game_state.congratulations_message = "Test Message"
-        
+
         # Call dismiss_message
         game_engine.dismiss_message()
-        
+
         # Verify
         assert game_engine.game_state.congratulations_message is None
 
@@ -303,10 +264,10 @@ class TestDismissMessageMethod:
         game_engine.game_state.previous_status = GameStatus.PLAYING
         game_engine.game_state.status = GameStatus.PAUSED
         game_engine.game_state.congratulations_message = "Test Message"
-        
+
         # Call dismiss_message
         game_engine.dismiss_message()
-        
+
         # Verify
         assert game_engine.game_state.status == GameStatus.PLAYING
         assert game_engine.game_state.previous_status is None
@@ -318,10 +279,10 @@ class TestDismissMessageMethod:
         game_engine.game_state.status = GameStatus.PAUSED
         game_engine.game_state.congratulations_message = "Test Message"
         game_engine.game_state.pending_elimination = "test-zombie-id"
-        
+
         # Call dismiss_message
         game_engine.dismiss_message()
-        
+
         # Verify
         assert game_engine.game_state.pending_elimination is None
 
@@ -331,10 +292,10 @@ class TestDismissMessageMethod:
         game_engine.game_state.previous_status = None
         game_engine.game_state.status = GameStatus.PAUSED
         game_engine.game_state.congratulations_message = "Test Message"
-        
+
         # Call dismiss_message
         game_engine.dismiss_message()
-        
+
         # Verify fallback to PLAYING
         assert game_engine.game_state.status == GameStatus.PLAYING
 
@@ -343,10 +304,10 @@ class TestDismissMessageMethod:
         # Setup: Playing mode (not paused)
         game_engine.game_state.status = GameStatus.PLAYING
         game_engine.game_state.congratulations_message = None
-        
+
         # Call dismiss_message
         game_engine.dismiss_message()
-        
+
         # Verify status unchanged
         assert game_engine.game_state.status == GameStatus.PLAYING
 
@@ -356,10 +317,10 @@ class TestDismissMessageMethod:
         game_engine.game_state.previous_status = GameStatus.PLAYING
         game_engine.game_state.status = GameStatus.PAUSED
         game_engine.game_state.congratulations_message = None
-        
+
         # Call dismiss_message
         game_engine.dismiss_message()
-        
+
         # Verify status unchanged (still paused)
         assert game_engine.game_state.status == GameStatus.PAUSED
 

@@ -10,6 +10,7 @@ logger = logging.getLogger(__name__)
 
 class ArcadeResultsAction(Enum):
     """Actions that can be triggered from the arcade results menu."""
+
     NONE = auto()
     QUARANTINE_ALL = auto()
     DISCARD_QUEUE = auto()
@@ -20,6 +21,7 @@ class ArcadeResultsAction(Enum):
 @dataclass
 class ArcadeStatsSnapshot:
     """Snapshot of arcade stats for display."""
+
     total_eliminations: int
     highest_combo: int
     powerups_collected: int
@@ -35,7 +37,11 @@ class ArcadeResultsController:
     """
 
     # Options when there are zombies to quarantine
-    QUARANTINE_OPTIONS = ["Yes - Quarantine All", "No - Discard Queue", "Replay - Try Again"]
+    QUARANTINE_OPTIONS = [
+        "Yes - Quarantine All",
+        "No - Discard Queue",
+        "Replay - Try Again",
+    ]
 
     # Options when there are no zombies to quarantine
     NO_QUARANTINE_OPTIONS = ["Replay - Try Again", "Exit - Return to Lobby"]
@@ -52,7 +58,7 @@ class ArcadeResultsController:
             "confirm": "A",
             "back": "B",
             "up": "D-Pad ↑",
-            "down": "D-Pad ↓"
+            "down": "D-Pad ↓",
         }
 
     def show(self, stats: ArcadeStatsSnapshot) -> None:
@@ -71,7 +77,9 @@ class ArcadeResultsController:
             self.options = self.NO_QUARANTINE_OPTIONS.copy()
 
         self.is_visible = True
-        logger.info(f"🎮 Arcade results shown: {stats.total_eliminations} eliminations, {stats.queue_size} queued")
+        logger.info(
+            f"🎮 Arcade results shown: {stats.total_eliminations} eliminations, {stats.queue_size} queued"
+        )
 
     def hide(self) -> None:
         """Hide the arcade results menu and reset state."""
@@ -93,7 +101,9 @@ class ArcadeResultsController:
 
         old_index = self.selected_index
         self.selected_index = (self.selected_index + direction) % len(self.options)
-        logger.debug(f"🎮 Arcade menu: {old_index} → {self.selected_index}: {self.options[self.selected_index]}")
+        logger.debug(
+            f"🎮 Arcade menu: {old_index} → {self.selected_index}: {self.options[self.selected_index]}"
+        )
 
     def select(self) -> ArcadeResultsAction:
         """

@@ -114,46 +114,29 @@ class TestGraphQLResponseValidation:
 
     def test_valid_response(self):
         """Valid GraphQL response should pass."""
-        response = {
-            "data": {
-                "UnusedIdentities": {
-                    "items": []
-                }
-            }
-        }
+        response = {"data": {"UnusedIdentities": {"items": []}}}
         APIValidator.validate_graphql_response(
-            response,
-            required_fields=["data.UnusedIdentities.items"]
+            response, required_fields=["data.UnusedIdentities.items"]
         )
 
     def test_graphql_error_response_fails(self):
         """Response with GraphQL errors should fail."""
-        response = {
-            "errors": [{"message": "Invalid query"}]
-        }
+        response = {"errors": [{"message": "Invalid query"}]}
         with pytest.raises(ValidationError, match="GraphQL error"):
             APIValidator.validate_graphql_response(response, required_fields=[])
 
     def test_missing_required_field_fails(self):
         """Response missing required field should fail."""
-        response = {
-            "data": {
-                "UnusedIdentities": {}
-            }
-        }
+        response = {"data": {"UnusedIdentities": {}}}
         with pytest.raises(ValidationError, match="missing required field"):
             APIValidator.validate_graphql_response(
-                response,
-                required_fields=["data.UnusedIdentities.items"]
+                response, required_fields=["data.UnusedIdentities.items"]
             )
 
     def test_non_dict_response_fails(self):
         """Non-dictionary response should fail."""
         with pytest.raises(ValidationError, match="must be a dictionary"):
-            APIValidator.validate_graphql_response(
-                "not a dict",
-                required_fields=[]
-            )
+            APIValidator.validate_graphql_response("not a dict", required_fields=[])
 
 
 class TestListResponseValidation:

@@ -8,7 +8,7 @@ from models import Vector2, ServiceProtectionQuest, QuestStatus
 from bedrock_sprite import (
     generate_bedrock_sprite,
     generate_bedrock_protected,
-    generate_bedrock_unprotected
+    generate_bedrock_unprotected,
 )
 
 
@@ -26,6 +26,7 @@ SERVICE_ICON_Y = PLATFORMER_GROUND_Y - SERVICE_ICON_HEIGHT  # 784
 @dataclass
 class ServiceNode:
     """Represents a protectable AWS service."""
+
     service_type: str  # "bedrock", "s3", "rds", etc.
     position: Vector2  # Icon location (x, y)
     protected: bool  # Protection status
@@ -95,15 +96,12 @@ def create_service_node(service_type: str, position: Vector2) -> ServiceNode:
         protected=False,  # Start unprotected
         sprite_base=sprite_base,
         sprite_protected=sprite_protected,
-        sprite_unprotected=sprite_unprotected
+        sprite_unprotected=sprite_unprotected,
     )
 
 
 def create_bedrock_protection_quest(
-    quest_id: str,
-    level: int,
-    trigger_pos: Vector2,
-    service_pos: Vector2
+    quest_id: str, level: int, trigger_pos: Vector2, service_pos: Vector2
 ) -> ServiceProtectionQuest:
     """
     Factory function to create a Bedrock protection quest.
@@ -127,5 +125,5 @@ def create_bedrock_protection_quest(
         time_remaining=60.0,
         status=QuestStatus.NOT_STARTED,
         hacker_spawned=False,
-        player_won=False
+        player_won=False,
     )

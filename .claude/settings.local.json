@@ -18,7 +18,11 @@
       "Bash(chmod:*)",
       "Bash(cat:*)",
       "Bash(git merge:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(pip install:*)",
+      "Bash(black:*)"
     ],
     "deny": [],
     "ask": []

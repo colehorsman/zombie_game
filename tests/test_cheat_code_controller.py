@@ -28,7 +28,7 @@ class TestCheatCodeController:
         controller = CheatCodeController()
 
         # Type U-N-L-O-C-K
-        keys = [ord('u'), ord('n'), ord('l'), ord('o'), ord('c'), ord('k')]
+        keys = [ord("u"), ord("n"), ord("l"), ord("o"), ord("c"), ord("k")]
         result = None
         for key in keys:
             result = controller.process_key(key, current_time=0)
@@ -42,7 +42,7 @@ class TestCheatCodeController:
         controller = CheatCodeController()
 
         # Type S-K-I-P
-        keys = [ord('s'), ord('k'), ord('i'), ord('p')]
+        keys = [ord("s"), ord("k"), ord("i"), ord("p")]
         result = None
         for key in keys:
             result = controller.process_key(key, current_time=0)
@@ -56,8 +56,14 @@ class TestCheatCodeController:
 
         # UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT - use actual pygame constants
         keys = [
-            pygame.K_UP, pygame.K_UP, pygame.K_DOWN, pygame.K_DOWN,
-            pygame.K_LEFT, pygame.K_RIGHT, pygame.K_LEFT, pygame.K_RIGHT
+            pygame.K_UP,
+            pygame.K_UP,
+            pygame.K_DOWN,
+            pygame.K_DOWN,
+            pygame.K_LEFT,
+            pygame.K_RIGHT,
+            pygame.K_LEFT,
+            pygame.K_RIGHT,
         ]
         result = None
         for key in keys:
@@ -71,8 +77,12 @@ class TestCheatCodeController:
 
         # UP UP DOWN DOWN A B - use actual pygame constants
         keys = [
-            pygame.K_UP, pygame.K_UP, pygame.K_DOWN, pygame.K_DOWN,
-            pygame.K_a, pygame.K_b
+            pygame.K_UP,
+            pygame.K_UP,
+            pygame.K_DOWN,
+            pygame.K_DOWN,
+            pygame.K_a,
+            pygame.K_b,
         ]
         result = None
         for key in keys:
@@ -85,7 +95,7 @@ class TestCheatCodeController:
         controller = CheatCodeController()
 
         # Type partial UNLOCK: U-N-L
-        keys = [ord('u'), ord('n'), ord('l')]
+        keys = [ord("u"), ord("n"), ord("l")]
         for key in keys:
             result = controller.process_key(key, current_time=0)
 
@@ -96,7 +106,7 @@ class TestCheatCodeController:
         controller = CheatCodeController()
 
         # Type random keys
-        keys = [ord('x'), ord('y'), ord('z')]
+        keys = [ord("x"), ord("y"), ord("z")]
         for key in keys:
             result = controller.process_key(key, current_time=0)
 
@@ -137,7 +147,7 @@ class TestCheatCodeController:
 
         # Add many keys
         for i in range(20):
-            controller.process_key(ord('x'), current_time=0)
+            controller.process_key(ord("x"), current_time=0)
 
         assert len(controller.cheat_buffer) <= 6
         assert len(controller.konami_buffer) <= 8
@@ -148,7 +158,7 @@ class TestCheatCodeController:
         controller = CheatCodeController()
 
         # Add some keys
-        controller.process_key(ord('u'), current_time=0)
+        controller.process_key(ord("u"), current_time=0)
         controller.process_key(273, current_time=0)
 
         controller.reset()
@@ -179,7 +189,7 @@ class TestCheatCodeController:
         controller = CheatCodeController()
 
         # Enter UNLOCK code
-        keys = [ord('u'), ord('n'), ord('l'), ord('o'), ord('c'), ord('k')]
+        keys = [ord("u"), ord("n"), ord("l"), ord("o"), ord("c"), ord("k")]
         for key in keys:
             controller.process_key(key, current_time=0)
 
@@ -192,7 +202,7 @@ class TestCheatCodeController:
         controller = CheatCodeController()
 
         # Enter SKIP code
-        keys = [ord('s'), ord('k'), ord('i'), ord('p')]
+        keys = [ord("s"), ord("k"), ord("i"), ord("p")]
         for key in keys:
             controller.process_key(key, current_time=0)
 
@@ -203,13 +213,13 @@ class TestCheatCodeController:
         controller = CheatCodeController()
 
         # Enter UNLOCK
-        unlock_keys = [ord('u'), ord('n'), ord('l'), ord('o'), ord('c'), ord('k')]
+        unlock_keys = [ord("u"), ord("n"), ord("l"), ord("o"), ord("c"), ord("k")]
         for key in unlock_keys:
             result = controller.process_key(key, current_time=0)
         assert result.action == CheatCodeAction.UNLOCK_ALL_LEVELS
 
         # Enter SKIP
-        skip_keys = [ord('s'), ord('k'), ord('i'), ord('p')]
+        skip_keys = [ord("s"), ord("k"), ord("i"), ord("p")]
         for key in skip_keys:
             result = controller.process_key(key, current_time=0)
         assert result.action == CheatCodeAction.SKIP_LEVEL
@@ -219,7 +229,16 @@ class TestCheatCodeController:
         controller = CheatCodeController()
 
         # Type UNBLOCXK (wrong)
-        keys = [ord('u'), ord('n'), ord('b'), ord('l'), ord('o'), ord('c'), ord('x'), ord('k')]
+        keys = [
+            ord("u"),
+            ord("n"),
+            ord("b"),
+            ord("l"),
+            ord("o"),
+            ord("c"),
+            ord("x"),
+            ord("k"),
+        ]
         result = None
         for key in keys:
             result = controller.process_key(key, current_time=0)

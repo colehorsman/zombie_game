@@ -2,12 +2,12 @@
 
 import pytest
 from src.models import (
-    Vector2, 
-    GameState, 
+    Vector2,
+    GameState,
     GameStatus,
     ArcadeModeState,
     ArcadeStats,
-    QuarantineReport
+    QuarantineReport,
 )
 
 
@@ -53,7 +53,7 @@ class TestGameState:
             status=GameStatus.LOBBY,
             zombies_remaining=10,
             zombies_quarantined=0,
-            total_zombies=10
+            total_zombies=10,
         )
         assert state.status == GameStatus.LOBBY
         assert state.zombies_remaining == 10
@@ -66,7 +66,7 @@ class TestGameState:
             status=GameStatus.PLAYING,
             zombies_remaining=5,
             zombies_quarantined=5,
-            total_zombies=10
+            total_zombies=10,
         )
         assert state.zombies_remaining == 5
         assert state.zombies_quarantined == 5
@@ -80,7 +80,7 @@ class TestGameState:
             zombies_quarantined=0,
             total_zombies=0,
             third_parties_blocked=2,
-            total_third_parties=5
+            total_third_parties=5,
         )
         assert state.third_parties_blocked == 2
         assert state.total_third_parties == 5
@@ -115,7 +115,7 @@ class TestArcadeModeState:
             combo_count=5,
             combo_multiplier=2.5,
             highest_combo=8,
-            powerups_collected=3
+            powerups_collected=3,
         )
         assert state.active is True
         assert state.in_countdown is False
@@ -131,10 +131,7 @@ class TestArcadeModeState:
     def test_arcade_mode_state_countdown_phase(self):
         """Test arcade mode state during countdown phase."""
         state = ArcadeModeState(
-            active=True,
-            in_countdown=True,
-            countdown_time=2.5,
-            time_remaining=60.0
+            active=True, in_countdown=True, countdown_time=2.5, time_remaining=60.0
         )
         assert state.active is True
         assert state.in_countdown is True
@@ -144,10 +141,7 @@ class TestArcadeModeState:
     def test_arcade_mode_state_combo_tracking(self):
         """Test arcade mode tracks combo count and multiplier."""
         state = ArcadeModeState(
-            active=True,
-            combo_count=10,
-            combo_multiplier=3.0,
-            highest_combo=12
+            active=True, combo_count=10, combo_multiplier=3.0, highest_combo=12
         )
         assert state.combo_count == 10
         assert state.combo_multiplier == 3.0
@@ -171,7 +165,7 @@ class TestArcadeStats:
             total_eliminations=50,
             eliminations_per_second=2.5,
             highest_combo=15,
-            powerups_collected=8
+            powerups_collected=8,
         )
         assert stats.total_eliminations == 50
         assert stats.eliminations_per_second == 2.5
@@ -181,10 +175,7 @@ class TestArcadeStats:
     def test_arcade_stats_calculates_rate(self):
         """Test arcade stats can represent elimination rate."""
         # Simulate 60 eliminations in 30 seconds = 2.0 per second
-        stats = ArcadeStats(
-            total_eliminations=60,
-            eliminations_per_second=2.0
-        )
+        stats = ArcadeStats(total_eliminations=60, eliminations_per_second=2.0)
         assert stats.total_eliminations == 60
         assert stats.eliminations_per_second == 2.0
 
@@ -203,10 +194,7 @@ class TestQuarantineReport:
     def test_quarantine_report_all_successful(self):
         """Test quarantine report with all successful operations."""
         report = QuarantineReport(
-            total_queued=10,
-            successful=10,
-            failed=0,
-            error_messages=[]
+            total_queued=10, successful=10, failed=0, error_messages=[]
         )
         assert report.total_queued == 10
         assert report.successful == 10
@@ -222,8 +210,8 @@ class TestQuarantineReport:
             error_messages=[
                 "Failed to quarantine zombie-1: API timeout",
                 "Failed to quarantine zombie-5: Invalid scope",
-                "Failed to quarantine zombie-8: Network error"
-            ]
+                "Failed to quarantine zombie-8: Network error",
+            ],
         )
         assert report.total_queued == 10
         assert report.successful == 7
@@ -235,11 +223,7 @@ class TestQuarantineReport:
 
     def test_quarantine_report_tracks_success_rate(self):
         """Test quarantine report can calculate success rate."""
-        report = QuarantineReport(
-            total_queued=100,
-            successful=95,
-            failed=5
-        )
+        report = QuarantineReport(total_queued=100, successful=95, failed=5)
         # Success rate = 95/100 = 95%
         success_rate = (report.successful / report.total_queued) * 100
         assert success_rate == 95.0

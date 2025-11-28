@@ -10,10 +10,11 @@ from models import Vector2
 
 class PowerUpType(Enum):
     """Types of AWS-themed power-ups."""
-    STAR_POWER = "Star Power"              # Invincibility + quarantine on touch (best power-up)
-    LAMBDA_SPEED = "Lambda Speedup"        # Move faster
-    LASER_BEAM = "Laser Beam"              # 10 seconds continuous fire (arcade mode)
-    BURST_SHOT = "Burst Shot"              # 3 one-shot kills (arcade mode)
+
+    STAR_POWER = "Star Power"  # Invincibility + quarantine on touch (best power-up)
+    LAMBDA_SPEED = "Lambda Speedup"  # Move faster
+    LASER_BEAM = "Laser Beam"  # 10 seconds continuous fire (arcade mode)
+    BURST_SHOT = "Burst Shot"  # 3 one-shot kills (arcade mode)
 
 
 class PowerUp:
@@ -47,20 +48,20 @@ class PowerUp:
     def _get_duration(self) -> float:
         """Get the duration of this power-up effect in seconds."""
         durations = {
-            PowerUpType.STAR_POWER: 10.0,      # 10 seconds invincibility + quarantine
-            PowerUpType.LAMBDA_SPEED: 12.0,    # 12 seconds speed boost
-            PowerUpType.LASER_BEAM: 10.0,      # 10 seconds continuous fire
-            PowerUpType.BURST_SHOT: 0.0,       # Instant (3 charges)
+            PowerUpType.STAR_POWER: 10.0,  # 10 seconds invincibility + quarantine
+            PowerUpType.LAMBDA_SPEED: 12.0,  # 12 seconds speed boost
+            PowerUpType.LASER_BEAM: 10.0,  # 10 seconds continuous fire
+            PowerUpType.BURST_SHOT: 0.0,  # Instant (3 charges)
         }
         return durations.get(self.powerup_type, 10.0)
 
     def _get_effect_value(self) -> float:
         """Get the effect multiplier/value for this power-up."""
         values = {
-            PowerUpType.STAR_POWER: 1.0,       # Invincibility + quarantine on touch
-            PowerUpType.LAMBDA_SPEED: 2.0,     # 2x speed multiplier
-            PowerUpType.LASER_BEAM: 1.0,       # Continuous fire enabled
-            PowerUpType.BURST_SHOT: 3.0,       # 3 one-shot kills
+            PowerUpType.STAR_POWER: 1.0,  # Invincibility + quarantine on touch
+            PowerUpType.LAMBDA_SPEED: 2.0,  # 2x speed multiplier
+            PowerUpType.LASER_BEAM: 1.0,  # Continuous fire enabled
+            PowerUpType.BURST_SHOT: 3.0,  # 3 one-shot kills
         }
         return values.get(self.powerup_type, 1.0)
 
@@ -87,18 +88,27 @@ class PowerUp:
 
         # Type-specific colors
         colors = {
-            PowerUpType.STAR_POWER: ((255, 215, 0), (200, 170, 0)),         # Gold star (best power)
-            PowerUpType.LAMBDA_SPEED: ((255, 153, 0), (200, 120, 0)),       # Orange (serverless)
-            PowerUpType.LASER_BEAM: ((255, 0, 0), (180, 0, 0)),             # Red (laser)
-            PowerUpType.BURST_SHOT: ((138, 43, 226), (100, 30, 180)),       # Purple (burst)
+            PowerUpType.STAR_POWER: (
+                (255, 215, 0),
+                (200, 170, 0),
+            ),  # Gold star (best power)
+            PowerUpType.LAMBDA_SPEED: (
+                (255, 153, 0),
+                (200, 120, 0),
+            ),  # Orange (serverless)
+            PowerUpType.LASER_BEAM: ((255, 0, 0), (180, 0, 0)),  # Red (laser)
+            PowerUpType.BURST_SHOT: ((138, 43, 226), (100, 30, 180)),  # Purple (burst)
         }
 
-        primary_color, shadow_color = colors.get(self.powerup_type, (AWS_ORANGE, AWS_DARK))
+        primary_color, shadow_color = colors.get(
+            self.powerup_type, (AWS_ORANGE, AWS_DARK)
+        )
 
         # Star power gets special 5-pointed star shape
         if self.powerup_type == PowerUpType.STAR_POWER:
             # Draw a 5-pointed star
             import math
+
             center_x, center_y = 16, 16
             outer_radius = 14
             inner_radius = 6
@@ -106,7 +116,9 @@ class PowerUp:
             # Draw star outline
             star_points = []
             for i in range(10):
-                angle = (i * 36 - 90) * math.pi / 180  # 36 degrees per point, start at top
+                angle = (
+                    (i * 36 - 90) * math.pi / 180
+                )  # 36 degrees per point, start at top
                 radius = outer_radius if i % 2 == 0 else inner_radius
                 x = center_x + int(radius * math.cos(angle))
                 y = center_y + int(radius * math.sin(angle))
@@ -114,7 +126,9 @@ class PowerUp:
 
             # Draw filled star
             pygame.draw.polygon(sprite, shadow_color, star_points)
-            pygame.draw.polygon(sprite, primary_color, [(x-1, y-1) for x, y in star_points])
+            pygame.draw.polygon(
+                sprite, primary_color, [(x - 1, y - 1) for x, y in star_points]
+            )
             pygame.draw.polygon(sprite, BLACK, star_points, 2)
 
             # Add sparkle effect
@@ -163,12 +177,13 @@ class PowerUp:
     def get_bounds(self) -> pygame.Rect:
         """Get bounding rectangle for collision detection."""
         import math
+
         bounce_y = int(math.sin(self.bounce_offset * 2) * 5)
         return pygame.Rect(
             int(self.position.x),
             int(self.position.y + bounce_y),
             self.width,
-            self.height
+            self.height,
         )
 
     def render(self, screen: pygame.Surface, camera_x: float, camera_y: float) -> None:
@@ -184,6 +199,7 @@ class PowerUp:
             return
 
         import math
+
         bounce_y = int(math.sin(self.bounce_offset * 2) * 5)
 
         screen_x = int(self.position.x - camera_x)
@@ -209,8 +225,8 @@ class PowerUpManager:
         if powerup.duration > 0:
             # Timed effect - store in active effects
             self.active_effects[powerup.powerup_type] = {
-                'time_remaining': powerup.duration,
-                'value': powerup.effect_value
+                "time_remaining": powerup.duration,
+                "value": powerup.effect_value,
             }
 
         # Instant effects are handled immediately by the game engine
@@ -226,8 +242,8 @@ class PowerUpManager:
         # Update timers and remove expired effects
         expired = []
         for powerup_type, effect in self.active_effects.items():
-            effect['time_remaining'] -= delta_time
-            if effect['time_remaining'] <= 0:
+            effect["time_remaining"] -= delta_time
+            if effect["time_remaining"] <= 0:
                 expired.append(powerup_type)
 
         for powerup_type in expired:
@@ -240,17 +256,19 @@ class PowerUpManager:
     def get_effect_value(self, powerup_type: PowerUpType) -> Optional[float]:
         """Get the effect value of an active power-up."""
         if powerup_type in self.active_effects:
-            return self.active_effects[powerup_type]['value']
+            return self.active_effects[powerup_type]["value"]
         return None
 
     def get_remaining_time(self, powerup_type: PowerUpType) -> float:
         """Get remaining time for an active power-up effect."""
         if powerup_type in self.active_effects:
-            return self.active_effects[powerup_type]['time_remaining']
+            return self.active_effects[powerup_type]["time_remaining"]
         return 0.0
 
 
-def spawn_random_powerups(level_width: int, ground_y: int, count: int = 5, arcade_mode: bool = False) -> list[PowerUp]:
+def spawn_random_powerups(
+    level_width: int, ground_y: int, count: int = 5, arcade_mode: bool = False
+) -> list[PowerUp]:
     """
     Spawn random power-ups across the level.
 
@@ -264,10 +282,14 @@ def spawn_random_powerups(level_width: int, ground_y: int, count: int = 5, arcad
         List of PowerUp instances
     """
     powerups = []
-    
+
     if arcade_mode:
         # Arcade mode: higher chance of LASER_BEAM and BURST_SHOT
-        arcade_types = [PowerUpType.LASER_BEAM, PowerUpType.BURST_SHOT, PowerUpType.STAR_POWER]
+        arcade_types = [
+            PowerUpType.LASER_BEAM,
+            PowerUpType.BURST_SHOT,
+            PowerUpType.STAR_POWER,
+        ]
         powerup_types = arcade_types
     else:
         # Normal mode: all power-ups

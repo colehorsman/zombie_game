@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 class ValidationError(Exception):
     """Raised when input validation fails."""
+
     pass
 
 
@@ -66,7 +67,9 @@ class APIValidator:
         logger.debug(f"Validated {param_name} (length: {len(token)})")
 
     @staticmethod
-    def validate_timeout(timeout: Union[int, float], param_name: str = "timeout") -> None:
+    def validate_timeout(
+        timeout: Union[int, float], param_name: str = "timeout"
+    ) -> None:
         """
         Validate a timeout value is positive and reasonable.
 
@@ -128,13 +131,18 @@ class APIValidator:
 
         parts = scope.split("/")
         if len(parts) < 2:
-            raise ValidationError(f"{param_name} must have at least two parts (aws/...)")
+            raise ValidationError(
+                f"{param_name} must have at least two parts (aws/...)"
+            )
 
         logger.debug(f"Validated {param_name}: {scope}")
 
     @staticmethod
-    def validate_graphql_response(response_data: Dict, required_fields: List[str],
-                                   response_type: str = "API response") -> None:
+    def validate_graphql_response(
+        response_data: Dict,
+        required_fields: List[str],
+        response_type: str = "API response",
+    ) -> None:
         """
         Validate a GraphQL response has required structure and fields.
 
@@ -147,7 +155,9 @@ class APIValidator:
             ValidationError: If response is missing required fields or has errors
         """
         if not isinstance(response_data, dict):
-            raise ValidationError(f"{response_type} must be a dictionary, got {type(response_data)}")
+            raise ValidationError(
+                f"{response_type} must be a dictionary, got {type(response_data)}"
+            )
 
         # Check for GraphQL errors
         if "errors" in response_data:
@@ -179,8 +189,12 @@ class APIValidator:
         logger.debug(f"Validated {response_type} with fields: {required_fields}")
 
     @staticmethod
-    def validate_list_response(items: Any, min_items: int = 0, max_items: Optional[int] = None,
-                               list_name: str = "items") -> None:
+    def validate_list_response(
+        items: Any,
+        min_items: int = 0,
+        max_items: Optional[int] = None,
+        list_name: str = "items",
+    ) -> None:
         """
         Validate a response contains a list with expected size constraints.
 
@@ -197,16 +211,24 @@ class APIValidator:
             raise ValidationError(f"{list_name} must be a list, got {type(items)}")
 
         if len(items) < min_items:
-            raise ValidationError(f"{list_name} must contain at least {min_items} items, got {len(items)}")
+            raise ValidationError(
+                f"{list_name} must contain at least {min_items} items, got {len(items)}"
+            )
 
         if max_items is not None and len(items) > max_items:
-            raise ValidationError(f"{list_name} must contain at most {max_items} items, got {len(items)}")
+            raise ValidationError(
+                f"{list_name} must contain at most {max_items} items, got {len(items)}"
+            )
 
         logger.debug(f"Validated {list_name}: {len(items)} items")
 
     @staticmethod
-    def validate_string_field(value: Any, field_name: str, allow_empty: bool = False,
-                             max_length: Optional[int] = None) -> None:
+    def validate_string_field(
+        value: Any,
+        field_name: str,
+        allow_empty: bool = False,
+        max_length: Optional[int] = None,
+    ) -> None:
         """
         Validate a field is a string with expected properties.
 
@@ -229,13 +251,19 @@ class APIValidator:
             raise ValidationError(f"{field_name} cannot be empty")
 
         if max_length is not None and len(value) > max_length:
-            raise ValidationError(f"{field_name} exceeds maximum length of {max_length}")
+            raise ValidationError(
+                f"{field_name} exceeds maximum length of {max_length}"
+            )
 
         logger.debug(f"Validated {field_name}: '{value}'")
 
     @staticmethod
-    def validate_integer_field(value: Any, field_name: str, min_value: Optional[int] = None,
-                               max_value: Optional[int] = None) -> None:
+    def validate_integer_field(
+        value: Any,
+        field_name: str,
+        min_value: Optional[int] = None,
+        max_value: Optional[int] = None,
+    ) -> None:
         """
         Validate a field is an integer within expected bounds.
 
@@ -252,10 +280,14 @@ class APIValidator:
             raise ValidationError(f"{field_name} must be an integer, got {type(value)}")
 
         if min_value is not None and value < min_value:
-            raise ValidationError(f"{field_name} must be at least {min_value}, got {value}")
+            raise ValidationError(
+                f"{field_name} must be at least {min_value}, got {value}"
+            )
 
         if max_value is not None and value > max_value:
-            raise ValidationError(f"{field_name} must be at most {max_value}, got {value}")
+            raise ValidationError(
+                f"{field_name} must be at most {max_value}, got {value}"
+            )
 
         logger.debug(f"Validated {field_name}: {value}")
 
@@ -279,7 +311,7 @@ class APIValidator:
             (r"Bearer\s+[\w\-\.]+", "Bearer [REDACTED]"),
             (r'"api_token":\s*"[^"]+"', '"api_token": "[REDACTED]"'),
             (r'"password":\s*"[^"]+"', '"password": "[REDACTED]"'),
-            (r'Authorization:\s*[^\s]+', 'Authorization: [REDACTED]'),
+            (r"Authorization:\s*[^\s]+", "Authorization: [REDACTED]"),
         ]
 
         sanitized = message

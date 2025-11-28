@@ -19,18 +19,17 @@ class Projectile:
         """
         self.position = position
         self.damage = damage  # Damage dealt on hit
-        
+
         # Default to moving right if no direction specified
         if direction is None:
             self.velocity = Vector2(400, 0)
         else:
             # Normalize direction and set speed to 400 pixels/second
             speed = 400
-            length = (direction.x ** 2 + direction.y ** 2) ** 0.5
+            length = (direction.x**2 + direction.y**2) ** 0.5
             if length > 0:
                 self.velocity = Vector2(
-                    (direction.x / length) * speed,
-                    (direction.y / length) * speed
+                    (direction.x / length) * speed, (direction.y / length) * speed
                 )
             else:
                 self.velocity = Vector2(400, 0)  # Fallback to right
@@ -92,10 +91,12 @@ class Projectile:
             int(self.position.x - self.radius),
             int(self.position.y - self.radius),
             self.radius * 2,
-            self.radius * 2
+            self.radius * 2,
         )
 
-    def is_off_screen(self, screen_width: int, screen_height: int, map_mode: bool = False) -> bool:
+    def is_off_screen(
+        self, screen_width: int, screen_height: int, map_mode: bool = False
+    ) -> bool:
         """
         Check if the projectile has moved off screen or off the map.
 
@@ -114,13 +115,13 @@ class Projectile:
             margin = self.radius
 
         return (
-            self.position.x < -margin or
-            self.position.x > screen_width + margin or
-            self.position.y < -margin or
-            self.position.y > screen_height + margin
+            self.position.x < -margin
+            or self.position.x > screen_width + margin
+            or self.position.y < -margin
+            or self.position.y > screen_height + margin
         )
 
-    def hits_wall(self, game_map: 'GameMap') -> bool:
+    def hits_wall(self, game_map: "GameMap") -> bool:
         """
         Check if the projectile has hit a wall tile.
 

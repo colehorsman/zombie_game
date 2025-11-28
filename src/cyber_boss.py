@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 class BossType(Enum):
     """Types of cyber attack bosses."""
+
     SCATTERED_SPIDER = "scattered_spider"  # Level 7 - Org
     BLACKCAT = "blackcat"  # Level 5 - Production Data
     MIDNIGHT_BLIZZARD = "midnight_blizzard"  # Level 6 - Production
@@ -102,11 +103,11 @@ class MiniSpider:
 
         # Color variants for different spiders
         colors = [
-            (20, 20, 20),      # Black (variant 0)
-            (180, 20, 20),     # Red (variant 1)
-            (20, 180, 20),     # Green (variant 2)
-            (20, 80, 200),     # Blue (variant 3)
-            (160, 20, 160),    # Purple (variant 4)
+            (20, 20, 20),  # Black (variant 0)
+            (180, 20, 20),  # Red (variant 1)
+            (20, 180, 20),  # Green (variant 2)
+            (20, 80, 200),  # Blue (variant 3)
+            (160, 20, 160),  # Purple (variant 4)
         ]
         body_color = colors[self.color_variant % len(colors)]
 
@@ -114,14 +115,21 @@ class MiniSpider:
         center_x, center_y = self.width // 2, self.height // 2
         body_width = 24  # Scaled from 16 (1.5x)
         body_height = 18  # Scaled from 12 (1.5x)
-        pygame.draw.ellipse(sprite, body_color,
-                          (center_x - body_width//2, center_y - body_height//2,
-                           body_width, body_height))
+        pygame.draw.ellipse(
+            sprite,
+            body_color,
+            (
+                center_x - body_width // 2,
+                center_y - body_height // 2,
+                body_width,
+                body_height,
+            ),
+        )
 
         # Spider legs (4 pairs, 8 legs total) - scaled up
         leg_color = tuple(max(0, c - 40) for c in body_color)  # Darker legs
         leg_length = 20  # Scaled from 12 (1.67x for dramatic effect)
-        leg_width = 3    # Scaled from 2 (1.5x)
+        leg_width = 3  # Scaled from 2 (1.5x)
 
         # Left legs (top to bottom)
         for i, angle in enumerate([135, 160, 200, 225]):
@@ -130,7 +138,9 @@ class MiniSpider:
             start_y = center_y + (i - 1.5) * 3  # Scaled spacing
             end_x = start_x + int(leg_length * math.cos(rad))
             end_y = start_y + int(leg_length * math.sin(rad))
-            pygame.draw.line(sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width)
+            pygame.draw.line(
+                sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width
+            )
 
         # Right legs (top to bottom)
         for i, angle in enumerate([45, 20, -20, -45]):
@@ -139,12 +149,16 @@ class MiniSpider:
             start_y = center_y + (i - 1.5) * 3  # Scaled spacing
             end_x = start_x + int(leg_length * math.cos(rad))
             end_y = start_y + int(leg_length * math.sin(rad))
-            pygame.draw.line(sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width)
+            pygame.draw.line(
+                sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width
+            )
 
         # Eyes (red) - scaled up
         eye_color = (255, 20, 20)
         eye_radius = 3  # Scaled from 2 (1.5x)
-        pygame.draw.circle(sprite, eye_color, (center_x - 5, center_y - 3), eye_radius)  # Scaled positions
+        pygame.draw.circle(
+            sprite, eye_color, (center_x - 5, center_y - 3), eye_radius
+        )  # Scaled positions
         pygame.draw.circle(sprite, eye_color, (center_x + 5, center_y - 3), eye_radius)
 
         return sprite
@@ -158,11 +172,11 @@ class MiniSpider:
 
         # Color variants for glow (semi-transparent matching spider color)
         glow_colors = [
-            (80, 80, 80, 100),      # Gray glow for black spider
-            (255, 100, 100, 100),   # Red glow
-            (100, 255, 100, 100),   # Green glow
-            (100, 150, 255, 100),   # Blue glow
-            (200, 100, 200, 100),   # Purple glow
+            (80, 80, 80, 100),  # Gray glow for black spider
+            (255, 100, 100, 100),  # Red glow
+            (100, 255, 100, 100),  # Green glow
+            (100, 150, 255, 100),  # Blue glow
+            (200, 100, 200, 100),  # Purple glow
         ]
         glow_color = glow_colors[self.color_variant % len(glow_colors)]
 
@@ -178,12 +192,19 @@ class MiniSpider:
 
             # Create temp surface for this ring
             temp = pygame.Surface((glow_width, glow_height), pygame.SRCALPHA)
-            pygame.draw.circle(temp, color_with_alpha, (center_x, center_y), int(radius))
+            pygame.draw.circle(
+                temp, color_with_alpha, (center_x, center_y), int(radius)
+            )
             glow.blit(temp, (0, 0))
 
         return glow
 
-    def update(self, delta_time: float, player_pos: Vector2, game_map: Optional['GameMap'] = None) -> None:
+    def update(
+        self,
+        delta_time: float,
+        player_pos: Vector2,
+        game_map: Optional["GameMap"] = None,
+    ) -> None:
         """
         Update spider AI based on movement type.
 
@@ -243,6 +264,7 @@ class MiniSpider:
                 self.teleport_timer = 0.0
                 # Teleport to random position near player
                 import random
+
                 offset_x = random.randint(-200, 200)
                 offset_y = random.randint(-100, 0)
                 self.position.x = player_pos.x + offset_x
@@ -317,10 +339,7 @@ class MiniSpider:
     def get_bounds(self) -> pygame.Rect:
         """Get the bounding rectangle for collision detection."""
         return pygame.Rect(
-            int(self.position.x),
-            int(self.position.y),
-            self.width,
-            self.height
+            int(self.position.x), int(self.position.y), self.width, self.height
         )
 
 
@@ -344,14 +363,23 @@ class ScatteredSpiderBoss:
 
         for i in range(5):
             spider = MiniSpider(
-                position=spawn_positions[i] if i < len(spawn_positions) else Vector2(100 * i, 100),
+                position=(
+                    spawn_positions[i]
+                    if i < len(spawn_positions)
+                    else Vector2(100 * i, 100)
+                ),
                 movement_type=movement_types[i],
-                color_variant=i
+                color_variant=i,
             )
             self.spiders.append(spider)
             logger.info(f"Spawned {movement_types[i]} spider at {spawn_positions[i]}")
 
-    def update(self, delta_time: float, player_pos: Vector2, game_map: Optional['GameMap'] = None) -> None:
+    def update(
+        self,
+        delta_time: float,
+        player_pos: Vector2,
+        game_map: Optional["GameMap"] = None,
+    ) -> None:
         """Update all spiders in the swarm."""
         if self.is_defeated:
             return
@@ -438,7 +466,9 @@ class HeartbleedBoss:
         self.flash_timer = 0.0
 
         # Health-based phase changes
-        self.current_phase = 1  # Phase 1: 100-150 HP, Phase 2: 50-99 HP, Phase 3: 1-49 HP
+        self.current_phase = (
+            1  # Phase 1: 100-150 HP, Phase 2: 50-99 HP, Phase 3: 1-49 HP
+        )
 
         # Create visuals
         self.sprite = self._create_red_queen_sprite()
@@ -464,20 +494,20 @@ class HeartbleedBoss:
         # Dress upper body (trapezoid shape)
         dress_top = center_y - 10
         dress_upper_points = [
-            (center_x - 8, dress_top),       # Left shoulder (slimmer)
-            (center_x + 8, dress_top),       # Right shoulder (slimmer)
-            (center_x + 12, center_y + 8),   # Right waist (slimmer)
-            (center_x - 12, center_y + 8)    # Left waist (slimmer)
+            (center_x - 8, dress_top),  # Left shoulder (slimmer)
+            (center_x + 8, dress_top),  # Right shoulder (slimmer)
+            (center_x + 12, center_y + 8),  # Right waist (slimmer)
+            (center_x - 12, center_y + 8),  # Left waist (slimmer)
         ]
         pygame.draw.polygon(sprite, dress_red, dress_upper_points)
         pygame.draw.lines(sprite, dress_dark, True, dress_upper_points, 2)
 
         # Dress skirt (shorter, slimmer bell shape)
         dress_skirt_points = [
-            (center_x - 12, center_y + 8),   # Left waist
-            (center_x + 12, center_y + 8),   # Right waist
+            (center_x - 12, center_y + 8),  # Left waist
+            (center_x + 12, center_y + 8),  # Right waist
             (center_x + 18, center_y + 22),  # Right hem (slimmer)
-            (center_x - 18, center_y + 22)   # Left hem (slimmer)
+            (center_x - 18, center_y + 22),  # Left hem (slimmer)
         ]
         pygame.draw.polygon(sprite, dress_red, dress_skirt_points)
         pygame.draw.lines(sprite, dress_dark, True, dress_skirt_points, 2)
@@ -491,7 +521,7 @@ class HeartbleedBoss:
         heart_bottom = [
             (center_x - 8, heart_center_y),
             (center_x + 8, heart_center_y),
-            (center_x, heart_center_y + 10)
+            (center_x, heart_center_y + 10),
         ]
         pygame.draw.polygon(sprite, card_black, heart_bottom)
 
@@ -503,25 +533,55 @@ class HeartbleedBoss:
         # === LEGS WITH FISHNET STOCKINGS ===
         # Left leg
         left_leg_x = center_x - 10
-        pygame.draw.line(sprite, skin_tone, (left_leg_x, center_y + 22),
-                        (left_leg_x, center_y + 38), 5)
+        pygame.draw.line(
+            sprite,
+            skin_tone,
+            (left_leg_x, center_y + 22),
+            (left_leg_x, center_y + 38),
+            5,
+        )
         # Fishnet pattern on left leg (diamond pattern)
         for leg_y in range(center_y + 24, center_y + 38, 4):
-            pygame.draw.line(sprite, card_black, (left_leg_x - 2, leg_y),
-                           (left_leg_x + 2, leg_y + 2), 1)
-            pygame.draw.line(sprite, card_black, (left_leg_x + 2, leg_y),
-                           (left_leg_x - 2, leg_y + 2), 1)
+            pygame.draw.line(
+                sprite,
+                card_black,
+                (left_leg_x - 2, leg_y),
+                (left_leg_x + 2, leg_y + 2),
+                1,
+            )
+            pygame.draw.line(
+                sprite,
+                card_black,
+                (left_leg_x + 2, leg_y),
+                (left_leg_x - 2, leg_y + 2),
+                1,
+            )
 
         # Right leg
         right_leg_x = center_x + 10
-        pygame.draw.line(sprite, skin_tone, (right_leg_x, center_y + 22),
-                        (right_leg_x, center_y + 38), 5)
+        pygame.draw.line(
+            sprite,
+            skin_tone,
+            (right_leg_x, center_y + 22),
+            (right_leg_x, center_y + 38),
+            5,
+        )
         # Fishnet pattern on right leg
         for leg_y in range(center_y + 24, center_y + 38, 4):
-            pygame.draw.line(sprite, card_black, (right_leg_x - 2, leg_y),
-                           (right_leg_x + 2, leg_y + 2), 1)
-            pygame.draw.line(sprite, card_black, (right_leg_x + 2, leg_y),
-                           (right_leg_x - 2, leg_y + 2), 1)
+            pygame.draw.line(
+                sprite,
+                card_black,
+                (right_leg_x - 2, leg_y),
+                (right_leg_x + 2, leg_y + 2),
+                1,
+            )
+            pygame.draw.line(
+                sprite,
+                card_black,
+                (right_leg_x + 2, leg_y),
+                (right_leg_x - 2, leg_y + 2),
+                1,
+            )
 
         # === HEAD (above dress) ===
         head_y = dress_top - 13
@@ -529,7 +589,9 @@ class HeartbleedBoss:
         # === NECK (connecting head to body) ===
         neck_top = head_y + 8
         neck_bottom = dress_top
-        pygame.draw.line(sprite, skin_tone, (center_x, neck_top), (center_x, neck_bottom), 6)
+        pygame.draw.line(
+            sprite, skin_tone, (center_x, neck_top), (center_x, neck_bottom), 6
+        )
 
         # === BLACK HAIR FIRST (drawn behind face - Harley Quinn flowing style) ===
         # Hair volume on top of head (fuller, more dramatic)
@@ -537,29 +599,29 @@ class HeartbleedBoss:
 
         # Left flowing pigtail (voluminous, elegant)
         left_hair_outer = [
-            (center_x - 9, head_y - 6),    # Start at head
-            (center_x - 11, head_y - 3),   # Flow out
-            (center_x - 16, head_y + 2),   # Wide curve
-            (center_x - 18, head_y + 8),   # Continue flowing
+            (center_x - 9, head_y - 6),  # Start at head
+            (center_x - 11, head_y - 3),  # Flow out
+            (center_x - 16, head_y + 2),  # Wide curve
+            (center_x - 18, head_y + 8),  # Continue flowing
             (center_x - 17, head_y + 15),  # Flow down gracefully
             (center_x - 14, head_y + 18),  # Taper
             (center_x - 10, head_y + 16),  # Inner curve
-            (center_x - 8, head_y + 10),   # Back toward face
-            (center_x - 7, head_y + 3),    # Up along face
+            (center_x - 8, head_y + 10),  # Back toward face
+            (center_x - 7, head_y + 3),  # Up along face
         ]
         pygame.draw.polygon(sprite, hair_black, left_hair_outer)
 
         # Right flowing pigtail (voluminous, elegant)
         right_hair_outer = [
-            (center_x + 9, head_y - 6),    # Start at head
-            (center_x + 11, head_y - 3),   # Flow out
-            (center_x + 16, head_y + 2),   # Wide curve
-            (center_x + 18, head_y + 8),   # Continue flowing
+            (center_x + 9, head_y - 6),  # Start at head
+            (center_x + 11, head_y - 3),  # Flow out
+            (center_x + 16, head_y + 2),  # Wide curve
+            (center_x + 18, head_y + 8),  # Continue flowing
             (center_x + 17, head_y + 15),  # Flow down gracefully
             (center_x + 14, head_y + 18),  # Taper
             (center_x + 10, head_y + 16),  # Inner curve
-            (center_x + 8, head_y + 10),   # Back toward face
-            (center_x + 7, head_y + 3),    # Up along face
+            (center_x + 8, head_y + 10),  # Back toward face
+            (center_x + 7, head_y + 3),  # Up along face
         ]
         pygame.draw.polygon(sprite, hair_black, right_hair_outer)
 
@@ -587,24 +649,34 @@ class HeartbleedBoss:
 
         # Cheekbones (subtle highlight circles)
         cheek_y = head_y + 2
-        pygame.draw.circle(sprite, (255, 180, 180), (center_x - 6, cheek_y), 3, 1)  # Left cheek
-        pygame.draw.circle(sprite, (255, 180, 180), (center_x + 6, cheek_y), 3, 1)  # Right cheek
+        pygame.draw.circle(
+            sprite, (255, 180, 180), (center_x - 6, cheek_y), 3, 1
+        )  # Left cheek
+        pygame.draw.circle(
+            sprite, (255, 180, 180), (center_x + 6, cheek_y), 3, 1
+        )  # Right cheek
 
         # Feminine eyes with eyelashes
         eye_y = head_y - 2
         # Left eye
         pygame.draw.circle(sprite, card_black, (center_x - 4, eye_y), 2)
-        pygame.draw.circle(sprite, (255, 255, 255), (center_x - 5, eye_y - 1), 1)  # Eye shine
+        pygame.draw.circle(
+            sprite, (255, 255, 255), (center_x - 5, eye_y - 1), 1
+        )  # Eye shine
         # Right eye
         pygame.draw.circle(sprite, card_black, (center_x + 4, eye_y), 2)
-        pygame.draw.circle(sprite, (255, 255, 255), (center_x + 5, eye_y - 1), 1)  # Eye shine
+        pygame.draw.circle(
+            sprite, (255, 255, 255), (center_x + 5, eye_y - 1), 1
+        )  # Eye shine
 
         # Elegant eyebrows (curved, thinner)
         pygame.draw.arc(sprite, card_black, (center_x - 8, eye_y - 5, 6, 3), 0, 3.14, 2)
         pygame.draw.arc(sprite, card_black, (center_x + 2, eye_y - 5, 6, 3), 0, 3.14, 2)
 
         # Small feminine nose
-        pygame.draw.line(sprite, card_black, (center_x, eye_y + 2), (center_x, eye_y + 4), 1)
+        pygame.draw.line(
+            sprite, card_black, (center_x, eye_y + 2), (center_x, eye_y + 4), 1
+        )
 
         # Red lips (fuller, more feminine)
         # Upper lip (slight M-shape)
@@ -613,24 +685,34 @@ class HeartbleedBoss:
             (center_x - 1, head_y + 5),
             (center_x, head_y + 6),
             (center_x + 1, head_y + 5),
-            (center_x + 3, head_y + 6)
+            (center_x + 3, head_y + 6),
         ]
         pygame.draw.lines(sprite, dress_red, False, upper_lip, 2)
         # Lower lip (curved)
         lower_lip = [
             (center_x - 3, head_y + 6),
             (center_x, head_y + 8),
-            (center_x + 3, head_y + 6)
+            (center_x + 3, head_y + 6),
         ]
         pygame.draw.lines(sprite, dress_red, False, lower_lip, 2)
 
         # === ARMS ===
         # Left arm
-        pygame.draw.line(sprite, skin_tone, (center_x - 10, dress_top + 5),
-                        (center_x - 20, center_y + 5), 4)
+        pygame.draw.line(
+            sprite,
+            skin_tone,
+            (center_x - 10, dress_top + 5),
+            (center_x - 20, center_y + 5),
+            4,
+        )
         # Right arm
-        pygame.draw.line(sprite, skin_tone, (center_x + 10, dress_top + 5),
-                        (center_x + 20, center_y + 5), 4)
+        pygame.draw.line(
+            sprite,
+            skin_tone,
+            (center_x + 10, dress_top + 5),
+            (center_x + 20, center_y + 5),
+            4,
+        )
 
         return sprite
 
@@ -646,11 +728,7 @@ class HeartbleedBoss:
         # Crown spikes (5 points)
         for i in range(5):
             x = 4 + i * 6
-            points = [
-                (x, 10),
-                (x + 3, 0),
-                (x + 6, 10)
-            ]
+            points = [(x, 10), (x + 3, 0), (x + 6, 10)]
             pygame.draw.polygon(crown, royal_gold, points)
             pygame.draw.polygon(crown, gold_dark, points, 1)
 
@@ -671,10 +749,10 @@ class HeartbleedBoss:
 
         # Red glow rings (representing data leak/bleeding)
         glow_colors = [
-            (220, 20, 20, 15),   # Outermost - faint red
+            (220, 20, 20, 15),  # Outermost - faint red
             (220, 20, 20, 25),
             (220, 20, 20, 35),
-            (220, 20, 20, 45),   # Innermost - stronger red
+            (220, 20, 20, 45),  # Innermost - stronger red
         ]
 
         for i, color in enumerate(glow_colors):
@@ -726,16 +804,18 @@ class HeartbleedBoss:
     def _spawn_bleeding_particle(self):
         """Spawn a red particle representing leaked data."""
         particle = {
-            'x': self.position.x + self.width // 2,
-            'y': self.position.y + self.height // 2,
-            'vx': (pygame.time.get_ticks() % 100 - 50) / 10.0,
-            'vy': -50.0 - (pygame.time.get_ticks() % 50),
-            'lifetime': 1.0,
-            'alpha': 255
+            "x": self.position.x + self.width // 2,
+            "y": self.position.y + self.height // 2,
+            "vx": (pygame.time.get_ticks() % 100 - 50) / 10.0,
+            "vy": -50.0 - (pygame.time.get_ticks() % 50),
+            "lifetime": 1.0,
+            "alpha": 255,
         }
         self.bleeding_particles.append(particle)
 
-    def update(self, delta_time: float, player_position: Vector2, game_map=None) -> None:
+    def update(
+        self, delta_time: float, player_position: Vector2, game_map=None
+    ) -> None:
         """Update boss logic."""
         if self.is_defeated:
             return
@@ -751,13 +831,13 @@ class HeartbleedBoss:
 
         # Update bleeding particles
         for particle in self.bleeding_particles[:]:
-            particle['lifetime'] -= delta_time
-            particle['x'] += particle['vx'] * delta_time
-            particle['y'] += particle['vy'] * delta_time
-            particle['vy'] += 200.0 * delta_time  # Gravity on particles
-            particle['alpha'] = int(255 * (particle['lifetime'] / 1.0))
+            particle["lifetime"] -= delta_time
+            particle["x"] += particle["vx"] * delta_time
+            particle["y"] += particle["vy"] * delta_time
+            particle["vy"] += 200.0 * delta_time  # Gravity on particles
+            particle["alpha"] = int(255 * (particle["lifetime"] / 1.0))
 
-            if particle['lifetime'] <= 0:
+            if particle["lifetime"] <= 0:
                 self.bleeding_particles.remove(particle)
 
         # Spawn bleeding particles periodically (data leak visual)
@@ -784,7 +864,7 @@ class HeartbleedBoss:
             if abs(dx) > 50:  # Move if not too close
                 direction = 1 if dx > 0 else -1
                 self.velocity.x = direction * self.move_speed
-                self.facing_right = (direction > 0)
+                self.facing_right = direction > 0
             else:
                 self.velocity.x = 0
 
@@ -830,7 +910,9 @@ class HeartbleedBoss:
 
     def get_bounds(self) -> pygame.Rect:
         """Get bounding box for collision detection."""
-        return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
+        return pygame.Rect(
+            int(self.position.x), int(self.position.y), self.width, self.height
+        )
 
 
 class WannaCryBoss:
@@ -917,12 +999,12 @@ class WannaCryBoss:
             sprite.fill((0, 0, 0, 0))  # Fill with fully transparent
 
             # Water colors - rich cyan/blue palette with depth
-            water_base = (25, 180, 200)      # Rich cyan
-            water_dark = (15, 120, 140)      # Deep cyan
-            water_bright = (100, 230, 255)   # Bright cyan
-            water_highlight = (180, 245, 255) # Very light cyan
-            water_shadow = (10, 80, 100)     # Dark shadow
-            outline_color = (5, 140, 160)    # Darker outline
+            water_base = (25, 180, 200)  # Rich cyan
+            water_dark = (15, 120, 140)  # Deep cyan
+            water_bright = (100, 230, 255)  # Bright cyan
+            water_highlight = (180, 245, 255)  # Very light cyan
+            water_shadow = (10, 80, 100)  # Dark shadow
+            outline_color = (5, 140, 160)  # Darker outline
 
             center_x, center_y = self.width // 2, self.height // 2
 
@@ -932,16 +1014,16 @@ class WannaCryBoss:
             # === MAIN BODY (Organic blob shape) ===
             # Lower body - flowing blob shape with curves
             body_points = [
-                (center_x, center_y + 30 + wobble),           # Bottom center
-                (center_x - 20, center_y + 25 + wobble//2),   # Bottom left curve
-                (center_x - 25, center_y + 10),               # Mid left bulge
-                (center_x - 22, center_y - 5),                # Upper left
-                (center_x - 15, center_y - 15),               # Shoulder left
-                (center_x, center_y - 18),                    # Neck
-                (center_x + 15, center_y - 15),               # Shoulder right
-                (center_x + 22, center_y - 5),                # Upper right
-                (center_x + 25, center_y + 10),               # Mid right bulge
-                (center_x + 20, center_y + 25 + wobble//2),   # Bottom right curve
+                (center_x, center_y + 30 + wobble),  # Bottom center
+                (center_x - 20, center_y + 25 + wobble // 2),  # Bottom left curve
+                (center_x - 25, center_y + 10),  # Mid left bulge
+                (center_x - 22, center_y - 5),  # Upper left
+                (center_x - 15, center_y - 15),  # Shoulder left
+                (center_x, center_y - 18),  # Neck
+                (center_x + 15, center_y - 15),  # Shoulder right
+                (center_x + 22, center_y - 5),  # Upper right
+                (center_x + 25, center_y + 10),  # Mid right bulge
+                (center_x + 20, center_y + 25 + wobble // 2),  # Bottom right curve
             ]
             # Only draw with water_base - remove the dark layer behind
             pygame.draw.polygon(sprite, water_base, body_points)
@@ -986,23 +1068,37 @@ class WannaCryBoss:
             # Flowing curves inside body to show water movement
             flow_curves = [
                 # Left flow
-                [(center_x - 18, center_y - 8), (center_x - 15, center_y),
-                 (center_x - 12, center_y + 8), (center_x - 8, center_y + 15)],
+                [
+                    (center_x - 18, center_y - 8),
+                    (center_x - 15, center_y),
+                    (center_x - 12, center_y + 8),
+                    (center_x - 8, center_y + 15),
+                ],
                 # Right flow
-                [(center_x + 18, center_y - 8), (center_x + 15, center_y),
-                 (center_x + 12, center_y + 8), (center_x + 8, center_y + 15)],
+                [
+                    (center_x + 18, center_y - 8),
+                    (center_x + 15, center_y),
+                    (center_x + 12, center_y + 8),
+                    (center_x + 8, center_y + 15),
+                ],
                 # Center swirl
-                [(center_x - 5, center_y + 5), (center_x, center_y + 10),
-                 (center_x + 5, center_y + 15)],
+                [
+                    (center_x - 5, center_y + 5),
+                    (center_x, center_y + 10),
+                    (center_x + 5, center_y + 15),
+                ],
             ]
             for curve in flow_curves:
                 pygame.draw.lines(sprite, (*water_highlight, 100), False, curve, 2)
 
             # === WATER DROPLETS AROUND CHARACTER ===
             droplet_positions = [
-                (center_x - 30, center_y - 10), (center_x + 30, center_y - 5),
-                (center_x - 25, center_y + 18), (center_x + 28, center_y + 20),
-                (center_x - 15, center_y - 40), (center_x + 18, center_y - 38),
+                (center_x - 30, center_y - 10),
+                (center_x + 30, center_y - 5),
+                (center_x - 25, center_y + 18),
+                (center_x + 28, center_y + 20),
+                (center_x - 15, center_y - 40),
+                (center_x + 18, center_y - 38),
             ]
             for dx, dy in droplet_positions:
                 pygame.draw.circle(sprite, water_bright, (dx, dy), 3)
@@ -1087,9 +1183,9 @@ class WannaCryBoss:
 
         # Cyan/blue water glow rings
         glow_colors = [
-            (0, 255, 255, 20),    # Cyan (outermost)
+            (0, 255, 255, 20),  # Cyan (outermost)
             (135, 206, 235, 35),  # Sky blue
-            (0, 206, 209, 50),    # Dark turquoise (innermost)
+            (0, 206, 209, 50),  # Dark turquoise (innermost)
         ]
 
         for i, color in enumerate(glow_colors):
@@ -1136,13 +1232,15 @@ class WannaCryBoss:
         """Spawn a falling tear droplet."""
         # Tears fall from eyes
         tear = {
-            'x': self.position.x + self.width // 2 + (10 if time.time() % 2 < 1 else -10),
-            'y': self.position.y + 25,  # Eye level
-            'vx': (time.time() % 40 - 20) * 2,  # Slight horizontal spread
-            'vy': 100.0,  # Falling speed
-            'lifetime': 2.0,
-            'alpha': 255,
-            'on_ground': False
+            "x": self.position.x
+            + self.width // 2
+            + (10 if time.time() % 2 < 1 else -10),
+            "y": self.position.y + 25,  # Eye level
+            "vx": (time.time() % 40 - 20) * 2,  # Slight horizontal spread
+            "vy": 100.0,  # Falling speed
+            "lifetime": 2.0,
+            "alpha": 255,
+            "on_ground": False,
         }
         self.tear_particles.append(tear)
 
@@ -1153,13 +1251,13 @@ class WannaCryBoss:
 
         # Create sob wave
         self.sob_wave = {
-            'x': self.position.x + self.width // 2,
-            'y': self.position.y + self.height // 2,
-            'radius': 0,
-            'max_radius': 300,
-            'lifetime': 1.0,
-            'alpha': 255,
-            'active': False  # Becomes active after charge
+            "x": self.position.x + self.width // 2,
+            "y": self.position.y + self.height // 2,
+            "radius": 0,
+            "max_radius": 300,
+            "lifetime": 1.0,
+            "alpha": 255,
+            "active": False,  # Becomes active after charge
         }
         logger.info("😭 WAAAAHHH! Wade unleashes a sob wave!")
 
@@ -1168,16 +1266,12 @@ class WannaCryBoss:
         if len(self.puddles) >= self.max_puddles:
             self.puddles.pop(0)  # Remove oldest puddle
 
-        puddle = {
-            'x': x,
-            'y': y,
-            'lifetime': 5.0,
-            'alpha': 200,
-            'radius': 20
-        }
+        puddle = {"x": x, "y": y, "lifetime": 5.0, "alpha": 200, "radius": 20}
         self.puddles.append(puddle)
 
-    def update(self, delta_time: float, player_position: Vector2, game_map=None) -> None:
+    def update(
+        self, delta_time: float, player_position: Vector2, game_map=None
+    ) -> None:
         """Update boss logic."""
         if self.is_defeated:
             return
@@ -1203,32 +1297,34 @@ class WannaCryBoss:
 
         # Constant crying - spawn tears periodically
         self.tear_spawn_timer += delta_time
-        tears_per_second = 2 + (self.current_phase - 1) * 2  # More tears in higher phases
+        tears_per_second = (
+            2 + (self.current_phase - 1) * 2
+        )  # More tears in higher phases
         if self.tear_spawn_timer >= (1.0 / tears_per_second):
             self._spawn_tear_particle()
             self.tear_spawn_timer = 0.0
 
         # Update tear particles
         for tear in self.tear_particles[:]:
-            tear['lifetime'] -= delta_time
-            tear['x'] += tear['vx'] * delta_time
-            tear['y'] += tear['vy'] * delta_time
-            tear['vy'] += 300.0 * delta_time  # Gravity
-            tear['alpha'] = int(255 * (tear['lifetime'] / 2.0))
+            tear["lifetime"] -= delta_time
+            tear["x"] += tear["vx"] * delta_time
+            tear["y"] += tear["vy"] * delta_time
+            tear["vy"] += 300.0 * delta_time  # Gravity
+            tear["alpha"] = int(255 * (tear["lifetime"] / 2.0))
 
             # Check if tear hit ground
-            if game_map and tear['y'] >= self.ground_y and not tear['on_ground']:
-                tear['on_ground'] = True
-                self._create_puddle(tear['x'], tear['y'])
+            if game_map and tear["y"] >= self.ground_y and not tear["on_ground"]:
+                tear["on_ground"] = True
+                self._create_puddle(tear["x"], tear["y"])
 
-            if tear['lifetime'] <= 0:
+            if tear["lifetime"] <= 0:
                 self.tear_particles.remove(tear)
 
         # Update puddles
         for puddle in self.puddles[:]:
-            puddle['lifetime'] -= delta_time
-            puddle['alpha'] = int(200 * (puddle['lifetime'] / 5.0))
-            if puddle['lifetime'] <= 0:
+            puddle["lifetime"] -= delta_time
+            puddle["alpha"] = int(200 * (puddle["lifetime"] / 5.0))
+            if puddle["lifetime"] <= 0:
                 self.puddles.remove(puddle)
 
         # Sob wave attack
@@ -1243,16 +1339,16 @@ class WannaCryBoss:
                 self.sob_charge_timer -= delta_time
                 if self.sob_charge_timer <= 0:
                     # Release sob wave!
-                    self.sob_wave['active'] = True
+                    self.sob_wave["active"] = True
 
             # Update active sob wave
-            if self.sob_wave and self.sob_wave['active']:
-                self.sob_wave['lifetime'] -= delta_time
+            if self.sob_wave and self.sob_wave["active"]:
+                self.sob_wave["lifetime"] -= delta_time
                 expand_speed = 600.0  # pixels per second
-                self.sob_wave['radius'] += expand_speed * delta_time
-                self.sob_wave['alpha'] = int(255 * (self.sob_wave['lifetime'] / 1.0))
+                self.sob_wave["radius"] += expand_speed * delta_time
+                self.sob_wave["alpha"] = int(255 * (self.sob_wave["lifetime"] / 1.0))
 
-                if self.sob_wave['lifetime'] <= 0:
+                if self.sob_wave["lifetime"] <= 0:
                     self.sob_wave = None
                     self.is_sobbing = False
 
@@ -1262,7 +1358,7 @@ class WannaCryBoss:
             if abs(dx) > 50:
                 direction = 1 if dx > 0 else -1
                 self.velocity.x = direction * self.move_speed
-                self.facing_right = (direction > 0)
+                self.facing_right = direction > 0
             else:
                 self.velocity.x = 0
 
@@ -1296,17 +1392,19 @@ class WannaCryBoss:
 
     def get_bounds(self) -> pygame.Rect:
         """Get bounding box for collision detection."""
-        return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
+        return pygame.Rect(
+            int(self.position.x), int(self.position.y), self.width, self.height
+        )
 
     def get_sob_wave_bounds(self) -> Optional[pygame.Rect]:
         """Get sob wave collision bounds if active."""
-        if self.sob_wave and self.sob_wave['active']:
-            radius = int(self.sob_wave['radius'])
+        if self.sob_wave and self.sob_wave["active"]:
+            radius = int(self.sob_wave["radius"])
             return pygame.Rect(
-                int(self.sob_wave['x'] - radius),
-                int(self.sob_wave['y'] - radius),
+                int(self.sob_wave["x"] - radius),
+                int(self.sob_wave["y"] - radius),
                 radius * 2,
-                radius * 2
+                radius * 2,
             )
         return None
 
@@ -1383,7 +1481,7 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
                 "Called help desks pretending to be employees",
                 "Bypassed MFA through SIM swapping attacks",
                 "Stole session tokens from identity providers",
-                "Moved laterally through cloud environments"
+                "Moved laterally through cloud environments",
             ],
             "victims": "MGM Resorts, Caesars Entertainment, Okta customers",
             "prevention": [
@@ -1391,9 +1489,9 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
                 "Session token monitoring and anomaly detection",
                 "Phishing-resistant MFA (passkeys, FIDO2)",
                 "Help desk verification protocols",
-                "Cloud Permissions Firewall to limit lateral movement"
+                "Cloud Permissions Firewall to limit lateral movement",
             ],
-            "mechanic": "Defeat all 5 spiders to win!\nEach spider represents a different attack vector."
+            "mechanic": "Defeat all 5 spiders to win!\nEach spider represents a different attack vector.",
         }
 
     elif boss_type == BossType.HEARTBLEED:
@@ -1405,7 +1503,7 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
                 "Leaked 64KB of memory per heartbeat request",
                 "Stole encryption keys, passwords, and session tokens",
                 "Affected 17% of all secure web servers worldwide",
-                "Could be exploited without leaving traces in logs"
+                "Could be exploited without leaving traces in logs",
             ],
             "victims": "Yahoo, Amazon, Google, NSA, Canadian Revenue Agency, hospitals worldwide",
             "prevention": [
@@ -1414,9 +1512,9 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
                 "Force password resets for all users",
                 "Memory-safe cryptographic libraries",
                 "Regular security audits of open source dependencies",
-                "Secret rotation and key management best practices"
+                "Secret rotation and key management best practices",
             ],
-            "mechanic": "The Red Queen has 3 phases based on health!\nWatch for bleeding particles and card-flip teleports.\nOFF WITH YOUR HEAD!"
+            "mechanic": "The Red Queen has 3 phases based on health!\nWatch for bleeding particles and card-flip teleports.\nOFF WITH YOUR HEAD!",
         }
 
     elif boss_type == BossType.WANNACRY:
@@ -1428,7 +1526,7 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
                 "Worm-like self-propagation across networks",
                 "Encrypted user files with RSA-2048 encryption",
                 "Displayed ransom note demanding $300-600 in Bitcoin",
-                "Spread to 150+ countries in just 4 days"
+                "Spread to 150+ countries in just 4 days",
             ],
             "victims": "UK NHS (80 trusts), FedEx, Telefónica, Deutsche Bahn - 200,000+ computers, $4B damages",
             "prevention": [
@@ -1437,9 +1535,9 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
                 "Network segmentation to prevent lateral movement",
                 "Regular offline backups (ransomware protection)",
                 "Email filtering and security awareness training",
-                "Cloud Permissions Firewall to limit blast radius"
+                "Cloud Permissions Firewall to limit blast radius",
             ],
-            "mechanic": "Wade cries tears that spread like WannaCry ransomware!\nAvoid sob waves and don't stand in puddles.\nThe more you hurt him, the more he cries!"
+            "mechanic": "Wade cries tears that spread like WannaCry ransomware!\nAvoid sob waves and don't stand in puddles.\nThe more you hurt him, the more he cries!",
         }
 
     # TODO: Add dialogues for other bosses
@@ -1449,5 +1547,5 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
         "how_attacked": [],
         "victims": "",
         "prevention": [],
-        "mechanic": "Defeat the boss to continue!"
+        "mechanic": "Defeat the boss to continue!",
     }

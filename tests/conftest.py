@@ -14,12 +14,12 @@ def sample_zombie():
     """Create a sample zombie for testing."""
     from src.models import Vector2
     from src.zombie import Zombie
-    
+
     return Zombie(
         identity_id="test-zombie-123",
         identity_name="test-user-1",
         position=Vector2(100, 100),
-        account="123456789012"
+        account="123456789012",
     )
 
 
@@ -28,9 +28,5 @@ def sample_projectile():
     """Create a sample projectile for testing."""
     from src.models import Vector2
     from src.projectile import Projectile
-    
-    return Projectile(
-        position=Vector2(50, 100),
-        velocity=Vector2(300, 0),
-        damage=1
-    )
+
+    return Projectile(position=Vector2(50, 100), velocity=Vector2(300, 0), damage=1)

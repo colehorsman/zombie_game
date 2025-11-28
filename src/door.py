@@ -8,7 +8,13 @@ from models import Vector2
 class Door:
     """Represents a Mario-style pipe door that connects rooms."""
 
-    def __init__(self, position: Vector2, direction: str = "vertical", destination_room: Optional[int] = None, destination_room_name: Optional[str] = None):
+    def __init__(
+        self,
+        position: Vector2,
+        direction: str = "vertical",
+        destination_room: Optional[int] = None,
+        destination_room_name: Optional[str] = None,
+    ):
         """
         Initialize a door/pipe.
 
@@ -34,9 +40,11 @@ class Door:
         # Animation state
         self.is_open = False
         self.animation_timer = 0.0
-        
+
         # Completion state
-        self.is_completed = False  # True if the level this door leads to has been completed
+        self.is_completed = (
+            False  # True if the level this door leads to has been completed
+        )
 
         # Create door sprite
         self.sprite = self._create_pipe_sprite()
@@ -46,10 +54,10 @@ class Door:
         sprite = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
 
         # Purple pipe colors (matching our theme)
-        PIPE_PURPLE = (100, 70, 140)      # Main pipe color
-        PIPE_DARK = (60, 40, 90)          # Shadow
-        PIPE_LIGHT = (140, 110, 180)      # Highlight
-        PIPE_OPENING = (40, 25, 60)       # Dark opening
+        PIPE_PURPLE = (100, 70, 140)  # Main pipe color
+        PIPE_DARK = (60, 40, 90)  # Shadow
+        PIPE_LIGHT = (140, 110, 180)  # Highlight
+        PIPE_OPENING = (40, 25, 60)  # Dark opening
         BLACK = (0, 0, 0)
 
         if self.direction == "vertical":
@@ -68,10 +76,18 @@ class Door:
 
             # Highlights and shadows on body
             pygame.draw.line(sprite, PIPE_LIGHT, (6, 14), (6, self.height - 1), 3)
-            pygame.draw.line(sprite, PIPE_DARK, (self.width - 7, 14), (self.width - 7, self.height - 1), 3)
+            pygame.draw.line(
+                sprite,
+                PIPE_DARK,
+                (self.width - 7, 14),
+                (self.width - 7, self.height - 1),
+                3,
+            )
 
             # Outline
-            pygame.draw.rect(sprite, BLACK, (4, 12, self.width - 8, self.height - 12), 2)
+            pygame.draw.rect(
+                sprite, BLACK, (4, 12, self.width - 8, self.height - 12), 2
+            )
 
         else:  # horizontal
             # Horizontal pipe (side-facing)
@@ -89,10 +105,18 @@ class Door:
 
             # Highlights and shadows on body
             pygame.draw.line(sprite, PIPE_LIGHT, (14, 6), (self.width - 1, 6), 3)
-            pygame.draw.line(sprite, PIPE_DARK, (14, self.height - 7), (self.width - 1, self.height - 7), 3)
+            pygame.draw.line(
+                sprite,
+                PIPE_DARK,
+                (14, self.height - 7),
+                (self.width - 1, self.height - 7),
+                3,
+            )
 
             # Outline
-            pygame.draw.rect(sprite, BLACK, (12, 4, self.width - 12, self.height - 8), 2)
+            pygame.draw.rect(
+                sprite, BLACK, (12, 4, self.width - 12, self.height - 8), 2
+            )
 
         return sprite
 
@@ -104,10 +128,7 @@ class Door:
             Pygame Rect representing the door's bounds
         """
         return pygame.Rect(
-            int(self.position.x),
-            int(self.position.y),
-            self.width,
-            self.height
+            int(self.position.x), int(self.position.y), self.width, self.height
         )
 
     def check_collision(self, player_bounds: pygame.Rect) -> bool:
@@ -158,7 +179,9 @@ class Door:
                 else:
                     label = f"Room {self.destination_room + 1}"
                 text = font.render(label, True, (255, 153, 0))  # AWS Orange
-                text_rect = text.get_rect(center=(screen_x + self.width // 2, screen_y - 8))
+                text_rect = text.get_rect(
+                    center=(screen_x + self.width // 2, screen_y - 8)
+                )
                 screen.blit(text, text_rect)
             except:
                 pass

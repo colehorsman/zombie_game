@@ -40,10 +40,10 @@ class TestComboTrackerBasics:
         tracker = ComboTracker()
         tracker.add_elimination()
         assert tracker.combo_count == 1
-        
+
         # Update for 3.1 seconds (past window)
         tracker.update(3.1)
-        
+
         assert tracker.combo_count == 0
         assert tracker.combo_timer == 0.0
 
@@ -51,12 +51,12 @@ class TestComboTrackerBasics:
         """Test combo is maintained if elimination added within window."""
         tracker = ComboTracker()
         tracker.add_elimination()
-        
+
         # Update for 2 seconds (within window)
         tracker.update(2.0)
         assert tracker.combo_count == 1
         assert tracker.combo_timer == 1.0
-        
+
         # Add another elimination before expiry
         tracker.add_elimination()
         assert tracker.combo_count == 2
@@ -69,7 +69,7 @@ class TestComboTrackerBasics:
         tracker.add_elimination()
         tracker.add_elimination()
         tracker.add_elimination()
-        
+
         assert tracker.combo_count == 4
         assert tracker.get_combo_multiplier() == 1.0
         assert tracker.is_multiplier_active() is False
@@ -79,7 +79,7 @@ class TestComboTrackerBasics:
         tracker = ComboTracker()
         for _ in range(5):
             tracker.add_elimination()
-        
+
         assert tracker.combo_count == 5
         assert tracker.get_combo_multiplier() == 1.5
         assert tracker.is_multiplier_active() is True
@@ -89,7 +89,7 @@ class TestComboTrackerBasics:
         tracker = ComboTracker()
         for _ in range(10):
             tracker.add_elimination()
-        
+
         assert tracker.combo_count == 10
         assert tracker.get_combo_multiplier() == 1.5
         assert tracker.is_multiplier_active() is True
@@ -97,26 +97,26 @@ class TestComboTrackerBasics:
     def test_highest_combo_tracking(self):
         """Test highest combo is tracked."""
         tracker = ComboTracker()
-        
+
         # First combo
         for _ in range(5):
             tracker.add_elimination()
         assert tracker.highest_combo == 5
-        
+
         # Let it expire
         tracker.update(3.1)
         assert tracker.combo_count == 0
         assert tracker.highest_combo == 5  # Highest preserved
-        
+
         # Second combo (lower)
         for _ in range(3):
             tracker.add_elimination()
         assert tracker.combo_count == 3
         assert tracker.highest_combo == 5  # Still 5
-        
+
         # Let it expire
         tracker.update(3.1)
-        
+
         # Third combo (higher)
         for _ in range(8):
             tracker.add_elimination()
@@ -128,12 +128,12 @@ class TestComboTrackerBasics:
         tracker = ComboTracker()
         for _ in range(10):
             tracker.add_elimination()
-        
+
         assert tracker.combo_count == 10
         assert tracker.highest_combo == 10
-        
+
         tracker.reset()
-        
+
         assert tracker.combo_count == 0
         assert tracker.combo_timer == 0.0
         assert tracker.highest_combo == 0
@@ -146,20 +146,20 @@ class TestComboTrackerProperties:
     def test_property_15_combo_chaining(self, elimination_count):
         """
         Property 15: Combo chaining
-        
+
         Given: A series of eliminations within the 3-second window
         When: Each elimination is added before the timer expires
         Then: Combo count equals the number of eliminations
-        
+
         Validates: Requirements 7.2
         """
         tracker = ComboTracker()
-        
+
         for i in range(elimination_count):
             tracker.add_elimination()
             # Update for 2 seconds (within 3-second window)
             tracker.update(2.0)
-        
+
         # Final combo count should equal eliminations
         # (minus 1 because last update might expire it)
         # Actually, we need to be more careful here
@@ -169,31 +169,31 @@ class TestComboTrackerProperties:
             tracker2.add_elimination()
             if i < elimination_count - 1:  # Don't update after last
                 tracker2.update(2.0)
-        
+
         assert tracker2.combo_count == elimination_count
 
     @given(st.floats(min_value=3.1, max_value=10.0))
     def test_property_16_combo_expiration(self, expiry_time):
         """
         Property 16: Combo expiration
-        
+
         Given: A combo is active
         When: Time exceeds the 3-second window without new eliminations
         Then: Combo count resets to 0
-        
+
         Validates: Requirements 7.3
         """
         tracker = ComboTracker()
         tracker.add_elimination()
         tracker.add_elimination()
         tracker.add_elimination()
-        
+
         initial_combo = tracker.combo_count
         assert initial_combo == 3
-        
+
         # Update past the window
         tracker.update(expiry_time)
-        
+
         # Combo should be expired
         assert tracker.combo_count == 0
         assert tracker.combo_timer == 0.0
@@ -202,18 +202,18 @@ class TestComboTrackerProperties:
     def test_property_17_combo_multiplier_activation(self, combo_count):
         """
         Property 17: Combo multiplier activation
-        
+
         Given: A combo count >= 5
         When: Checking the multiplier
         Then: Multiplier is 1.5x
-        
+
         Validates: Requirements 7.5
         """
         tracker = ComboTracker()
-        
+
         for _ in range(combo_count):
             tracker.add_elimination()
-        
+
         assert tracker.combo_count == combo_count
         assert tracker.get_combo_multiplier() == 1.5
         assert tracker.is_multiplier_active() is True
@@ -222,41 +222,42 @@ class TestComboTrackerProperties:
     def test_property_combo_multiplier_inactive_below_threshold(self, combo_count):
         """
         Property: Combo multiplier inactive below threshold
-        
+
         Given: A combo count < 5
         When: Checking the multiplier
         Then: Multiplier is 1.0x
         """
         tracker = ComboTracker()
-        
+
         for _ in range(combo_count):
             tracker.add_elimination()
-        
+
         assert tracker.combo_count == combo_count
         assert tracker.get_combo_multiplier() == 1.0
         assert tracker.is_multiplier_active() is False
 
     @given(
-        st.integers(min_value=1, max_value=20),
-        st.floats(min_value=0.1, max_value=2.9)
+        st.integers(min_value=1, max_value=20), st.floats(min_value=0.1, max_value=2.9)
     )
-    def test_property_combo_timer_resets_on_elimination(self, eliminations, time_elapsed):
+    def test_property_combo_timer_resets_on_elimination(
+        self, eliminations, time_elapsed
+    ):
         """
         Property: Combo timer resets on elimination
-        
+
         Given: A combo with some time elapsed
         When: A new elimination is added
         Then: Timer resets to 3.0 seconds
         """
         tracker = ComboTracker()
-        
+
         for _ in range(eliminations):
             tracker.add_elimination()
             tracker.update(time_elapsed)
-        
+
         # Add one more elimination
         tracker.add_elimination()
-        
+
         # Timer should be reset to full window
         assert tracker.combo_timer == 3.0
 
@@ -264,23 +265,23 @@ class TestComboTrackerProperties:
     def test_property_highest_combo_monotonic(self, combo_sequences):
         """
         Property: Highest combo is monotonically increasing
-        
+
         Given: Multiple combo sequences
         When: Each sequence is completed
         Then: Highest combo never decreases
         """
         tracker = ComboTracker()
         previous_highest = 0
-        
+
         for combo_size in combo_sequences:
             # Build combo
             for _ in range(combo_size):
                 tracker.add_elimination()
-            
+
             # Check highest is monotonic
             assert tracker.highest_combo >= previous_highest
             previous_highest = tracker.highest_combo
-            
+
             # Let combo expire
             tracker.update(3.1)
 

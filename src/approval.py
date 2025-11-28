@@ -49,8 +49,15 @@ class ApprovalCollectible:
         pygame.draw.rect(sprite, PAPER_WHITE, (2, 2, self.width - 4, self.height - 4))
 
         # Paper shadow (3D effect)
-        pygame.draw.line(sprite, PAPER_SHADOW, (2, self.height - 3), (self.width - 2, self.height - 3))
-        pygame.draw.line(sprite, PAPER_SHADOW, (self.width - 3, 2), (self.width - 3, self.height - 3))
+        pygame.draw.line(
+            sprite,
+            PAPER_SHADOW,
+            (2, self.height - 3),
+            (self.width - 2, self.height - 3),
+        )
+        pygame.draw.line(
+            sprite, PAPER_SHADOW, (self.width - 3, 2), (self.width - 3, self.height - 3)
+        )
 
         # Document lines (representing text)
         for i in range(4, 12, 2):
@@ -58,7 +65,9 @@ class ApprovalCollectible:
 
         # "APPROVED" stamp (red circle)
         pygame.draw.circle(sprite, STAMP_RED, (self.width // 2, 14), 4, 1)
-        pygame.draw.line(sprite, STAMP_RED, (self.width // 2 - 2, 14), (self.width // 2 + 2, 14))
+        pygame.draw.line(
+            sprite, STAMP_RED, (self.width // 2 - 2, 14), (self.width // 2 + 2, 14)
+        )
 
         # Gold border (makes it stand out)
         pygame.draw.rect(sprite, GOLD_BORDER, (0, 0, self.width, self.height), 2)
@@ -76,10 +85,7 @@ class ApprovalCollectible:
             Pygame Rect representing the form's bounds
         """
         return pygame.Rect(
-            int(self.position.x),
-            int(self.position.y),
-            self.width,
-            self.height
+            int(self.position.x), int(self.position.y), self.width, self.height
         )
 
     def check_collision(self, player_bounds: pygame.Rect) -> bool:
@@ -118,7 +124,11 @@ class ApprovalCollectible:
         if not self.collected:
             # Pulsing glow animation
             self.animation_timer += delta_time * 2
-            self.glow_intensity = int(50 + 50 * abs(pygame.math.Vector2(1, 0).rotate(self.animation_timer * 180).x))
+            self.glow_intensity = int(
+                50
+                + 50
+                * abs(pygame.math.Vector2(1, 0).rotate(self.animation_timer * 180).x)
+            )
 
     def render(self, screen: pygame.Surface, camera_x: float, camera_y: float) -> None:
         """
@@ -134,13 +144,15 @@ class ApprovalCollectible:
             screen_y = int(self.position.y - camera_y)
 
             # Draw glow effect (larger semi-transparent circle behind)
-            glow_surface = pygame.Surface((self.width + 10, self.height + 10), pygame.SRCALPHA)
+            glow_surface = pygame.Surface(
+                (self.width + 10, self.height + 10), pygame.SRCALPHA
+            )
             glow_color = (255, 215, 0, self.glow_intensity)  # Gold with pulsing alpha
             pygame.draw.circle(
                 glow_surface,
                 glow_color,
                 (self.width // 2 + 5, self.height // 2 + 5),
-                12
+                12,
             )
             screen.blit(glow_surface, (screen_x - 5, screen_y - 5))
 
