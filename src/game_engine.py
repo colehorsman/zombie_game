@@ -38,6 +38,8 @@ from service_protection_quest import (
 from hacker import Hacker
 from jit_access_quest import Auditor, AdminRole, create_jit_quest_entities
 from models import JitQuestState, PermissionSet
+from arcade_mode import ArcadeModeManager
+from combo_tracker import ComboTracker
 
 
 logger = logging.getLogger(__name__)
@@ -141,6 +143,10 @@ class GameEngine:
         self.star_power_touched_zombies = set()  # Track which zombies we've already touched during current Star Power
         self.star_power_was_active = False  # Track when Star Power ends to clear touched set
 
+        # Arcade Mode
+        self.arcade_manager = ArcadeModeManager()
+        self.combo_tracker = ComboTracker()
+
         # Count 3rd parties
         third_parties_count = 0
         if use_map and self.game_map and hasattr(self.game_map, 'third_parties'):
@@ -235,6 +241,10 @@ class GameEngine:
         # Pause menu (Zelda-style)
         self.pause_menu_options = ["Return to Game", "Return to Lobby", "Save Game", "Quit Game"]
         self.pause_menu_selected_index = 0
+        
+        # Arcade results menu
+        self.arcade_results_options = []
+        self.arcade_results_selected_index = 0
         
         # Controller button labels for 8BitDo SN30 Pro
         self.controller_labels = {
@@ -714,6 +724,14 @@ class GameEngine:
             if self.game_state.resource_message_timer <= 0:
                 self.game_state.resource_message = None
 
+        # Update arcade mode if active
+        if self.arcade_manager.is_active():
+            self._update_arcade_mode(delta_time)
+            # Sync arcade state to game state for rendering
+            self.game_state.arcade_mode = self.arcade_manager.get_state()
+        else:
+            self.game_state.arcade_mode = None
+
         # Handle different game states
         if self.game_state.status == GameStatus.LOBBY:
             self._update_lobby(delta_time)
@@ -1144,6 +1162,167 @@ class GameEngine:
         
         logger.info("✅ Returned to lobby")
 
+    def _update_arcade_mode(self, delta_time: float) -> None:
+        """
+        Update arcade mode logic.
+
+        Args:
+            delta_time: Time elapsed since last frame in seconds
+        """
+        # Update arcade manager (handles timer, countdown, combo tracker, etc.)
+        self.arcade_manager.update(delta_time)
+
+        # Check if session ended
+        if not self.arcade_manager.is_active():
+            # Session ended - show results screen
+            self._show_arcade_results()
+            return
+
+        # Disable quests during arcade mode
+        # (Quests are updated in _update_playing, which still runs)
+
+    def _show_arcade_results(self) -> None:
+        """Show arcade mode results screen with quarantine options."""
+        # Get final statistics
+        stats = self.arcade_manager.get_stats()
+        
+        # Build results message
+        results_message = "🎮 ARCADE MODE COMPLETE! 🎮\n\n"
+        results_message += "═══════════════════════════\n\n"
+        results_message += f"Zombies Eliminated: {stats.total_eliminations}\n"
+        results_message += f"Highest Combo: {stats.highest_combo}x\n"
+        results_message += f"Power-ups Collected: {stats.powerups_collected}\n"
+        results_message += f"Eliminations/Second: {stats.eliminations_per_second:.2f}\n\n"
+        results_message += "═══════════════════════════\n\n"
+        
+        # Check if there are zombies to quarantine
+        queue_size = len(self.arcade_manager.get_elimination_queue())
+        if queue_size > 0:
+            results_message += f"💾 {queue_size} identities queued for quarantine\n\n"
+            results_message += "Quarantine all eliminated identities?\n\n"
+            results_message += "▶ Yes - Quarantine All\n"
+            results_message += "  No - Discard Queue\n"
+            results_message += "  Replay - Try Again\n\n"
+        else:
+            results_message += "No eliminations to quarantine.\n\n"
+            results_message += "▶ Replay - Try Again\n"
+            results_message += "  Exit - Return to Lobby\n\n"
+        
+        # Add input instructions
+        if self.joystick:
+            results_message += f"{self.controller_labels['up']}/{self.controller_labels['down']} = Select\n"
+            results_message += f"{self.controller_labels['confirm']} = Confirm"
+        else:
+            results_message += "↑/↓ or W/S = Select\n"
+            results_message += "ENTER or SPACE = Confirm"
+        
+        # Pause game and show results
+        self.game_state.previous_status = self.game_state.status
+        self.game_state.status = GameStatus.PAUSED
+        self.game_state.congratulations_message = results_message
+        
+        # Initialize arcade results menu state
+        self.arcade_results_selected_index = 0
+        self.arcade_results_options = ["Yes - Quarantine All", "No - Discard Queue", "Replay - Try Again"] if queue_size > 0 else ["Replay - Try Again", "Exit - Return to Lobby"]
+        
+        logger.info(f"🎮 Arcade results shown: {stats.total_eliminations} eliminations, {queue_size} queued")
+
+    def _navigate_arcade_results_menu(self, direction: int) -> None:
+        """
+        Navigate arcade results menu selection.
+        
+        Args:
+            direction: -1 for up, 1 for down
+        """
+        if not self.arcade_results_options:
+            return
+        
+        self.arcade_results_selected_index = (self.arcade_results_selected_index + direction) % len(self.arcade_results_options)
+        
+        # Update message to show new selection
+        self._update_arcade_results_display()
+        
+        logger.debug(f"🎮 Arcade menu: selected option {self.arcade_results_selected_index}: {self.arcade_results_options[self.arcade_results_selected_index]}")
+
+    def _update_arcade_results_display(self) -> None:
+        """Update the arcade results message to reflect current menu selection."""
+        stats = self.arcade_manager.get_stats()
+        queue_size = len(self.arcade_manager.get_elimination_queue())
+        
+        # Build results message
+        message = "🎮 ARCADE MODE COMPLETE! 🎮\n\n"
+        message += "═══════════════════════════\n\n"
+        message += f"Zombies Eliminated: {stats.total_eliminations}\n"
+        message += f"Highest Combo: {stats.highest_combo}x\n"
+        message += f"Power-ups Collected: {stats.powerups_collected}\n"
+        message += f"Eliminations/Second: {stats.eliminations_per_second:.2f}\n\n"
+        message += "═══════════════════════════\n\n"
+        
+        # Add menu options with selection indicator
+        if queue_size > 0:
+            message += f"💾 {queue_size} identities queued for quarantine\n\n"
+            message += "Quarantine all eliminated identities?\n\n"
+            for i, option in enumerate(self.arcade_results_options):
+                if i == self.arcade_results_selected_index:
+                    message += f"▶ {option}\n"
+                else:
+                    message += f"  {option}\n"
+            message += "\n"
+        else:
+            message += "No eliminations to quarantine.\n\n"
+            for i, option in enumerate(self.arcade_results_options):
+                if i == self.arcade_results_selected_index:
+                    message += f"▶ {option}\n"
+                else:
+                    message += f"  {option}\n"
+            message += "\n"
+        
+        # Add input instructions
+        if self.joystick:
+            message += f"{self.controller_labels['up']}/{self.controller_labels['down']} = Select\n"
+            message += f"{self.controller_labels['confirm']} = Confirm"
+        else:
+            message += "↑/↓ or W/S = Select\n"
+            message += "ENTER or SPACE = Confirm"
+        
+        self.game_state.congratulations_message = message
+
+    def _execute_arcade_results_option(self) -> None:
+        """Execute the selected arcade results menu option."""
+        if not self.arcade_results_options or self.arcade_results_selected_index >= len(self.arcade_results_options):
+            return
+        
+        selected_option = self.arcade_results_options[self.arcade_results_selected_index]
+        logger.info(f"🎮 Arcade results: executing option '{selected_option}'")
+        
+        if selected_option == "Yes - Quarantine All":
+            # TODO: Implement batch quarantine (Task 11)
+            logger.info("🔄 Batch quarantine not yet implemented - clearing queue")
+            self.arcade_manager.clear_elimination_queue()
+            self._return_to_lobby()
+        
+        elif selected_option == "No - Discard Queue":
+            # Discard queue and return to lobby
+            logger.info("🗑️  Discarding elimination queue")
+            self.arcade_manager.clear_elimination_queue()
+            self._return_to_lobby()
+        
+        elif selected_option == "Replay - Try Again":
+            # Restart arcade mode
+            logger.info("🔄 Restarting arcade mode")
+            self.arcade_manager.start_session()
+            # Clear menu state
+            self.arcade_results_options = []
+            self.arcade_results_selected_index = 0
+            # Resume game
+            self.game_state.congratulations_message = None
+            self.game_state.status = GameStatus.PLAYING
+        
+        elif selected_option == "Exit - Return to Lobby":
+            # Return to lobby without quarantine
+            logger.info("🏠 Exiting arcade mode to lobby")
+            self._return_to_lobby()
+
     def _update_playing(self, delta_time: float) -> None:
         """
         Update game logic during PLAYING state.
@@ -1438,6 +1617,22 @@ class GameEngine:
         Args:
             zombie: The zombie that was hit
         """
+        # ARCADE MODE: Queue elimination instead of immediate quarantine
+        if self.arcade_manager.is_active():
+            # Hide zombie immediately for visual feedback
+            zombie.is_hidden = True
+            
+            # Queue for batch quarantine at end of session
+            # Note: arcade_manager.queue_elimination also updates combo tracker internally
+            self.arcade_manager.queue_elimination(zombie)
+            
+            # Update game state counters
+            self.game_state.zombies_remaining -= 1
+            
+            logger.info(f"🎮 ARCADE: Queued {zombie.identity_name} for batch quarantine (combo: {self.arcade_manager.combo_tracker.get_combo_count()}x)")
+            return
+        
+        # NORMAL MODE: Immediate quarantine
         # NOTE: Approval system removed - zombies always quarantine when health reaches 0
         # The approval mechanic was blocking gameplay in production environments
         
@@ -1705,8 +1900,22 @@ class GameEngine:
 
                 # Handle pause menu navigation (if paused with menu active)
                 if self.game_state.status == GameStatus.PAUSED:
+                    # Check if we're showing arcade results menu
+                    if self.arcade_results_options and self.game_state.congratulations_message and "ARCADE MODE COMPLETE" in self.game_state.congratulations_message:
+                        # UP arrow or W - move selection up
+                        if event.key in (pygame.K_UP, pygame.K_w):
+                            self._navigate_arcade_results_menu(-1)
+                            continue
+                        # DOWN arrow or S - move selection down
+                        elif event.key in (pygame.K_DOWN, pygame.K_s):
+                            self._navigate_arcade_results_menu(1)
+                            continue
+                        # ENTER or SPACE - execute selected option
+                        elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                            self._execute_arcade_results_option()
+                            continue
                     # Check if we're showing the actual pause menu (not a different message)
-                    if self.game_state.congratulations_message and "PAUSED" in self.game_state.congratulations_message:
+                    elif self.game_state.congratulations_message and "PAUSED" in self.game_state.congratulations_message:
                         # UP arrow - move selection up
                         if event.key == pygame.K_UP:
                             self._navigate_pause_menu(-1)
@@ -1852,7 +2061,22 @@ class GameEngine:
                     logger.info(f"🎮 Controller button pressed: {event.button}")
                     # Handle pause menu navigation with controller
                     if self.game_state.status == GameStatus.PAUSED:
-                        if self.game_state.congratulations_message and "PAUSED" in self.game_state.congratulations_message:
+                        # Check if we're showing arcade results menu
+                        if self.arcade_results_options and self.game_state.congratulations_message and "ARCADE MODE COMPLETE" in self.game_state.congratulations_message:
+                            # D-pad UP (11) - navigate up
+                            if event.button == 11:
+                                self._navigate_arcade_results_menu(-1)
+                                continue
+                            # D-pad DOWN (12) - navigate down
+                            elif event.button == 12:
+                                self._navigate_arcade_results_menu(1)
+                                continue
+                            # A button (0) or B button (1) - confirm selection
+                            elif event.button in (0, 1):
+                                self._execute_arcade_results_option()
+                                continue
+                        # Check if we're showing the actual pause menu
+                        elif self.game_state.congratulations_message and "PAUSED" in self.game_state.congratulations_message:
                             # D-pad UP (11) - navigate up
                             if event.button == 11:
                                 self._navigate_pause_menu(-1)

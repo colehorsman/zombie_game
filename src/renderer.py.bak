@@ -35,19 +35,19 @@ class Renderer:
         # Initialize fonts - Cache all fonts to avoid recreating every frame (30% performance gain)
         pygame.font.init()
         self.ui_font = pygame.font.Font(None, 32)
-        self.label_font = self.label_font
+        self.label_font = pygame.font.Font(None, 20)
         self.message_font = pygame.font.Font(None, 24)
 
         # Additional cached fonts (previously created every frame)
-        self.tiny_font = self.tiny_font       # Line 213
+        self.tiny_font = pygame.font.Font(None, 14)       # Line 213
         self.small_font = pygame.font.Font(None, 16)      # Line 1654
         self.subtitle_font = pygame.font.Font(None, 18)   # Line 997
-        self.name_font = self.name_font       # Line 609, 1456
-        self.timer_font = self.timer_font      # Line 1198
-        self.elim_font = self.elim_font       # Line 1223
-        self.combo_font = self.combo_font      # Line 1230
-        self.victory_font = self.victory_font    # Line 1267
-        self.countdown_font = self.countdown_font # Line 1174
+        self.name_font = pygame.font.Font(None, 24)       # Line 609, 1456
+        self.timer_font = pygame.font.Font(None, 72)      # Line 1198
+        self.elim_font = pygame.font.Font(None, 48)       # Line 1223
+        self.combo_font = pygame.font.Font(None, 56)      # Line 1230
+        self.victory_font = pygame.font.Font(None, 64)    # Line 1267
+        self.countdown_font = pygame.font.Font(None, 128) # Line 1174
 
         # Background scroll offset
         self.scroll_offset = 0
@@ -61,20 +61,6 @@ class Renderer:
     def clear_screen(self) -> None:
         """Clear the screen to background color."""
         self.screen.fill(self.bg_color)
-
-    def _apply_flash_effect(self, x: int, y: int, width: int, height: int) -> None:
-        """
-        Apply flash effect overlay without copying sprite (15% performance gain).
-
-        Args:
-            x: X position on screen
-            y: Y position on screen
-            width: Width of flash area
-            height: Height of flash area
-        """
-        flash_surface = pygame.Surface((width, height), pygame.SRCALPHA)
-        flash_surface.fill((255, 255, 255, 128))
-        self.screen.blit(flash_surface, (x, y), special_flags=pygame.BLEND_RGBA_ADD)
 
     def render_background(self, game_map: Optional[GameMap] = None) -> None:
         """
@@ -150,18 +136,27 @@ class Renderer:
                     screen_x, screen_y = game_map.world_to_screen(zombie.position.x, zombie.position.y)
                     
                     # Apply flash effect if active
-                    self.screen.blit(zombie.sprite, (screen_x, screen_y))
                     if zombie.is_flashing:
-                        self._apply_flash_effect(screen_x, screen_y, zombie.width, zombie.height)
+                        flash_sprite = zombie.sprite.copy()
+                        flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                        self.screen.blit(flash_sprite, (screen_x, screen_y))
+                    else:
+                        self.screen.blit(zombie.sprite, (screen_x, screen_y))
                     
                     rendered_count += 1
             else:
                 # Classic mode: only render zombies that are on or near the screen
                 if -100 < zombie.position.x < self.width + 100:
                     # Apply flash effect if active
-                    self.screen.blit(zombie.sprite, (int(zombie.position.x), int(zombie.position.y)))
                     if zombie.is_flashing:
-                        self._apply_flash_effect(int(zombie.position.x), int(zombie.position.y), zombie.width, zombie.height)
+                        flash_sprite = zombie.sprite.copy()
+                        flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                        self.screen.blit(flash_sprite, (int(zombie.position.x), int(zombie.position.y)))
+                    else:
+                        self.screen.blit(
+                            zombie.sprite,
+                            (int(zombie.position.x), int(zombie.position.y))
+                        )
                     rendered_count += 1
 
         # Debug log on first few frames
@@ -187,17 +182,25 @@ class Renderer:
                     screen_x, screen_y = game_map.world_to_screen(third_party.position.x, third_party.position.y)
                     
                     # Apply flash effect if active
-                    self.screen.blit(third_party.sprite, (screen_x, screen_y))
-                                    if third_party.is_flashing:
-                            self._apply_flash_effect(screen_x, screen_y, third_party.width, third_party.height)
+                    if third_party.is_flashing:
+                        flash_sprite = third_party.sprite.copy()
+                        flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                        self.screen.blit(flash_sprite, (screen_x, screen_y))
+                    else:
+                        self.screen.blit(third_party.sprite, (screen_x, screen_y))
             else:
                 # Classic mode: only render 3rd parties that are on or near the screen
                 if -100 < third_party.position.x < self.width + 100:
                     # Apply flash effect if active
                     if third_party.is_flashing:
-                    self.screen.blit(third_party.sprite, (int(third_party.position.x), int(third_party.position.y)))
-                                if third_party.is_flashing:
-                        self._apply_flash_effect(int(third_party.position.x), int(third_party.position.y), third_party.width, third_party.height)
+                        flash_sprite = third_party.sprite.copy()
+                        flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                        self.screen.blit(flash_sprite, (int(third_party.position.x), int(third_party.position.y)))
+                    else:
+                        self.screen.blit(
+                            third_party.sprite,
+                            (int(third_party.position.x), int(third_party.position.y))
+                        )
 
     def render_doors(self, doors: List[Door], game_map: GameMap) -> None:
         """
@@ -218,7 +221,7 @@ class Renderer:
                     
                     # Draw green checkmark or "COMPLETED" text above door
                     try:
-                        font = self.tiny_font
+                        font = pygame.font.Font(None, 14)
                         text = font.render("✓ COMPLETED", True, (0, 255, 0))  # Green
                         text_rect = text.get_rect(center=(screen_x + door.width // 2, screen_y - 20))
                         self.screen.blit(text, text_rect)
@@ -537,9 +540,12 @@ class Renderer:
                     self.screen.blit(boss.cloud_sprite, (cloud_screen_x, cloud_screen_y))
                 
                 # Apply flash effect if active
-                self.screen.blit(boss.sprite, (screen_x, screen_y))
-                                if boss.is_flashing:
-                        self._apply_flash_effect(screen_x, screen_y, boss.width, boss.height)
+                if boss.is_flashing:
+                    flash_sprite = boss.sprite.copy()
+                    flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                    self.screen.blit(flash_sprite, (screen_x, screen_y))
+                else:
+                    self.screen.blit(boss.sprite, (screen_x, screen_y))
         else:
             # Classic mode: render if on screen
             if -100 < boss.position.x < self.width + 100:
@@ -611,7 +617,7 @@ class Renderer:
         pygame.draw.rect(self.screen, (255, 215, 0), (bar_x, bar_y, bar_width, bar_height), 2)
 
         # Boss name above health bar
-        name_font = self.name_font
+        name_font = pygame.font.Font(None, 24)
         name_text = name_font.render(boss_name, True, (255, 215, 0))
         name_x = (self.width - name_text.get_width()) // 2
         name_y = bar_y - 25
@@ -647,9 +653,12 @@ class Renderer:
                     self.screen.blit(spider.glow_sprite, (glow_x, glow_y))
 
                     # Step 2: Render spider sprite on top
-                    self.screen.blit(spider.sprite, (screen_x, screen_y))
-                                        if spider.is_flashing:
-                            self._apply_flash_effect(screen_x, screen_y, spider.width, spider.height)
+                    if spider.is_flashing:
+                        flash_sprite = spider.sprite.copy()
+                        flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                        self.screen.blit(flash_sprite, (screen_x, screen_y))
+                    else:
+                        self.screen.blit(spider.sprite, (screen_x, screen_y))
             else:
                 # Classic mode
                 if -100 < spider.position.x < self.width + 100:
@@ -658,9 +667,13 @@ class Renderer:
                     glow_y = int(spider.position.y) - spider.effect_radius
                     self.screen.blit(spider.glow_sprite, (glow_x, glow_y))
 
-                    self.screen.blit(spider.sprite, (int(spider.position.x), int(spider.position.y)))
+                    # Step 2: Render spider
                     if spider.is_flashing:
-                        self._apply_flash_effect(int(spider.position.x), int(spider.position.y), spider.width, spider.height)
+                        flash_sprite = spider.sprite.copy()
+                        flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                        self.screen.blit(flash_sprite, (int(spider.position.x), int(spider.position.y)))
+                    else:
+                        self.screen.blit(spider.sprite, (int(spider.position.x), int(spider.position.y)))
 
     def render_heartbleed_boss(self, boss: 'HeartbleedBoss', game_map: Optional[GameMap] = None) -> None:
         """
@@ -962,7 +975,7 @@ class Renderer:
 
         # "WAHHH!" text when fully charged
         if charge_progress >= 0.95:
-            font = self.label_font
+            font = pygame.font.Font(None, 20)
             text = font.render("WAHHH!", True, (0, 255, 255))
             text_rect = text.get_rect(center=(indicator_x, indicator_y))
             self.screen.blit(text, text_rect)
@@ -989,10 +1002,10 @@ class Renderer:
         pygame.draw.rect(dialogue_surface, (0, 0, 0), (0, 0, box_width, box_height), 3)
 
         # Fonts
-        title_font = self.ui_font
-        header_font = self.name_font
-        body_font = self.label_font
-        small_font = self.subtitle_font
+        title_font = pygame.font.Font(None, 32)
+        header_font = pygame.font.Font(None, 24)
+        body_font = pygame.font.Font(None, 20)
+        small_font = pygame.font.Font(None, 18)
 
         # Current Y position for text rendering
         y_pos = 20
@@ -1169,7 +1182,7 @@ class Renderer:
         """
         # Countdown phase - show large countdown
         if arcade_state.in_countdown:
-            countdown_font = self.countdown_font
+            countdown_font = pygame.font.Font(None, 128)
             countdown_num = int(arcade_state.countdown_time) + 1
             countdown_text = str(countdown_num) if countdown_num > 0 else "GO!"
             
@@ -1193,7 +1206,7 @@ class Renderer:
             return
         
         # Timer display (large, prominent)
-        timer_font = self.timer_font
+        timer_font = pygame.font.Font(None, 72)
         time_remaining = max(0, arcade_state.time_remaining)
         timer_text = f"{int(time_remaining)}s"
         
@@ -1218,14 +1231,14 @@ class Renderer:
         self.screen.blit(timer_surface, (timer_x, timer_y))
         
         # Elimination count
-        elim_font = self.elim_font
+        elim_font = pygame.font.Font(None, 48)
         elim_text = f"Eliminations: {arcade_state.eliminations_count}"
         elim_surface = elim_font.render(elim_text, True, (255, 255, 255))
         self.screen.blit(elim_surface, (10, 10))
         
         # Combo counter (if active)
         if arcade_state.combo_count > 1:
-            combo_font = self.combo_font
+            combo_font = pygame.font.Font(None, 56)
             combo_text = f"{arcade_state.combo_count}x COMBO!"
             
             # Color based on multiplier
@@ -1262,7 +1275,7 @@ class Renderer:
         self.screen.blit(overlay, (0, 0))
 
         # Victory message
-        victory_font = self.victory_font
+        victory_font = pygame.font.Font(None, 64)
         victory_text = "VICTORY!"
         victory_surface = victory_font.render(victory_text, True, (0, 255, 0))
         victory_x = self.width // 2 - victory_surface.get_width() // 2
@@ -1451,7 +1464,7 @@ class Renderer:
             return
 
         # Render hint at bottom center of screen
-        hint_font = self.name_font
+        hint_font = pygame.font.Font(None, 24)
         hint_surface = hint_font.render(hint_message, True, (255, 200, 100))  # Light orange
 
         hint_x = (self.width - hint_surface.get_width()) // 2
@@ -1649,7 +1662,7 @@ class Renderer:
 
             # Draw label with permission set name
             try:
-                font = self.small_font
+                font = pygame.font.Font(None, 16)
                 label_text = admin_role.permission_set.name[:20]  # Truncate long names
                 label_surface = font.render(label_text, True, (255, 255, 255))
                 label_x = int(screen_x - label_surface.get_width() // 2)

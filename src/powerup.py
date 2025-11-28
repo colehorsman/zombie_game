@@ -12,6 +12,8 @@ class PowerUpType(Enum):
     """Types of AWS-themed power-ups."""
     STAR_POWER = "Star Power"              # Invincibility + quarantine on touch (best power-up)
     LAMBDA_SPEED = "Lambda Speedup"        # Move faster
+    LASER_BEAM = "Laser Beam"              # 10 seconds continuous fire (arcade mode)
+    BURST_SHOT = "Burst Shot"              # 3 one-shot kills (arcade mode)
 
 
 class PowerUp:
@@ -47,6 +49,8 @@ class PowerUp:
         durations = {
             PowerUpType.STAR_POWER: 10.0,      # 10 seconds invincibility + quarantine
             PowerUpType.LAMBDA_SPEED: 12.0,    # 12 seconds speed boost
+            PowerUpType.LASER_BEAM: 10.0,      # 10 seconds continuous fire
+            PowerUpType.BURST_SHOT: 0.0,       # Instant (3 charges)
         }
         return durations.get(self.powerup_type, 10.0)
 
@@ -55,6 +59,8 @@ class PowerUp:
         values = {
             PowerUpType.STAR_POWER: 1.0,       # Invincibility + quarantine on touch
             PowerUpType.LAMBDA_SPEED: 2.0,     # 2x speed multiplier
+            PowerUpType.LASER_BEAM: 1.0,       # Continuous fire enabled
+            PowerUpType.BURST_SHOT: 3.0,       # 3 one-shot kills
         }
         return values.get(self.powerup_type, 1.0)
 
@@ -63,6 +69,8 @@ class PowerUp:
         descriptions = {
             PowerUpType.STAR_POWER: "10 seconds of untouchable status - any zombie you contact will be quarantined!",
             PowerUpType.LAMBDA_SPEED: "Move 2x faster for 12 seconds with Lambda speed!",
+            PowerUpType.LASER_BEAM: "10 seconds of continuous laser fire - no reload needed!",
+            PowerUpType.BURST_SHOT: "3 one-shot eliminations - instant kills!",
         }
         return descriptions.get(self.powerup_type, "Power-up collected!")
 
@@ -81,6 +89,8 @@ class PowerUp:
         colors = {
             PowerUpType.STAR_POWER: ((255, 215, 0), (200, 170, 0)),         # Gold star (best power)
             PowerUpType.LAMBDA_SPEED: ((255, 153, 0), (200, 120, 0)),       # Orange (serverless)
+            PowerUpType.LASER_BEAM: ((255, 0, 0), (180, 0, 0)),             # Red (laser)
+            PowerUpType.BURST_SHOT: ((138, 43, 226), (100, 30, 180)),       # Purple (burst)
         }
 
         primary_color, shadow_color = colors.get(self.powerup_type, (AWS_ORANGE, AWS_DARK))
@@ -122,6 +132,8 @@ class PowerUp:
             font = pygame.font.Font(None, 16)
             icons = {
                 PowerUpType.LAMBDA_SPEED: "λ",
+                PowerUpType.LASER_BEAM: "⚡",
+                PowerUpType.BURST_SHOT: "💥",
             }
 
             icon_text = icons.get(self.powerup_type, "?")
@@ -238,25 +250,32 @@ class PowerUpManager:
         return 0.0
 
 
-def spawn_random_powerups(count: int, map_width: int, map_height: int, ground_y: int) -> list[PowerUp]:
+def spawn_random_powerups(level_width: int, ground_y: int, count: int = 5, arcade_mode: bool = False) -> list[PowerUp]:
     """
     Spawn random power-ups across the level.
 
     Args:
-        count: Number of power-ups to spawn
-        map_width: Width of the map
-        map_height: Height of the map
+        level_width: Width of the level
         ground_y: Y position of the ground
+        count: Number of power-ups to spawn
+        arcade_mode: If True, favor arcade power-ups (LASER_BEAM, BURST_SHOT)
 
     Returns:
         List of PowerUp instances
     """
     powerups = []
-    powerup_types = list(PowerUpType)
+    
+    if arcade_mode:
+        # Arcade mode: higher chance of LASER_BEAM and BURST_SHOT
+        arcade_types = [PowerUpType.LASER_BEAM, PowerUpType.BURST_SHOT, PowerUpType.STAR_POWER]
+        powerup_types = arcade_types
+    else:
+        # Normal mode: all power-ups
+        powerup_types = list(PowerUpType)
 
     for i in range(count):
         # Distribute power-ups across the level width
-        x = random.randint(100, map_width - 100)
+        x = random.randint(100, level_width - 100)
         y = ground_y - 100  # Spawn above ground level
 
         # Random power-up type
