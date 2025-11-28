@@ -218,19 +218,25 @@ class TestAdminRoleRendering:
 
     def test_render_admin_roles_draws_label(self, renderer, mock_game_map, sample_admin_role):
         """Test that admin roles render with permission set name label."""
-        with patch('pygame.font.Font') as mock_font_class:
-            mock_font = Mock()
-            mock_surface = Mock()
-            mock_surface.get_width.return_value = 100
-            mock_font.render.return_value = mock_surface
-            mock_font_class.return_value = mock_font
-            
+        # Create a mock font to capture render calls
+        mock_font = Mock()
+        mock_surface = Mock()
+        mock_surface.get_width.return_value = 100
+        mock_font.render.return_value = mock_surface
+
+        # Patch the renderer's existing small_font attribute
+        original_font = renderer.small_font
+        renderer.small_font = mock_font
+
+        try:
             renderer.render_admin_roles([sample_admin_role], mock_game_map, pulse_time=0.0)
-            
+
             # Should render label with permission set name
             render_calls = [call[0][0] for call in mock_font.render.call_args_list]
             assert any("AdministratorAccess" in str(call) for call in render_calls), \
                 "Should render permission set name as label"
+        finally:
+            renderer.small_font = original_font
 
     def test_render_admin_roles_not_drawn_when_off_screen(self, renderer, mock_game_map, sample_admin_role):
         """Test that admin roles are not rendered when off screen."""

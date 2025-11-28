@@ -35,19 +35,19 @@ class Renderer:
         # Initialize fonts - Cache all fonts to avoid recreating every frame (30% performance gain)
         pygame.font.init()
         self.ui_font = pygame.font.Font(None, 32)
-        self.label_font = self.label_font
         self.message_font = pygame.font.Font(None, 24)
 
-        # Additional cached fonts (previously created every frame)
-        self.tiny_font = self.tiny_font       # Line 213
-        self.small_font = pygame.font.Font(None, 16)      # Line 1654
-        self.subtitle_font = pygame.font.Font(None, 18)   # Line 997
-        self.name_font = self.name_font       # Line 609, 1456
-        self.timer_font = self.timer_font      # Line 1198
-        self.elim_font = self.elim_font       # Line 1223
-        self.combo_font = self.combo_font      # Line 1230
-        self.victory_font = self.victory_font    # Line 1267
-        self.countdown_font = self.countdown_font # Line 1174
+        # Additional cached fonts for various UI elements
+        self.tiny_font = pygame.font.Font(None, 14)       # Very small text
+        self.small_font = pygame.font.Font(None, 16)      # Small labels
+        self.subtitle_font = pygame.font.Font(None, 18)   # Subtitles
+        self.label_font = pygame.font.Font(None, 20)      # Entity labels, map markers
+        self.name_font = pygame.font.Font(None, 28)       # Boss names, headers
+        self.elim_font = pygame.font.Font(None, 28)       # Elimination count
+        self.combo_font = pygame.font.Font(None, 32)      # Combo display
+        self.timer_font = pygame.font.Font(None, 48)      # Arcade timer
+        self.victory_font = pygame.font.Font(None, 48)    # Victory messages
+        self.countdown_font = pygame.font.Font(None, 72)  # Countdown "3, 2, 1, GO!"
 
         # Background scroll offset
         self.scroll_offset = 0

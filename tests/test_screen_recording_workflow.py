@@ -278,9 +278,10 @@ class TestScreenRecordingWorkflow:
         )
         game_engine._enter_level(sandbox_door)
         game_engine._show_pause_menu()
-        
-        # Select "Return to Lobby" option (index 1)
-        game_engine.pause_menu_selected_index = 1
+
+        # Select "Return to Lobby" option (index 2 when arcade option is included)
+        # Menu: ["Return to Game", "Arcade Mode", "Return to Lobby", ...]
+        game_engine.pause_menu_selected_index = 2
         game_engine._execute_pause_menu_option()
         
         # Verify returned to lobby
@@ -429,8 +430,9 @@ class TestScreenRecordingWorkflow:
         # Step 2: Pause and return to lobby
         game_engine._show_pause_menu()
         assert game_engine.game_state.status == GameStatus.PAUSED
-        
-        game_engine.pause_menu_selected_index = 1  # "Return to Lobby"
+
+        # Index 2 = "Return to Lobby" when arcade option is included
+        game_engine.pause_menu_selected_index = 2
         game_engine._execute_pause_menu_option()
         assert game_engine.game_state.status == GameStatus.LOBBY
         

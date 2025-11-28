@@ -153,8 +153,8 @@ class TestDoorInteractionCooldownSetOnLobbyReturn:
                 # Return to lobby
                 engine._return_to_lobby()
                 
-                # Cooldown should be set to 1.0 seconds
-                assert engine.door_interaction_cooldown == 1.0
+                # Cooldown should be set to 2.0 seconds (increased to prevent immediate re-entry)
+                assert engine.door_interaction_cooldown == 2.0
 
     def test_cooldown_prevents_immediate_door_entry(self, mock_pygame, mock_api_client):
         """Test that cooldown prevents door interaction immediately after lobby return."""
@@ -264,8 +264,8 @@ class TestDoorInteractionCooldownIntegration:
                     
                     engine._return_to_lobby()
                     
-                    # After returning to lobby, cooldown should be 1.0
-                    assert engine.door_interaction_cooldown == 1.0
+                    # After returning to lobby, cooldown should be 2.0 (increased to prevent immediate re-entry)
+                    assert engine.door_interaction_cooldown == 2.0
                     
                     # Test cooldown decrement without calling _update_lobby
                     # (to avoid player update issues)
@@ -273,10 +273,10 @@ class TestDoorInteractionCooldownIntegration:
                     
                     # Manually decrement cooldown as _update_lobby would
                     engine.door_interaction_cooldown -= 0.5
-                    assert engine.door_interaction_cooldown == pytest.approx(0.5, abs=0.01)
+                    assert engine.door_interaction_cooldown == pytest.approx(1.5, abs=0.01)
                     
-                    # Decrement again
-                    engine.door_interaction_cooldown -= 0.6
+                    # Decrement again (need to decrement by 1.6 to go below 0 with 2.0 second cooldown)
+                    engine.door_interaction_cooldown -= 1.6
                     assert engine.door_interaction_cooldown <= 0.0
                     
                     # Doors should now be accessible (cooldown <= 0)

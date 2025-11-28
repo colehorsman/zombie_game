@@ -74,10 +74,11 @@ class ArcadeResultsController:
         logger.info(f"🎮 Arcade results shown: {stats.total_eliminations} eliminations, {stats.queue_size} queued")
 
     def hide(self) -> None:
-        """Hide the arcade results menu."""
+        """Hide the arcade results menu and reset state."""
         self.is_visible = False
         self.options = []
         self.stats = None
+        self.selected_index = 0
         logger.info("🎮 Arcade results hidden")
 
     def navigate(self, direction: int) -> None:

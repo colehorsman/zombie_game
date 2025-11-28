@@ -4,30 +4,10 @@ import pytest
 import sys
 from pathlib import Path
 
+import pygame
+
 # Add src directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-# Import pygame (it's already mocked in conftest.py or actually installed)
-try:
-    import pygame
-except ImportError:
-    # Create minimal pygame mock if not available
-    pygame = type(sys)('pygame')
-    pygame.K_u = ord('u')
-    pygame.K_n = ord('n')
-    pygame.K_l = ord('l')
-    pygame.K_o = ord('o')
-    pygame.K_c = ord('c')
-    pygame.K_k = ord('k')
-    pygame.K_s = ord('s')
-    pygame.K_i = ord('i')
-    pygame.K_p = ord('p')
-    pygame.K_a = ord('a')
-    pygame.K_b = ord('b')
-    pygame.K_UP = 273
-    pygame.K_DOWN = 274
-    pygame.K_LEFT = 276
-    pygame.K_RIGHT = 275
 
 from cheat_code_controller import CheatCodeController, CheatCodeAction, CheatCodeResult
 
@@ -74,8 +54,11 @@ class TestCheatCodeController:
         """Konami code is detected correctly."""
         controller = CheatCodeController()
 
-        # UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT
-        keys = [273, 273, 274, 274, 276, 275, 276, 275]
+        # UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT - use actual pygame constants
+        keys = [
+            pygame.K_UP, pygame.K_UP, pygame.K_DOWN, pygame.K_DOWN,
+            pygame.K_LEFT, pygame.K_RIGHT, pygame.K_LEFT, pygame.K_RIGHT
+        ]
         result = None
         for key in keys:
             result = controller.process_key(key, current_time=0)
@@ -86,8 +69,11 @@ class TestCheatCodeController:
         """Arcade code is detected correctly."""
         controller = CheatCodeController()
 
-        # UP UP DOWN DOWN A B
-        keys = [273, 273, 274, 274, ord('a'), ord('b')]
+        # UP UP DOWN DOWN A B - use actual pygame constants
+        keys = [
+            pygame.K_UP, pygame.K_UP, pygame.K_DOWN, pygame.K_DOWN,
+            pygame.K_a, pygame.K_b
+        ]
         result = None
         for key in keys:
             result = controller.process_key(key, current_time=0)
@@ -121,12 +107,12 @@ class TestCheatCodeController:
         controller = CheatCodeController()
 
         # Start Konami sequence
-        controller.process_key(273, current_time=0)  # UP
-        controller.process_key(273, current_time=0.5)  # UP
-        controller.process_key(274, current_time=1.0)  # DOWN
+        controller.process_key(pygame.K_UP, current_time=0)
+        controller.process_key(pygame.K_UP, current_time=0.5)
+        controller.process_key(pygame.K_DOWN, current_time=1.0)
 
         # Wait for timeout
-        controller.process_key(274, current_time=5.0)  # DOWN after timeout
+        controller.process_key(pygame.K_DOWN, current_time=5.0)  # After timeout
 
         # Buffer should have been reset, so only last DOWN is in buffer
         assert len(controller.konami_buffer) == 1
@@ -136,11 +122,11 @@ class TestCheatCodeController:
         controller = CheatCodeController()
 
         # Start Arcade sequence
-        controller.process_key(273, current_time=0)  # UP
-        controller.process_key(273, current_time=0.5)  # UP
+        controller.process_key(pygame.K_UP, current_time=0)
+        controller.process_key(pygame.K_UP, current_time=0.5)
 
         # Wait for timeout
-        controller.process_key(274, current_time=5.0)  # DOWN after timeout
+        controller.process_key(pygame.K_DOWN, current_time=5.0)  # After timeout
 
         # Buffer should have been reset
         assert len(controller.arcade_buffer) == 1

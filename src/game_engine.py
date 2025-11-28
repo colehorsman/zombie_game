@@ -715,6 +715,7 @@ class GameEngine:
 
         # Update arcade mode if active
         if self.arcade_manager.is_active():
+            logger.debug(f"🎮 Arcade mode is active, updating...")
             self._update_arcade_mode(delta_time)
             # Sync arcade state to game state for rendering
             self.game_state.arcade_mode = self.arcade_manager.get_state()
@@ -1146,8 +1147,9 @@ class GameEngine:
         self.game_state.current_level_account_id = None
         
         # Set door interaction cooldown to prevent immediate re-entry
-        self.door_interaction_cooldown = 1.0  # 1 second cooldown
-        logger.info("🚪 Door interaction cooldown set to 1.0 seconds")
+        # Increased to 2 seconds to ensure player has time to move away from door
+        self.door_interaction_cooldown = 2.0  # 2 second cooldown
+        logger.info("🚪 Door interaction cooldown set to 2.0 seconds (prevents immediate re-entry)")
         
         logger.info("✅ Returned to lobby")
 
@@ -1160,16 +1162,24 @@ class GameEngine:
         """
         # Update arcade manager (handles timer, countdown, combo tracker, etc.)
         self.arcade_manager.update(delta_time)
+        
+        # Get current state for logging
+        state = self.arcade_manager.get_state()
+        logger.debug(f"🎮 Arcade update: active={state.active}, countdown={state.countdown_time:.1f}s, time={state.time_remaining:.1f}s")
 
         # Check if session ended
         if not self.arcade_manager.is_active():
             # Session ended - show results screen
+            logger.info("🎮 Arcade session ended - showing results")
             self._show_arcade_results()
             return
 
         # Dynamic zombie spawning - maintain minimum count
-        if self.arcade_manager.should_respawn_zombies(len([z for z in self.zombies if not z.is_hidden])):
+        visible_count = len([z for z in self.zombies if not z.is_hidden])
+        if self.arcade_manager.should_respawn_zombies(visible_count):
+            logger.debug(f"🎮 Should respawn zombies (visible: {visible_count})")
             ready_zombies = self.arcade_manager.get_zombies_ready_to_respawn()
+            logger.debug(f"🎮 Ready to respawn: {len(ready_zombies)} zombies")
             for zombie in ready_zombies:
                 if self.game_map:
                     ground_y = 800  # Platform ground level
@@ -1179,22 +1189,30 @@ class GameEngine:
                         self.game_map.map_width,
                         ground_y
                     )
-                    logger.debug(f"♻️  Respawned zombie in arcade mode: {zombie.identity_name}")
+                    logger.info(f"♻️  Respawned zombie in arcade mode: {zombie.identity_name}")
 
         # Disable quests during arcade mode
         # (Quests are updated in _update_playing, which still runs)
 
     def _start_arcade_mode(self) -> None:
         """Start arcade mode session with initialization."""
-        logger.info("🎮 Starting arcade mode session...")
+        logger.info("🎮 ========== STARTING ARCADE MODE SESSION ==========")
+        logger.info(f"🎮 Current game state: {self.game_state.status}")
+        logger.info(f"🎮 Current level: {self.game_state.current_level}")
+        logger.info(f"🎮 Current account: {self.game_state.current_level_account_id}")
+        logger.info(f"🎮 Has game_map: {self.game_map is not None}")
+        logger.info(f"🎮 Zombie count: {len(self.zombies)}")
         
         # Start arcade manager
         self.arcade_manager.start_session()
+        logger.info(f"🎮 Arcade manager started. Is active: {self.arcade_manager.is_active()}")
         
         # Calculate initial zombie count based on level width
         if self.game_map:
             initial_count = self.arcade_manager.calculate_initial_zombie_count(self.game_map.map_width)
             logger.info(f"🎮 Arcade mode: {initial_count} zombies calculated for level width {self.game_map.map_width}")
+        else:
+            logger.warning("🎮 ⚠️  No game_map available for arcade mode!")
         
         # Spawn arcade power-ups
         if self.game_map:
@@ -1212,6 +1230,7 @@ class GameEngine:
         self.game_state.quest_message_timer = 3.0
         
         logger.info("✅ Arcade mode initialized successfully")
+        logger.info("🎮 ==================================================")
 
     def _show_arcade_results(self) -> None:
         """Show arcade mode results screen. Delegates to ArcadeResultsController."""
@@ -1668,10 +1687,15 @@ class GameEngine:
         if action == PauseMenuAction.RESUME:
             self.dismiss_message()
         elif action == PauseMenuAction.START_ARCADE:
-            logger.info("🎮 Starting arcade mode from pause menu...")
+            logger.info("🎮 ========== PAUSE MENU: Starting arcade mode ==========")
+            logger.info(f"🎮 Previous status: {self.game_state.previous_status}")
+            logger.info(f"🎮 Current status: {self.game_state.status}")
             self.game_state.congratulations_message = None
             self.game_state.status = self.game_state.previous_status
+            logger.info(f"🎮 Status restored to: {self.game_state.status}")
             self._start_arcade_mode()
+            logger.info(f"🎮 After start, arcade active: {self.arcade_manager.is_active()}")
+            logger.info("🎮 ========================================================")
         elif action == PauseMenuAction.RETURN_TO_LOBBY:
             if self.game_state.previous_status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
                 self.game_state.congratulations_message = None

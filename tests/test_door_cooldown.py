@@ -68,8 +68,8 @@ class TestDoorInteractionCooldown:
         # Return to lobby
         game_engine._return_to_lobby()
         
-        # Verify cooldown was set
-        assert game_engine.door_interaction_cooldown == 1.0
+        # Verify cooldown was set to 2.0 seconds (increased from 1.0 to prevent immediate re-entry)
+        assert game_engine.door_interaction_cooldown == 2.0
         assert game_engine.game_state.status == GameStatus.LOBBY
 
     def test_cooldown_decrements_during_lobby_update(self, game_engine):
@@ -140,11 +140,11 @@ class TestDoorInteractionCooldown:
         # First return
         game_engine.game_state.status = GameStatus.PLAYING
         game_engine._return_to_lobby()
-        assert game_engine.door_interaction_cooldown == 1.0
+        assert game_engine.door_interaction_cooldown == 2.0
         
         # Simulate time passing
         game_engine._update_lobby(0.5)
-        assert game_engine.door_interaction_cooldown == 0.5
+        assert game_engine.door_interaction_cooldown == 1.5
         
         # Enter level again (simulate)
         game_engine.game_state.status = GameStatus.PLAYING
@@ -152,8 +152,8 @@ class TestDoorInteractionCooldown:
         # Return to lobby again
         game_engine._return_to_lobby()
         
-        # Verify cooldown was reset to full 1.0 seconds
-        assert game_engine.door_interaction_cooldown == 1.0
+        # Verify cooldown was reset to full 2.0 seconds
+        assert game_engine.door_interaction_cooldown == 2.0
 
     def test_cooldown_prevents_immediate_sandbox_re_entry(self, game_engine):
         """Test the specific bug: returning from Sandbox doesn't immediately re-enter."""
@@ -188,18 +188,19 @@ class TestDoorCooldownIntegration:
         # Simulate being in a level
         game_engine.game_state.status = GameStatus.PLAYING
         game_engine.game_state.current_level_account_id = "577945324761"
-        
+
         # Show pause menu
         game_engine._show_pause_menu()
         assert game_engine.game_state.status == GameStatus.PAUSED
-        
-        # Select "Return to Lobby" option (index 1)
-        game_engine.pause_menu_selected_index = 1
+
+        # Select "Return to Lobby" option (index 2 when arcade option is included)
+        # Menu: ["Return to Game", "Arcade Mode", "Return to Lobby", ...]
+        game_engine.pause_menu_selected_index = 2
         game_engine._execute_pause_menu_option()
         
-        # Verify we're in lobby with cooldown
+        # Verify we're in lobby with cooldown (2.0 seconds to prevent immediate re-entry)
         assert game_engine.game_state.status == GameStatus.LOBBY
-        assert game_engine.door_interaction_cooldown == 1.0
+        assert game_engine.door_interaction_cooldown == 2.0
 
     def test_l_key_return_to_lobby_sets_cooldown(self, game_engine):
         """Test that L key return to lobby sets cooldown."""
@@ -210,9 +211,9 @@ class TestDoorCooldownIntegration:
         # Press L key to return to lobby
         game_engine._return_to_lobby()
         
-        # Verify we're in lobby with cooldown
+        # Verify we're in lobby with cooldown (2.0 seconds to prevent immediate re-entry)
         assert game_engine.game_state.status == GameStatus.LOBBY
-        assert game_engine.door_interaction_cooldown == 1.0
+        assert game_engine.door_interaction_cooldown == 2.0
 
     def test_select_button_return_to_lobby_sets_cooldown(self, game_engine):
         """Test that controller Select button return to lobby sets cooldown."""
@@ -223,9 +224,9 @@ class TestDoorCooldownIntegration:
         # Simulate Select button press (calls _return_to_lobby)
         game_engine._return_to_lobby()
         
-        # Verify we're in lobby with cooldown
+        # Verify we're in lobby with cooldown (2.0 seconds to prevent immediate re-entry)
         assert game_engine.game_state.status == GameStatus.LOBBY
-        assert game_engine.door_interaction_cooldown == 1.0
+        assert game_engine.door_interaction_cooldown == 2.0
 
 
 if __name__ == "__main__":
