@@ -46,7 +46,7 @@ python3 src/main.py
 
 **Action**: Walk up to the Sandbox door and press **SPACE** or **ENTER**
 
-**Expected**: 
+**Expected**:
 - Screen transitions to side-scrolling platformer view
 - You see zombies (unused identities)
 - Level name shows "MyHealth - Sandbox"
@@ -68,11 +68,11 @@ python3 src/main.py
   Quit Game
 ```
 
-**Action**: 
+**Action**:
 1. Use **Arrow Keys** to navigate to "🎮 Arcade Mode"
 2. Press **ENTER** to select
 
-**Expected**: 
+**Expected**:
 - Pause menu closes
 - 3-second countdown appears: "3... 2... 1... GO!"
 - Arcade mode starts
@@ -92,7 +92,7 @@ UP, UP, DOWN, DOWN, A, B
 - **A**: A key
 - **B**: B key
 
-**Expected**: 
+**Expected**:
 - Message appears: "🎮 ARCADE MODE ACTIVATED!"
 - 3-second countdown: "3... 2... 1... GO!"
 - Arcade mode starts
@@ -118,7 +118,7 @@ UP, UP, DOWN, DOWN, A, B
 3. **Combo Multiplier**: Get 5+ combo, see gold color and "1.5x" indicator
 4. **Power-ups**: Collect power-ups if they spawn
 5. **Dynamic Spawning**: Watch zombies respawn after 2 seconds
-6. **Timer Colors**: 
+6. **Timer Colors**:
    - White at 60-11 seconds
    - Orange at 10-6 seconds
    - Red at 5-0 seconds
@@ -203,13 +203,13 @@ What would you like to do?
 **Solution**: Make sure you're in the Sandbox level (MyHealth - Sandbox)
 
 ### Issue: Cheat code doesn't work
-**Solution**: 
+**Solution**:
 - Make sure you're in Sandbox level
 - Press keys in exact sequence: UP UP DOWN DOWN A B
 - Try using arrow keys instead of WASD
 
 ### Issue: No zombies spawning
-**Solution**: 
+**Solution**:
 - Check `.env` has valid Sonrai credentials
 - Try using UNLOCK cheat code first (type UNLOCK)
 - Verify Sandbox account has unused identities
@@ -221,7 +221,7 @@ What would you like to do?
 - Ensure all dependencies installed: `pip install -r requirements.txt`
 
 ### Issue: Timer not visible
-**Solution**: 
+**Solution**:
 - Check screen resolution (game designed for 1280x720)
 - Try fullscreen mode (F11)
 
