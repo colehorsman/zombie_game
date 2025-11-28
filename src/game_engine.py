@@ -42,6 +42,7 @@ from arcade_mode import ArcadeModeManager
 from combo_tracker import ComboTracker
 from pause_menu_controller import PauseMenuController, PauseMenuAction
 from arcade_results_controller import ArcadeResultsController, ArcadeResultsAction, ArcadeStatsSnapshot
+from cheat_code_controller import CheatCodeController, CheatCodeAction
 
 
 logger = logging.getLogger(__name__)
@@ -183,14 +184,9 @@ class GameEngine:
         self.last_autosave_time = 0.0  # Track last autosave for periodic saves
         self.autosave_interval = 30.0  # Autosave every 30 seconds
 
-        # Cheat code system
-        self.cheat_enabled = False  # All levels unlocked via cheat
-        self.cheat_buffer = []  # Track recent key presses for cheat detection
-        self.cheat_codes = {
-            'UNLOCK': [pygame.K_u, pygame.K_n, pygame.K_l, pygame.K_o, pygame.K_c, pygame.K_k],  # "UNLOCK"
-            'SKIP': [pygame.K_s, pygame.K_k, pygame.K_i, pygame.K_p],  # "SKIP"
-        }
-        
+        # Cheat code system - now managed by CheatCodeController
+        self.cheat_code_controller = CheatCodeController()
+
         # Door interaction cooldown (prevents immediate re-entry after returning to lobby)
         self.door_interaction_cooldown = 0.0  # Seconds remaining before doors can be entered
 
@@ -232,19 +228,6 @@ class GameEngine:
         self.showing_boss_dialogue = False
         self.boss_dialogue_content: Optional[dict] = None
         self.boss_dialogue_shown = False
-
-        # Konami code cheat (up up down down left right left right)
-        self.konami_code = [pygame.K_UP, pygame.K_UP, pygame.K_DOWN, pygame.K_DOWN,
-                           pygame.K_LEFT, pygame.K_RIGHT, pygame.K_LEFT, pygame.K_RIGHT]
-        self.konami_input = []  # Track current input sequence
-        self.konami_timeout = 2.0  # Reset sequence after 2 seconds of no input
-        self.last_konami_input_time = 0.0
-        
-        # Arcade mode cheat code (UP UP DOWN DOWN A B)
-        self.arcade_code = [pygame.K_UP, pygame.K_UP, pygame.K_DOWN, pygame.K_DOWN,
-                           pygame.K_a, pygame.K_b]
-        self.arcade_input = []  # Track arcade code input
-        self.last_arcade_input_time = 0.0
 
         # Pause menu (Zelda-style) - now managed by PauseMenuController
         self.pause_menu_controller = PauseMenuController()
@@ -1890,72 +1873,30 @@ class GameEngine:
                             self.dismiss_message()
                             continue
 
-                # Konami code detection (up up down down left right left right)
-                current_time = time.time()
-                if current_time - self.last_konami_input_time > self.konami_timeout:
-                    # Reset sequence if too much time passed
-                    self.konami_input = []
-                
-                self.last_konami_input_time = current_time
-                self.konami_input.append(event.key)
-                
-                # Keep only last 8 inputs
-                if len(self.konami_input) > 8:
-                    self.konami_input = self.konami_input[-8:]
+                # Cheat code detection - delegates to CheatCodeController
+                cheat_result = self.cheat_code_controller.process_key(event.key)
 
-                # Check for admin cheat codes (UNLOCK, SKIP)
-                self.cheat_buffer.append(event.key)
-                if len(self.cheat_buffer) > 6:  # Max cheat code length
-                    self.cheat_buffer = self.cheat_buffer[-6:]
-
-                # Check UNLOCK cheat (unlocks all levels)
-                if self.cheat_buffer == self.cheat_codes['UNLOCK']:
-                    self.cheat_enabled = True
-                    self.game_state.congratulations_message = "🔓 CHEAT ACTIVATED\n\nAll Levels Unlocked!\n\nPress ESC to continue"
-                    # Save current status before pausing
+                if cheat_result.action == CheatCodeAction.UNLOCK_ALL_LEVELS:
+                    self.game_state.congratulations_message = cheat_result.message
                     self.game_state.previous_status = self.game_state.status
                     self.game_state.status = GameStatus.PAUSED
-                    logger.info("🔓 CHEAT: All levels unlocked!")
-                    self.cheat_buffer = []
 
-                # Check SKIP cheat (skip current level)
-                if self.cheat_buffer == self.cheat_codes['SKIP']:
+                elif cheat_result.action == CheatCodeAction.SKIP_LEVEL:
                     if self.game_state.status == GameStatus.PLAYING and self.level_manager:
-                        # Mark current level as complete and return to lobby
                         current_level = self.level_manager.levels[self.level_manager.current_level_index]
                         logger.info(f"🔓 CHEAT: Skipping level {current_level.account_name}")
                         self._return_to_lobby(mark_completed=True)
-                    self.cheat_buffer = []
 
-                # Check if Konami code matches
-                if len(self.konami_input) >= 8:
-                    if self.konami_input[-8:] == self.konami_code:
-                        logger.info("🎮 KONAMI CODE ACTIVATED! Spawning boss...")
-                        self._spawn_boss()
-                        self.konami_input = []  # Reset
-                
-                # Arcade mode cheat code detection (UP UP DOWN DOWN A B)
-                if current_time - self.last_arcade_input_time > self.konami_timeout:
-                    self.arcade_input = []
-                
-                self.last_arcade_input_time = current_time
-                self.arcade_input.append(event.key)
-                
-                if len(self.arcade_input) > 6:
-                    self.arcade_input = self.arcade_input[-6:]
-                
-                # Check if arcade code matches
-                if len(self.arcade_input) >= 6:
-                    if self.arcade_input[-6:] == self.arcade_code:
-                        # Only activate in Sandbox account
-                        if self.game_state.status == GameStatus.PLAYING:
-                            if self.game_state.current_level_account_id == "577945324761":
-                                logger.info("🎮 ARCADE CODE ACTIVATED! Starting arcade mode...")
-                                self._start_arcade_mode()
-                                self.arcade_input = []
-                            else:
-                                logger.info("⚠️  Arcade mode only available in Sandbox account")
-                                self.arcade_input = []
+                elif cheat_result.action == CheatCodeAction.SPAWN_BOSS:
+                    self._spawn_boss()
+
+                elif cheat_result.action == CheatCodeAction.START_ARCADE:
+                    # Only activate in Sandbox account
+                    if self.game_state.status == GameStatus.PLAYING:
+                        if self.game_state.current_level_account_id == "577945324761":
+                            self._start_arcade_mode()
+                        else:
+                            logger.info("⚠️  Arcade mode only available in Sandbox account")
 
                 # Handle boss dialogue dismissal (ENTER key only)
                 if event.key == pygame.K_RETURN:
@@ -2352,6 +2293,20 @@ class GameEngine:
     def arcade_results_selected_index(self, value: int) -> None:
         """Set arcade results selected index. Backwards compatibility for ArcadeResultsController."""
         self.arcade_results_controller.selected_index = value
+
+    # Backwards compatibility property for cheat system (delegates to CheatCodeController)
+    @property
+    def cheat_enabled(self) -> bool:
+        """Get cheat unlock state. Backwards compatibility for CheatCodeController."""
+        return self.cheat_code_controller.unlock_enabled
+
+    @cheat_enabled.setter
+    def cheat_enabled(self, value: bool) -> None:
+        """Set cheat unlock state. Backwards compatibility for CheatCodeController."""
+        if value:
+            self.cheat_code_controller.enable_unlock()
+        else:
+            self.cheat_code_controller.disable_unlock()
 
     def distribute_zombies(self) -> None:
         """Distribute zombies across the level space."""
