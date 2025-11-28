@@ -253,16 +253,31 @@ The **Cloud Permissions Firewall** is Sonrai's real-time enforcement engine that
 
 ### Visual Branding
 
-**Sonrai Logo:**
-- Location: `assets/sonrai_logo.png`
-- Usage: Splash screen, about screen, documentation
-- Never modify or distort logo
-- Maintain clear space around logo
+**Sonrai Digital Assets:**
+- **Location:** `assets/` directory
+- **Available Logos:**
+  - `sonrai_logo.png` - Original Sonrai logo (86KB)
+  - `Sonrai logo_stacked_purple-black.png` - Stacked purple/black logo (178KB)
+
+**Logo Usage Guidelines:**
+- **Splash Screen:** Use stacked logo for prominent branding
+- **Pause Menu:** Add Sonrai logo for brand visibility (TASK: SONRAI-002)
+- **About Screen:** Display Sonrai attribution
+- **Documentation:** Use appropriate logo variant
+- **Never modify or distort logos**
+- **Maintain clear space around logos**
+
+**Current Implementation:**
+- ✅ Logo available in assets
+- ⏳ Splash screen integration (pending)
+- ⏳ Pause menu integration (pending - SONRAI-002)
+- ⏳ About screen integration (pending)
 
 **Color Palette:**
-- Primary: Sonrai brand colors
+- Primary: Sonrai brand colors (purple/black)
 - Purple shields: Represent Sonrai protection
 - Visual consistency with Sonrai platform
+- Use stacked logo for better brand recognition
 
 ---
 

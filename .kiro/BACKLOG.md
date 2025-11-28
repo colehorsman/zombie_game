@@ -1,7 +1,23 @@
 # Product Backlog - Sonrai Zombie Blaster
 
-**Last Updated**: 2025-11-24
-**Sprint**: Current Development Cycle
+**Last Updated**: 2024-11-28
+**Sprint**: Kiroween Submission Sprint (HARD DEADLINE: Dec 5, 2025)
+
+---
+
+## 📊 Current Status
+
+**Last Sync with ARB:** November 28, 2024
+**Overall Project Health:** 7.5/10 (13-agent weighted average)
+**ARB Report:** 53 total recommendations across 13 specialized agents
+
+**Priority Breakdown:**
+- **P0 Items:** 11 (40-52 hours) - INCLUDES KIROWEEN DEADLINE
+- **P1 Items:** 21 (103-129 hours)
+- **P2 Items:** 21 (72-91 hours)
+
+**Current Sprint:** Kiroween Submission (7 days remaining)
+**Sprint Goal:** Complete hackathon submission by Dec 5, 2025 @ 4:00pm CST
 
 ---
 
@@ -13,10 +29,447 @@
 
 ---
 
-## 🚀 Features
+## 🚨 P0 - CRITICAL (KIROWEEN SUBMISSION - DUE DEC 5, 2025)
+
+### Kiroween Submission Tasks (ABSOLUTE PRIORITY)
+
+#### KIRO-001: Create Evidence Directory
+- **Priority**: 🔴 P0 - CRITICAL
+- **Effort**: S (2-3 hours)
+- **Deadline**: Nov 28-29 (Days 1-2)
+- **Tasks**:
+  - [ ] Screenshot Kiro conversations showing vibe coding
+  - [ ] Document spec-driven development examples
+  - [ ] Capture hook configurations and automation
+  - [ ] Export MCP usage metrics
+  - [ ] Highlight 13-agent architecture review
+- **ARB Reference**: Kiroween Submission Agent Review
+
+#### KIRO-002: Write Comprehensive Kiro Usage Document
+- **Priority**: 🔴 P0 - CRITICAL
+- **Effort**: L (8-10 hours)
+- **Deadline**: Nov 30 - Dec 1 (Days 3-4)
+- **Tasks**:
+  - [ ] Vibe coding examples with before/after
+  - [ ] Spec-driven development workflow
+  - [ ] Agent hooks automation impact
+  - [ ] Steering documents effectiveness
+  - [ ] MCP integration benefits
+  - [ ] Multi-agent architecture review process
+- **ARB Reference**: Kiroween Submission Agent Review
+
+#### KIRO-003: Create 3-Minute Demo Video
+- **Priority**: 🔴 P0 - CRITICAL
+- **Effort**: L (10-12 hours)
+- **Deadline**: Dec 2-3 (Days 5-6)
+- **Tasks**:
+  - [ ] 0:00-0:30: Hook & problem statement
+  - [ ] 0:30-1:30: Gameplay demonstration
+  - [ ] 1:30-2:15: Kiro usage showcase (including ARB)
+  - [ ] 2:15-2:45: Impact & value proposition
+  - [ ] 2:45-3:00: Call to action
+- **ARB Reference**: Kiroween Submission Agent Review
+
+#### KIRO-004: Prepare Submission Package
+- **Priority**: 🔴 P0 - CRITICAL
+- **Effort**: M (4-6 hours)
+- **Deadline**: Dec 4-5 (Day 7)
+- **Tasks**:
+  - [ ] Verify all requirements met
+  - [ ] Test repository clone/setup
+  - [ ] Upload video to YouTube
+  - [ ] Write category justification
+  - [ ] Submit to Devpost
+- **ARB Reference**: Kiroween Submission Agent Review
+
+#### SONRAI-001: Rotate API Tokens Before Submission
+- **Priority**: 🔴 P0 - CRITICAL
+- **Effort**: S (1 hour)
+- **Deadline**: Before Dec 5, 2025
+- **Tasks**:
+  - [ ] Generate new token in Sonrai platform
+  - [ ] Update .env file
+  - [ ] Test connectivity
+  - [ ] Document rotation date
+- **ARB Reference**: Sonrai Integration Agent Review
+
+---
+
+## 🔴 P0 - CRITICAL (Other Critical Items)
+
+#### SEC-001: Audit API Error Handling
+- **Priority**: 🔴 P0
+- **Effort**: S (2-3 hours)
+- **Description**: Ensure API errors don't expose tokens
+- **ARB Reference**: Security Agent Review
+
+#### OPS-001: Document Deployment Process
+- **Priority**: 🔴 P0
+- **Effort**: S (2-3 hours)
+- **Description**: Create deployment documentation
+- **ARB Reference**: Operations/SRE Agent Review
+
+#### DEVEX-001: Create CONTRIBUTING.md
+- **Priority**: 🔴 P0
+- **Effort**: M (4-6 hours)
+- **Description**: Enable external contributions
+- **ARB Reference**: DevEx Agent Review
+
+#### DEVEX-002: Create TROUBLESHOOTING.md
+- **Priority**: 🔴 P0
+- **Effort**: M (3-4 hours)
+- **Description**: Help developers debug issues
+- **ARB Reference**: DevEx Agent Review
+
+#### UX-001: Add Interactive Tutorial
+- **Priority**: 🔴 P0
+- **Effort**: L (2-3 days)
+- **Description**: New players need guidance
+- **ARB Reference**: UX/Design Agent Review
+
+#### UX-002: Add Quest Objective UI
+- **Priority**: 🔴 P0
+- **Effort**: M (4-6 hours)
+- **Description**: Make quest goals clear
+- **ARB Reference**: UX/Design Agent Review
+
+---
+
+## 🟠 P1 - HIGH PRIORITY (Architecture, QA, Security, Operations, DevEx, UX, DevOps, Vision, PM, Sonrai)
+
+### Architecture Recommendations
+
+#### ARCH-001: Continue game_engine.py Refactoring
+- **Priority**: 🟠 P1
+- **Effort**: L (2-3 days)
+- **Description**: Extract PlayerController, ZombieController, CollisionController
+- **Goal**: Reduce from 1,500 lines to < 500 lines
+- **ARB Reference**: Architecture Agent Review
+
+#### ARCH-002: Implement Event Bus Pattern
+- **Priority**: 🟠 P1
+- **Effort**: M (6-8 hours)
+- **Description**: Create EventBus class, migrate quest triggers to pub/sub
+- **Benefit**: Easier to add new quests without modifying game_engine.py
+- **ARB Reference**: Architecture Agent Review
+
+### QA/Testing Recommendations
+
+#### QA-001: Reorganize Test Structure
+- **Priority**: 🟠 P1
+- **Effort**: M (4-6 hours)
+- **Description**: Move from flat structure to organized test directories
+- **ARB Reference**: QA/Testing Agent Review
+
+#### QA-002: Fix Failing Tests
+- **Priority**: 🟠 P1
+- **Effort**: M (6-8 hours)
+- **Description**: Investigate and fix failing tests
+- **ARB Reference**: QA/Testing Agent Review
+
+### Security Recommendations
+
+#### SEC-002: Add Request Timeouts
+- **Priority**: 🟠 P1
+- **Effort**: S (2-3 hours)
+- **Description**: Prevent hanging requests
+- **ARB Reference**: Security Agent Review
+
+#### SEC-003: Implement API Rate Limiting
+- **Priority**: 🟠 P1
+- **Effort**: M (4-6 hours)
+- **Description**: Protect against API abuse
+- **ARB Reference**: Security Agent Review
+
+### Operations Recommendations
+
+#### OPS-002: Add Error Tracking (Sentry)
+- **Priority**: 🟠 P1
+- **Effort**: M (4-6 hours)
+- **Description**: Monitor production errors
+- **ARB Reference**: Operations/SRE Agent Review
+
+#### OPS-003: Create Operational Runbooks
+- **Priority**: 🟠 P1
+- **Effort**: M (4-6 hours)
+- **Description**: Document operational procedures
+- **ARB Reference**: Operations/SRE Agent Review
+
+### DevEx Recommendations
+
+#### DEVEX-003: Add VS Code Configuration
+- **Priority**: 🟠 P1
+- **Effort**: S (1-2 hours)
+- **Description**: Provide IDE settings for developers
+- **ARB Reference**: DevEx Agent Review
+
+#### DEVEX-004: Optimize Setup Time
+- **Priority**: 🟠 P1
+- **Effort**: S (2-3 hours)
+- **Description**: Reduce time to first contribution
+- **ARB Reference**: DevEx Agent Review
+
+### UX/Design Recommendations
+
+#### UX-003: Add Visual Feedback
+- **Priority**: 🟠 P1
+- **Effort**: M (6-8 hours)
+- **Description**: Actions need confirmation feedback
+- **ARB Reference**: UX/Design Agent Review
+
+#### UX-004: Improve Text Contrast
+- **Priority**: 🟠 P1
+- **Effort**: S (2-3 hours)
+- **Description**: Text hard to read on some backgrounds
+- **ARB Reference**: UX/Design Agent Review
+
+### DevOps Recommendations
+
+#### DEVOPS-001: Add Deployment Pipeline
+- **Priority**: 🟠 P1
+- **Effort**: M (6-8 hours)
+- **Description**: Automate deployment process
+- **ARB Reference**: DevOps/Tools Agent Review
+
+#### DEVOPS-002: Add Release Artifacts
+- **Priority**: 🟠 P1
+- **Effort**: M (4-6 hours)
+- **Description**: Package releases properly
+- **ARB Reference**: DevOps/Tools Agent Review
+
+### Product Vision Recommendations
+
+#### VISION-001: Add Educational Tooltips
+- **Priority**: 🟠 P1
+- **Effort**: M (6-8 hours)
+- **Description**: Teach security concepts during gameplay
+- **ARB Reference**: Product Vision Agent Review
+
+#### VISION-002: Add Breach Story Interludes
+- **Priority**: 🟠 P1
+- **Effort**: M (4-6 hours)
+- **Description**: Show real-world security impact
+- **ARB Reference**: Product Vision Agent Review
+
+### Product Manager Recommendations
+
+#### PM-001: Migrate Backlog to GitHub Issues
+- **Priority**: 🟠 P1
+- **Effort**: M (4-6 hours)
+- **Description**: Track work in GitHub
+- **ARB Reference**: Product Manager Review
+
+#### PM-002: Add Sprint Tracking
+- **Priority**: 🟠 P1
+- **Effort**: S (2-3 hours)
+- **Description**: Monitor sprint progress
+- **ARB Reference**: Product Manager Review
+
+### Sonrai Integration Recommendations
+
+#### SONRAI-002: Add Sonrai Branding to Game
+- **Priority**: 🟠 P1
+- **Effort**: M (4-6 hours)
+- **Assets Available**:
+  - `assets/sonrai_logo.png` (86KB)
+  - `assets/Sonrai logo_stacked_purple-black.png` (178KB - recommended for pause menu)
+- **Tasks**:
+  - [ ] Add Sonrai stacked logo to pause menu (prominent placement)
+  - [ ] Add Sonrai logo to splash screen
+  - [ ] Add "Powered by Sonrai Security" to UI
+  - [ ] Add Sonrai attribution in about screen
+  - [ ] Ensure brand consistency and proper logo placement
+- **ARB Reference**: Sonrai Integration Agent Review
+- **Note**: Use stacked purple/black logo for better brand recognition
+
+#### SONRAI-003: Complete JIT Access Quest
+- **Priority**: 🟠 P1
+- **Effort**: L (8-10 hours)
+- **Tasks**:
+  - [ ] Finish design.md
+  - [ ] Create tasks.md
+  - [ ] Implement JIT permission grant workflow
+  - [ ] Integrate with real Sonrai JIT API
+- **ARB Reference**: Sonrai Integration Agent Review
+
+#### SONRAI-004: Document API Token Rotation Process
+- **Priority**: 🟠 P1
+- **Effort**: S (2-3 hours)
+- **Tasks**:
+  - [ ] Create rotation schedule
+  - [ ] Document rotation procedure
+  - [ ] Add to security documentation
+  - [ ] Set calendar reminders
+- **ARB Reference**: Sonrai Integration Agent Review
+
+---
+
+## 🟡 P2 - MEDIUM PRIORITY (Architecture, QA, Security, Operations, DevEx, UX, Documentation, DevOps, Standards, Vision, PM, Sonrai)
+
+### Architecture Recommendations
+
+#### ARCH-003: Extract Rendering Logic
+- **Priority**: 🟡 P2
+- **Effort**: M (4-6 hours)
+- **Description**: Separate rendering into rendering system
+- **ARB Reference**: Architecture Agent Review
+
+#### ARCH-004: Create QuestManager
+- **Priority**: 🟡 P2
+- **Effort**: M (6-8 hours)
+- **Description**: Centralize quest management
+- **ARB Reference**: Architecture Agent Review
+
+### QA/Testing Recommendations
+
+#### QA-003: Add Performance Benchmarks
+- **Priority**: 🟡 P2
+- **Effort**: S (2-3 hours)
+- **Description**: Track performance metrics
+- **ARB Reference**: QA/Testing Agent Review
+
+#### QA-004: Standardize Test Naming
+- **Priority**: 🟡 P2
+- **Effort**: S (2-3 hours)
+- **Description**: Consistent test naming conventions
+- **ARB Reference**: QA/Testing Agent Review
+
+### Security Recommendations
+
+#### SEC-004: Document Secret Rotation
+- **Priority**: 🟡 P2
+- **Effort**: S (1-2 hours)
+- **Description**: Create rotation schedule and process
+- **ARB Reference**: Security Agent Review
+
+### Operations Recommendations
+
+#### OPS-004: Add Performance Monitoring
+- **Priority**: 🟡 P2
+- **Effort**: M (6-8 hours)
+- **Description**: Track FPS, memory usage
+- **ARB Reference**: Operations/SRE Agent Review
+
+#### OPS-005: Implement Save File Backup
+- **Priority**: 🟡 P2
+- **Effort**: S (2-3 hours)
+- **Description**: Backup player progress
+- **ARB Reference**: Operations/SRE Agent Review
+
+### DevEx Recommendations
+
+#### DEVEX-005: Add Hot Reload
+- **Priority**: 🟡 P2
+- **Effort**: L (1-2 days)
+- **Description**: Faster development iteration
+- **ARB Reference**: DevEx Agent Review
+
+### UX/Design Recommendations
+
+#### UX-005: Add Colorblind Mode
+- **Priority**: 🟡 P2
+- **Effort**: M (4-6 hours)
+- **Description**: Accessibility improvement
+- **ARB Reference**: UX/Design Agent Review
+
+#### UX-006: Add Settings Menu
+- **Priority**: 🟡 P2
+- **Effort**: M (6-8 hours)
+- **Description**: Adjust volume, controls, etc.
+- **ARB Reference**: UX/Design Agent Review
+
+### Documentation Recommendations
+
+#### DOC-001: Consolidate re:Invent Docs
+- **Priority**: 🟡 P2
+- **Effort**: S (2-3 hours)
+- **Description**: Remove duplication
+- **ARB Reference**: Documentation Agent Review
+
+#### DOC-002: Add Documentation Navigation
+- **Priority**: 🟡 P2
+- **Effort**: S (1-2 hours)
+- **Description**: Improve docs discoverability
+- **ARB Reference**: Documentation Agent Review
+
+#### DOC-003: Add API Reference
+- **Priority**: 🟡 P2
+- **Effort**: M (4-6 hours)
+- **Description**: Complete API documentation
+- **ARB Reference**: Documentation Agent Review
+
+### DevOps Recommendations
+
+#### DEVOPS-003: Add Automated Changelog
+- **Priority**: 🟡 P2
+- **Effort**: S (2-3 hours)
+- **Description**: Generate changelog from commits
+- **ARB Reference**: DevOps/Tools Agent Review
+
+### Development Standards Recommendations
+
+#### STD-001: Add Commit Message Linting
+- **Priority**: 🟡 P2
+- **Effort**: S (1-2 hours)
+- **Description**: Enforce commit message format
+- **ARB Reference**: Development Standards Agent Review
+
+#### STD-002: Create PR Templates
+- **Priority**: 🟡 P2
+- **Effort**: S (1-2 hours)
+- **Description**: Standardize pull requests
+- **ARB Reference**: Development Standards Agent Review
+
+#### STD-003: Add Code Review Checklist
+- **Priority**: 🟡 P2
+- **Effort**: S (1 hour)
+- **Description**: Consistent code reviews
+- **ARB Reference**: Development Standards Agent Review
+
+### Product Vision Recommendations
+
+#### VISION-003: Implement Achievement System
+- **Priority**: 🟡 P2
+- **Effort**: L (1-2 days)
+- **Description**: Reward learning milestones
+- **ARB Reference**: Product Vision Agent Review
+
+### Product Manager Recommendations
+
+#### PM-003: Implement Velocity Tracking
+- **Priority**: 🟡 P2
+- **Effort**: S (2-3 hours)
+- **Description**: Measure team velocity
+- **ARB Reference**: Product Manager Review
+
+### Sonrai Integration Recommendations
+
+#### SONRAI-005: Enhance CPF Showcase
+- **Priority**: 🟡 P2
+- **Effort**: M (6-8 hours)
+- **Tasks**:
+  - [ ] Add educational tooltips about CPF
+  - [ ] Show CPF actions in real-time
+  - [ ] Highlight CPF value proposition
+  - [ ] Add CPF statistics to UI
+- **ARB Reference**: Sonrai Integration Agent Review
+
+#### SONRAI-006: Add Risk Scoring Integration
+- **Priority**: 🟡 P2
+- **Effort**: M (6-8 hours)
+- **Tasks**:
+  - [ ] Fetch Sonrai risk scores
+  - [ ] Use for difficulty scaling
+  - [ ] Display risk levels visually
+  - [ ] Tie to educational content
+- **ARB Reference**: Sonrai Integration Agent Review
+
+---
+
+## 🚀 Features (Original Backlog Items)
 
 ### Epic: Admin & Exemption Management System
-**Priority**: 🔴 P0 | **Status**: In Progress | **Sprint Goal**: TODAY
+**Priority**: 🟠 P1 | **Status**: In Progress
 
 #### F-001: Identify Admin Characters
 - **User Story**: As a player, I need to see which identities are admins so I can understand privilege levels
@@ -262,41 +715,97 @@
 
 ## 🎯 Current Sprint Goals
 
-### Sprint: Admin JIT & Visual Polish
-**Duration**: TBD
-**Goal**: Implement admin character identification, JIT access system, and key visual improvements
+### 🚨 IMMEDIATE: Kiroween Submission Sprint (7 days remaining)
+**Duration**: Nov 28 - Dec 5, 2025
+**Goal**: Complete hackathon submission by December 5, 2025 @ 4:00pm CST
+**HARD DEADLINE**: Dec 5, 2025 @ 4:00pm CST
 
-**Sprint Backlog**:
-1. 🔴 F-001: Identify Admin Characters
-2. 🔴 F-002: Just-In-Time (JIT) Access System
-3. 🔴 F-003: Purple Shield Effect for Exemption Characters
-4. 🔴 F-007: QA Agent Auto-Run Validation
-5. 🟠 F-004: Ray Gun Visual Asset Update
-6. 🟠 F-005: Pause Menu Redesign
-7. 🟠 QA-003: Cross-Level Functionality Verification
+**Sprint Backlog (ABSOLUTE PRIORITY)**:
+1. 🔴 KIRO-001: Create evidence directory (Days 1-2)
+2. 🔴 KIRO-002: Write comprehensive Kiro usage document (Days 3-4)
+3. 🔴 KIRO-003: Create 3-minute demo video (Days 5-6)
+4. 🔴 KIRO-004: Prepare submission package (Day 7)
+5. 🔴 SONRAI-001: Rotate API tokens before submission
 
 **Success Criteria**:
-- [ ] All admin characters identified and marked
-- [ ] JIT access can be applied and expires correctly
-- [ ] Purple shields display on exemptions with JIT
-- [ ] QA agent runs automatically on code changes
-- [ ] Ray gun looks like a real weapon
-- [ ] Pause menu is clean and functional
-- [ ] All levels tested and verified working
+- [ ] Evidence directory created with screenshots and examples
+- [ ] Comprehensive Kiro usage write-up complete
+- [ ] 3-minute demo video recorded and uploaded
+- [ ] Submission package ready and submitted to Devpost
+- [ ] API tokens rotated and documented
+- [ ] All Kiroween requirements met
+
+**Timeline**:
+- **Days 1-2 (Nov 28-29)**: Evidence collection
+- **Days 3-4 (Nov 30 - Dec 1)**: Content creation
+- **Days 5-6 (Dec 2-3)**: Video production
+- **Day 7 (Dec 4-5)**: Final submission
+
+---
+
+### Sprint 3: Developer Experience (AFTER Kiroween)
+**Duration**: 2 weeks
+**Goal**: Enable external contributions
+
+**Stories**: DEVEX-001, DEVEX-002, DEVEX-003, DEVEX-004, PM-001, PM-002, SEC-001, OPS-001
+
+### Sprint 4: Architecture & Quality (AFTER Kiroween)
+**Duration**: 2 weeks
+**Goal**: Improve code maintainability
+
+**Stories**: ARCH-001, ARCH-002, QA-001, QA-002, SEC-002, SEC-003, OPS-002, OPS-003
+
+### Sprint 5: UX & Polish (AFTER Kiroween)
+**Duration**: 2 weeks
+**Goal**: Improve player experience
+
+**Stories**: UX-001, UX-002, UX-003, UX-004, VISION-001, VISION-002, DEVOPS-001, DEVOPS-002
+
+### Sprint 6: Operations & Deployment (AFTER Kiroween)
+**Duration**: 2 weeks
+**Goal**: Production readiness
+
+**Stories**: ARCH-003, ARCH-004, QA-003, OPS-004, UX-005, UX-006, DOC-001, DOC-003
 
 ---
 
 ## 🗺️ Roadmap
 
-### Current Sprint (This Week)
-- Admin & Exemption Management System
-- Visual Polish (Ray Gun, Pause Menu, Hacker)
-- QA Infrastructure Validation
+### 🚨 IMMEDIATE: Kiroween Submission (7 days - HARD DEADLINE)
+**Goal**: Complete hackathon submission by Dec 5, 2025
+- Evidence collection (KIRO-001)
+- Kiro usage write-up (KIRO-002)
+- Demo video production (KIRO-003)
+- Submission package (KIRO-004)
+- API token rotation (SONRAI-001)
 
-### Next Sprint
-- Complete Game Enhancements Phase 2 (Protected Identities)
-- Service Protection Quest (Start Phase 1-3)
-- Documentation Agent
+### Sprint 3: Developer Experience (2 weeks - AFTER Kiroween)
+**Goal**: Enable external contributions
+- CONTRIBUTING.md, TROUBLESHOOTING.md
+- VS Code configuration
+- GitHub Issues migration
+- Security audit
+
+### Sprint 4: Architecture & Quality (2 weeks)
+**Goal**: Improve code maintainability
+- Refactor game_engine.py
+- Event Bus pattern
+- Test reorganization
+- API security improvements
+
+### Sprint 5: UX & Polish (2 weeks)
+**Goal**: Improve player experience
+- Interactive tutorial
+- Quest objective UI
+- Visual feedback
+- Educational tooltips
+
+### Sprint 6: Operations & Deployment (2 weeks)
+**Goal**: Production readiness
+- Deployment pipeline
+- Performance monitoring
+- Error tracking
+- Documentation improvements
 
 ### Future Sprints
 - Game Enhancements Phase 3-6 (Multi-level, Boss Battles, Scoring)
@@ -308,13 +817,21 @@
 
 ## 📊 Backlog Statistics
 
+**ARB Recommendations:**
+- **Total Recommendations**: 53 items from 13 specialized agents
+- **P0 Items**: 11 (40-52 hours) - INCLUDES KIROWEEN DEADLINE
+- **P1 Items**: 21 (103-129 hours)
+- **P2 Items**: 21 (72-91 hours)
+- **Total Estimated Effort**: 215-272 hours (5-7 sprints)
+
+**Original Features:**
 - **Total Features**: 9
 - **Total Bugs**: 1 known
 - **Total QA Tasks**: 3
 - **Total Technical Debt**: 2
-- **P0 Items**: 4
-- **P1 Items**: 5
 - **Completion**: ~60% core game, 20% enhancement features
+
+**Overall Project Health**: 7.5/10 (13-agent weighted average)
 
 ---
 
@@ -330,8 +847,22 @@
 
 ## 🔗 Related Documents
 
+### ARB & Planning
+- [Architecture Review Board Report](.kiro/ARCHITECTURE_REVIEW_BOARD_REPORT.md) - 13-agent comprehensive review
+- [Kiroween Submission](.kiro/KIROWEEN_SUBMISSION.md) - Hackathon submission details
+
+### Specs & Tasks
 - [Game Enhancements Tasks](.kiro/specs/game-enhancements/tasks.md)
 - [Service Protection Quest Tasks](.kiro/specs/service-protection-quest/tasks.md)
 - [JIT Access Quest Requirements](.kiro/specs/jit-access-quest/requirements.md)
+
+### QA & Testing
 - [QA Agent Guide](.kiro/QA_AGENT_GUIDE.md)
 - [QA Setup Status](.kiro/QA_SETUP_STATUS.md)
+
+### Steering Documents
+- [Kiroween Submission Agent](.kiro/steering/kiroween-submission-agent.md)
+- [Sonrai Integration Agent](.kiro/steering/sonrai-agent.md)
+- [Product Manager](.kiro/steering/product-manager.md)
+- [Architecture Agent](.kiro/steering/architecture-agent.md)
+- [All Steering Documents](.kiro/steering/)

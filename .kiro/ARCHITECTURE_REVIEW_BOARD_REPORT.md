@@ -490,10 +490,12 @@
 
 **P1 - High Priority:**
 2. **[SONRAI-002] Add Sonrai branding to game** (M: 4-6 hours)
+   - Add Sonrai stacked logo to pause menu
    - Add Sonrai logo to splash screen
    - Add "Powered by Sonrai Security" to UI
    - Add Sonrai attribution in about screen
-   - Ensure brand consistency
+   - Use assets: `Sonrai logo_stacked_purple-black.png` or `sonrai_logo.png`
+   - Ensure brand consistency and proper logo placement
 
 3. **[SONRAI-003] Complete JIT Access Quest** (L: 8-10 hours)
    - Finish design.md
