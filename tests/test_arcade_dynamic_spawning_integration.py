@@ -394,3 +394,220 @@ class TestSpawningLogging:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+
+class TestArcadeModeZombieVisibility:
+    """Tests for zombie visibility when entering arcade mode."""
+
+    def test_hidden_zombies_made_visible_on_arcade_start(self, mock_pygame, mock_api_client):
+        """Test that hidden zombies are made visible when arcade mode starts."""
+        # Create zombies
+        zombies = []
+        for i in range(10):
+            zombie = Zombie(
+                identity_id=f"zombie-{i}",
+                identity_name=f"TestZombie{i}",
+                position=Vector2(100 + i * 50, 400),
+                account="577945324761"
+            )
+            zombies.append(zombie)
+        
+        # Create game engine
+        engine = GameEngine(
+            api_client=mock_api_client,
+            zombies=zombies,
+            screen_width=1280,
+            screen_height=720,
+            use_map=True,
+            account_data={"577945324761": 10},
+            third_party_data={}
+        )
+        engine.start()
+        
+        # AFTER start(), zombies are visible in lobby (main branch behavior)
+        # Now manually hide some zombies to simulate quest completion or other scenarios
+        for i, zombie in enumerate(engine.zombies):
+            if i % 2 == 0:
+                zombie.is_hidden = True
+        
+        # Verify some zombies are hidden
+        hidden_count = sum(1 for z in engine.zombies if z.is_hidden)
+        assert hidden_count == 5, f"Expected 5 hidden zombies, got {hidden_count}"
+        
+        # Start arcade mode
+        with patch('arcade_mode.spawn_random_powerups', return_value=[]):
+            engine._start_arcade_mode()
+        
+        # Verify all zombies are now visible
+        hidden_count_after = sum(1 for z in engine.zombies if z.is_hidden)
+        assert hidden_count_after == 0, f"Expected 0 hidden zombies after arcade start, got {hidden_count_after}"
+        
+        # Verify all zombies are visible
+        for zombie in engine.zombies:
+            assert zombie.is_hidden is False, f"Zombie {zombie.identity_name} should be visible"
+
+    def test_arcade_start_logs_visibility_count(self, mock_pygame, mock_api_client, caplog):
+        """Test that arcade mode start logs how many zombies were made visible."""
+        import logging
+        caplog.set_level(logging.INFO)
+        
+        # Create zombies
+        zombies = []
+        for i in range(5):
+            zombie = Zombie(
+                identity_id=f"zombie-{i}",
+                identity_name=f"TestZombie{i}",
+                position=Vector2(100 + i * 50, 400),
+                account="577945324761"
+            )
+            zombies.append(zombie)
+        
+        # Create game engine
+        engine = GameEngine(
+            api_client=mock_api_client,
+            zombies=zombies,
+            screen_width=1280,
+            screen_height=720,
+            use_map=True,
+            account_data={"577945324761": 5},
+            third_party_data={}
+        )
+        engine.start()
+        
+        # Manually hide 3 zombies after start
+        for i in range(3):
+            engine.zombies[i].is_hidden = True
+        
+        # Start arcade mode
+        with patch('arcade_mode.spawn_random_powerups', return_value=[]):
+            engine._start_arcade_mode()
+        
+        # Verify log message
+        log_messages = [record.message for record in caplog.records]
+        visibility_logs = [msg for msg in log_messages if "Made" in msg and "zombies visible" in msg]
+        assert len(visibility_logs) > 0, "Should log visibility count"
+        assert "Made 3 zombies visible" in visibility_logs[0], f"Expected 'Made 3 zombies visible', got: {visibility_logs[0]}"
+
+    def test_arcade_start_with_no_hidden_zombies(self, mock_pygame, mock_api_client, caplog):
+        """Test arcade mode start when no zombies are hidden."""
+        import logging
+        caplog.set_level(logging.INFO)
+        
+        # Create zombies
+        zombies = []
+        for i in range(5):
+            zombie = Zombie(
+                identity_id=f"zombie-{i}",
+                identity_name=f"TestZombie{i}",
+                position=Vector2(100 + i * 50, 400),
+                account="577945324761"
+            )
+            zombies.append(zombie)
+        
+        # Create game engine
+        engine = GameEngine(
+            api_client=mock_api_client,
+            zombies=zombies,
+            screen_width=1280,
+            screen_height=720,
+            use_map=True,
+            account_data={"577945324761": 5},
+            third_party_data={}
+        )
+        engine.start()
+        
+        # All zombies are visible after start (no manual hiding)
+        
+        # Start arcade mode
+        with patch('arcade_mode.spawn_random_powerups', return_value=[]):
+            engine._start_arcade_mode()
+        
+        # Verify log shows 0 zombies made visible
+        log_messages = [record.message for record in caplog.records]
+        visibility_logs = [msg for msg in log_messages if "Made" in msg and "zombies visible" in msg]
+        assert len(visibility_logs) > 0, "Should log visibility count"
+        assert "Made 0 zombies visible" in visibility_logs[0], f"Expected 'Made 0 zombies visible', got: {visibility_logs[0]}"
+
+    def test_arcade_start_with_all_hidden_zombies(self, mock_pygame, mock_api_client):
+        """Test arcade mode start when all zombies are hidden."""
+        # Create zombies
+        zombies = []
+        for i in range(8):
+            zombie = Zombie(
+                identity_id=f"zombie-{i}",
+                identity_name=f"TestZombie{i}",
+                position=Vector2(100 + i * 50, 400),
+                account="577945324761"
+            )
+            zombies.append(zombie)
+        
+        # Create game engine
+        engine = GameEngine(
+            api_client=mock_api_client,
+            zombies=zombies,
+            screen_width=1280,
+            screen_height=720,
+            use_map=True,
+            account_data={"577945324761": 8},
+            third_party_data={}
+        )
+        engine.start()
+        
+        # Manually hide all zombies after start
+        for zombie in engine.zombies:
+            zombie.is_hidden = True
+        
+        # Verify all hidden
+        assert all(z.is_hidden for z in engine.zombies), "All zombies should be hidden"
+        
+        # Start arcade mode
+        with patch('arcade_mode.spawn_random_powerups', return_value=[]):
+            engine._start_arcade_mode()
+        
+        # Verify all visible after arcade start
+        assert all(not z.is_hidden for z in engine.zombies), "All zombies should be visible after arcade start"
+
+    def test_arcade_visibility_fix_prevents_empty_arcade_mode(self, mock_pygame, mock_api_client):
+        """Test that visibility fix prevents starting arcade mode with no visible zombies."""
+        # Create scenario where zombies might be hidden (e.g., after quest completion)
+        zombies = []
+        for i in range(15):
+            zombie = Zombie(
+                identity_id=f"zombie-{i}",
+                identity_name=f"TestZombie{i}",
+                position=Vector2(100 + i * 50, 400),
+                account="577945324761"
+            )
+            zombies.append(zombie)
+        
+        # Create game engine
+        engine = GameEngine(
+            api_client=mock_api_client,
+            zombies=zombies,
+            screen_width=1280,
+            screen_height=720,
+            use_map=True,
+            account_data={"577945324761": 15},
+            third_party_data={}
+        )
+        engine.start()
+        
+        # Manually hide all zombies after start (simulating quest completion)
+        for zombie in engine.zombies:
+            zombie.is_hidden = True
+        
+        # Verify all hidden before arcade start
+        visible_before = len([z for z in engine.zombies if not z.is_hidden])
+        assert visible_before == 0, "All zombies should be hidden before arcade start"
+        
+        # Start arcade mode
+        with patch('arcade_mode.spawn_random_powerups', return_value=[]):
+            engine._start_arcade_mode()
+        
+        # Verify zombies are now visible (arcade mode is playable)
+        visible_after = len([z for z in engine.zombies if not z.is_hidden])
+        assert visible_after == 15, "All zombies should be visible after arcade start"
+        
+        # Verify arcade mode is active and playable
+        assert engine.arcade_manager.is_active(), "Arcade mode should be active"

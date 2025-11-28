@@ -1224,9 +1224,9 @@ class Renderer:
         
         self.screen.blit(timer_surface, (timer_x, timer_y))
         
-        # Elimination count
+        # Quarantined count (consistent with normal mode terminology)
         elim_font = self.elim_font
-        elim_text = f"Eliminations: {arcade_state.eliminations_count}"
+        elim_text = f"Quarantined: {arcade_state.eliminations_count}"
         elim_surface = elim_font.render(elim_text, True, (255, 255, 255))
         self.screen.blit(elim_surface, (10, 10))
         
@@ -1291,10 +1291,140 @@ class Renderer:
 
     def render_message_bubble(self, message: str) -> None:
         """
-        Render a retro Game Boy-style message bubble.
+        Render a beautiful purple vertical menu or message bubble.
 
         Args:
             message: The message text to display
+        """
+        # Check if this is a pause menu (contains menu options with ▶)
+        is_menu = "▶" in message or ("Return to Game" in message and "Quit Game" in message)
+        
+        if is_menu:
+            self._render_purple_menu(message)
+        else:
+            self._render_message_box(message)
+    
+    def _render_purple_menu(self, message: str) -> None:
+        """
+        Render a beautiful purple vertical menu (Zelda-style).
+        
+        Args:
+            message: Menu text with options
+        """
+        # Purple color scheme
+        PURPLE_DARK = (60, 40, 80)      # Dark purple background
+        PURPLE_LIGHT = (120, 80, 160)   # Light purple border
+        PURPLE_GLOW = (180, 120, 240)   # Purple glow for selected
+        WHITE = (255, 255, 255)
+        GOLD = (255, 215, 0)
+        
+        # Parse menu lines
+        lines = message.split('\n')
+        
+        # Filter out empty lines and separators
+        menu_lines = []
+        title_lines = []
+        footer_lines = []
+        
+        in_menu = False
+        for line in lines:
+            stripped = line.strip()
+            if not stripped or stripped == '═══════════════════════════':
+                continue
+            
+            # Check if this is a menu option (has ▶ or starts with space)
+            if '▶' in line or (in_menu and (line.startswith('  ') or line.startswith('▶'))):
+                menu_lines.append(line)
+                in_menu = True
+            elif '↑' in line or '↓' in line or 'ENTER' in line or 'SPACE' in line or '=' in line.lower():
+                footer_lines.append(stripped)
+            elif not in_menu:
+                title_lines.append(stripped)
+        
+        # Menu dimensions
+        menu_width = 400
+        line_height = 40
+        padding = 30
+        title_height = len(title_lines) * 35 + 20 if title_lines else 0
+        menu_height = len(menu_lines) * line_height
+        footer_height = len(footer_lines) * 25 + 10 if footer_lines else 0
+        total_height = title_height + menu_height + footer_height + padding * 2
+        
+        # Center on screen
+        menu_x = (self.width - menu_width) // 2
+        menu_y = (self.height - total_height) // 2
+        
+        # Draw semi-transparent dark overlay
+        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        self.screen.blit(overlay, (0, 0))
+        
+        # Draw menu background (dark purple)
+        menu_rect = pygame.Rect(menu_x, menu_y, menu_width, total_height)
+        pygame.draw.rect(self.screen, PURPLE_DARK, menu_rect)
+        
+        # Draw glowing border (light purple)
+        pygame.draw.rect(self.screen, PURPLE_LIGHT, menu_rect, 4)
+        
+        # Inner glow effect
+        inner_rect = pygame.Rect(menu_x + 4, menu_y + 4, menu_width - 8, total_height - 8)
+        pygame.draw.rect(self.screen, PURPLE_GLOW, inner_rect, 2)
+        
+        # Render title
+        current_y = menu_y + padding
+        if title_lines:
+            for title_line in title_lines:
+                title_surface = self.name_font.render(title_line, True, GOLD)
+                title_x = menu_x + (menu_width - title_surface.get_width()) // 2
+                self.screen.blit(title_surface, (title_x, current_y))
+                current_y += 35
+            current_y += 10
+        
+        # Render menu options
+        for line in menu_lines:
+            is_selected = '▶' in line
+            
+            # Remove the arrow for rendering
+            display_text = line.replace('▶', '').strip()
+            
+            # Choose color based on selection
+            if is_selected:
+                text_color = PURPLE_GLOW
+                # Draw selection highlight
+                highlight_rect = pygame.Rect(menu_x + 20, current_y - 5, menu_width - 40, line_height - 10)
+                pygame.draw.rect(self.screen, (100, 60, 140), highlight_rect)
+                pygame.draw.rect(self.screen, PURPLE_GLOW, highlight_rect, 2)
+            else:
+                text_color = WHITE
+            
+            # Render text
+            text_surface = self.combo_font.render(display_text, True, text_color)
+            text_x = menu_x + (menu_width - text_surface.get_width()) // 2
+            self.screen.blit(text_surface, (text_x, current_y))
+            
+            # Draw arrow for selected item
+            if is_selected:
+                arrow_surface = self.combo_font.render('▶', True, GOLD)
+                arrow_x = text_x - arrow_surface.get_width() - 10
+                self.screen.blit(arrow_surface, (arrow_x, current_y))
+            
+            current_y += line_height
+        
+        # Render footer (controls)
+        if footer_lines:
+            current_y += 10
+            for footer_line in footer_lines:
+                footer_surface = self.small_font.render(footer_line, True, (180, 180, 180))
+                footer_x = menu_x + (menu_width - footer_surface.get_width()) // 2
+                self.screen.blit(footer_surface, (footer_x, current_y))
+                current_y += 25
+    
+    def _render_message_box(self, message: str) -> None:
+        """
+        Render a traditional message box (for non-menu messages).
+        
+        Args:
+            message: Message text to display
         """
         # Calculate bubble dimensions
         padding = 20

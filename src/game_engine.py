@@ -713,24 +713,27 @@ class GameEngine:
             if self.game_state.resource_message_timer <= 0:
                 self.game_state.resource_message = None
 
-        # Update arcade mode if active
-        if self.arcade_manager.is_active():
-            logger.debug(f"🎮 Arcade mode is active, updating...")
-            self._update_arcade_mode(delta_time)
-            # Sync arcade state to game state for rendering
-            self.game_state.arcade_mode = self.arcade_manager.get_state()
-        else:
-            self.game_state.arcade_mode = None
-
         # Handle different game states
         if self.game_state.status == GameStatus.LOBBY:
             self._update_lobby(delta_time)
         elif self.game_state.status == GameStatus.PLAYING:
             self._update_playing(delta_time)  # LEVEL mode (platformer)
+            
+            # Update arcade mode if active (only during PLAYING, not during PAUSED)
+            if self.arcade_manager.is_active():
+                logger.debug(f"🎮 Arcade mode is active, updating...")
+                self._update_arcade_mode(delta_time)
+                # Sync arcade state to game state for rendering
+                self.game_state.arcade_mode = self.arcade_manager.get_state()
+            else:
+                self.game_state.arcade_mode = None
         elif self.game_state.status == GameStatus.BOSS_BATTLE:
             self._update_boss_battle(delta_time)
         elif self.game_state.status == GameStatus.PAUSED:
-            # Game is paused, don't update entities
+            # Game is paused, don't update entities or arcade timer
+            # Keep arcade state synced for rendering (shows paused timer)
+            if self.arcade_manager.is_active():
+                self.game_state.arcade_mode = self.arcade_manager.get_state()
             pass
 
     def _update_lobby(self, delta_time: float) -> None:
@@ -1207,6 +1210,14 @@ class GameEngine:
         self.arcade_manager.start_session()
         logger.info(f"🎮 Arcade manager started. Is active: {self.arcade_manager.is_active()}")
         
+        # Make all zombies visible for arcade mode
+        visible_count = 0
+        for zombie in self.zombies:
+            if zombie.is_hidden:
+                zombie.is_hidden = False
+                visible_count += 1
+        logger.info(f"🎮 Made {visible_count} zombies visible for arcade mode")
+        
         # Calculate initial zombie count based on level width
         if self.game_map:
             initial_count = self.arcade_manager.calculate_initial_zombie_count(self.game_map.map_width)
@@ -1225,9 +1236,9 @@ class GameEngine:
             self.powerups.extend(arcade_powerups)
             logger.info(f"🎁 Spawned {len(arcade_powerups)} arcade power-ups")
         
-        # Show confirmation message
-        self.game_state.quest_message = "🎮 ARCADE MODE ACTIVATED!\n\nEliminate as many zombies as possible in 60 seconds!"
-        self.game_state.quest_message_timer = 3.0
+        # Show confirmation message (use resource_message to avoid blocking shooting)
+        self.game_state.resource_message = "🎮 ARCADE MODE ACTIVATED!\n\nEliminate as many zombies as possible in 60 seconds!"
+        self.game_state.resource_message_timer = 3.0
         
         logger.info("✅ Arcade mode initialized successfully")
         logger.info("🎮 ==================================================")
@@ -1676,12 +1687,15 @@ class GameEngine:
 
     def _navigate_pause_menu(self, direction: int) -> None:
         """Navigate the pause menu. Delegates to PauseMenuController."""
+        logger.info(f"🎮 _navigate_pause_menu called with direction={direction}")
         self.pause_menu_controller.navigate(direction)
         # Update the menu display
         self.game_state.congratulations_message = self._build_pause_menu_message()
+        logger.info(f"🎮 After navigation: selected_index={self.pause_menu_controller.selected_index}, option='{self.pause_menu_controller.get_selected_option()}'")
 
     def _execute_pause_menu_option(self) -> None:
         """Execute the selected pause menu option. Delegates to PauseMenuController."""
+        logger.info(f"🎮 _execute_pause_menu_option called: selected_index={self.pause_menu_controller.selected_index}")
         action = self.pause_menu_controller.select()
 
         if action == PauseMenuAction.RESUME:
@@ -2094,6 +2108,7 @@ class GameEngine:
 
         # Handle continuous movement
         # LOBBY MODE: Top-down movement (4-directional)
+        # Skip continuous movement if paused (prevents interference with menu navigation)
         if self.game_state.status == GameStatus.LOBBY:
             # Check keyboard input
             keyboard_left = pygame.K_LEFT in self.keys_pressed or pygame.K_a in self.keys_pressed
