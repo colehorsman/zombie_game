@@ -15,7 +15,8 @@
       "Bash(tee:*)",
       "Bash(find:*)",
       "Bash(md5sum:*)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

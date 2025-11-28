@@ -40,6 +40,7 @@ from jit_access_quest import Auditor, AdminRole, create_jit_quest_entities
 from models import JitQuestState, PermissionSet
 from arcade_mode import ArcadeModeManager
 from combo_tracker import ComboTracker
+from pause_menu_controller import PauseMenuController, PauseMenuAction
 
 
 logger = logging.getLogger(__name__)
@@ -244,18 +245,18 @@ class GameEngine:
         self.arcade_input = []  # Track arcade code input
         self.last_arcade_input_time = 0.0
 
-        # Pause menu (Zelda-style)
-        self.pause_menu_options = ["Return to Game", "Return to Lobby", "Save Game", "Quit Game"]
-        self.pause_menu_selected_index = 0
-        
+        # Pause menu (Zelda-style) - now managed by PauseMenuController
+        self.pause_menu_controller = PauseMenuController()
+
         # Arcade results menu
         self.arcade_results_options = []
         self.arcade_results_selected_index = 0
-        
+
         # Controller button labels for 8BitDo SN30 Pro
+        # Note: PauseMenuController has its own copy, but keeping this for backwards compatibility
         self.controller_labels = {
             "confirm": "A",
-            "back": "B", 
+            "back": "B",
             "pause": "Start",
             "lobby": "Select",
             "up": "D-Pad ↑",
@@ -1733,110 +1734,56 @@ class GameEngine:
         self._block_third_party(third_party)
 
     def _show_pause_menu(self) -> None:
-        """Show Zelda-style pause menu with options."""
-        # Add arcade mode option if in Sandbox account
-        base_options = ["Return to Game", "Return to Lobby", "Save Game", "Quit Game"]
-        
-        if (self.game_state.status == GameStatus.PLAYING and 
+        """Show Zelda-style pause menu with options. Delegates to PauseMenuController."""
+        # Determine if arcade mode option should be shown
+        include_arcade = (
+            self.game_state.status == GameStatus.PLAYING and
             self.game_state.current_level_account_id == "577945324761" and
-            not self.arcade_manager.is_active()):
-            # Insert arcade mode option after "Return to Game"
-            self.pause_menu_options = ["Return to Game", "🎮 Arcade Mode", "Return to Lobby", "Save Game", "Quit Game"]
-        else:
-            self.pause_menu_options = base_options
-        
-        # Reset menu selection to first option
-        self.pause_menu_selected_index = 0
-        logger.info(f"⏸️  Pause menu initialized - selection index: {self.pause_menu_selected_index}")
+            not self.arcade_manager.is_active()
+        )
 
-        # Build pause menu message
-        pause_message = self._build_pause_menu_message()
+        # Show the menu via controller
+        self.pause_menu_controller.show(include_arcade_option=include_arcade)
 
-        # Set pause state
-        self.game_state.congratulations_message = pause_message
+        # Build and set the pause message
+        self.game_state.congratulations_message = self._build_pause_menu_message()
         self.game_state.previous_status = self.game_state.status
         self.game_state.status = GameStatus.PAUSED
         logger.info("⏸️  Game paused - showing menu")
 
     def _build_pause_menu_message(self) -> str:
-        """Build the pause menu message with current selection highlighted."""
-        menu_message = "⏸️  PAUSED\n\n"
-
-        for i, option in enumerate(self.pause_menu_options):
-            if i == self.pause_menu_selected_index:
-                # Highlight selected option with arrow
-                menu_message += f"▶ {option}\n"
-            else:
-                # Unselected option
-                menu_message += f"  {option}\n"
-
-        # Add controller/keyboard instructions
-        if self.joystick:
-            # Controller connected - show controller buttons
-            menu_message += f"\n{self.controller_labels['up']}/{self.controller_labels['down']} = Select"
-            menu_message += f"\n{self.controller_labels['confirm']} = Confirm"
-            menu_message += f"\n{self.controller_labels['back']} = Cancel"
-            menu_message += f"\n{self.controller_labels['lobby']} = Quick Lobby"
-        else:
-            # Keyboard only
-            menu_message += "\n↑↓ = Select, ENTER = Confirm, ESC = Cancel"
-            menu_message += "\nL = Quick Return to Lobby"
-        
-        return menu_message
+        """Build the pause menu message. Delegates to PauseMenuController."""
+        return self.pause_menu_controller.build_message(has_controller=self.joystick is not None)
 
     def _navigate_pause_menu(self, direction: int) -> None:
-        """
-        Navigate the pause menu up or down.
-
-        Args:
-            direction: -1 for up, 1 for down
-        """
-        old_index = self.pause_menu_selected_index
-        self.pause_menu_selected_index = (self.pause_menu_selected_index + direction) % len(self.pause_menu_options)
+        """Navigate the pause menu. Delegates to PauseMenuController."""
+        self.pause_menu_controller.navigate(direction)
         # Update the menu display
         self.game_state.congratulations_message = self._build_pause_menu_message()
-        logger.info(f"Menu navigation: {old_index} → {self.pause_menu_selected_index} ({self.pause_menu_options[self.pause_menu_selected_index]})")
 
     def _execute_pause_menu_option(self) -> None:
-        """Execute the currently selected pause menu option."""
-        selected_option = self.pause_menu_options[self.pause_menu_selected_index]
-        logger.info(f"Executing menu option: {selected_option} (index: {self.pause_menu_selected_index})")
+        """Execute the selected pause menu option. Delegates to PauseMenuController."""
+        action = self.pause_menu_controller.select()
 
-        if selected_option == "Return to Game":
-            # Resume the game
+        if action == PauseMenuAction.RESUME:
             self.dismiss_message()
-        elif selected_option == "🎮 Arcade Mode":
-            # Start arcade mode
+        elif action == PauseMenuAction.START_ARCADE:
             logger.info("🎮 Starting arcade mode from pause menu...")
             self.game_state.congratulations_message = None
             self.game_state.status = self.game_state.previous_status
             self._start_arcade_mode()
-        elif selected_option == "Return to Lobby":
-            # Return to lobby (only if in a level)
+        elif action == PauseMenuAction.RETURN_TO_LOBBY:
             if self.game_state.previous_status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
                 self.game_state.congratulations_message = None
-                # Don't restore status here - let _return_to_lobby() handle it
                 self._return_to_lobby()
             else:
-                # Already in lobby, just resume
                 self.dismiss_message()
-        elif selected_option == "Save Game":
-            # Save the game
+        elif action == PauseMenuAction.SAVE_GAME:
             self._save_game()
-            # Show brief confirmation in the menu
             logger.info("✅ Game saved from pause menu")
-            # Rebuild menu with save confirmation
-            menu_message = "⏸️  PAUSED\\n\\n"
-            menu_message += "✅ Game Saved!\\n\\n"
-            for i, option in enumerate(self.pause_menu_options):
-                if i == self.pause_menu_selected_index:
-                    menu_message += f"▶ {option}\\n"
-                else:
-                    menu_message += f"  {option}\\n"
-            menu_message += "\\nUse ↑↓ to select, ENTER to confirm"
-            self.game_state.congratulations_message = menu_message
-        elif selected_option == "Quit Game":
-            # Save and quit
+            # Update display with save confirmation (controller already set the flag)
+            self.game_state.congratulations_message = self._build_pause_menu_message()
+        elif action == PauseMenuAction.QUIT_GAME:
             logger.info("Saving game before quit...")
             self._save_game()
             self.running = False
@@ -2445,6 +2392,27 @@ class GameEngine:
     def get_scroll_offset(self) -> float:
         """Get the current scroll offset."""
         return self.scroll_offset
+
+    # Backwards compatibility properties for pause menu (delegates to PauseMenuController)
+    @property
+    def pause_menu_options(self) -> List[str]:
+        """Get pause menu options. Backwards compatibility for PauseMenuController."""
+        return self.pause_menu_controller.options
+
+    @pause_menu_options.setter
+    def pause_menu_options(self, value: List[str]) -> None:
+        """Set pause menu options. Backwards compatibility for PauseMenuController."""
+        self.pause_menu_controller.options = value
+
+    @property
+    def pause_menu_selected_index(self) -> int:
+        """Get pause menu selected index. Backwards compatibility for PauseMenuController."""
+        return self.pause_menu_controller.selected_index
+
+    @pause_menu_selected_index.setter
+    def pause_menu_selected_index(self, value: int) -> None:
+        """Set pause menu selected index. Backwards compatibility for PauseMenuController."""
+        self.pause_menu_controller.selected_index = value
 
     def distribute_zombies(self) -> None:
         """Distribute zombies across the level space."""
