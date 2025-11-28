@@ -282,3 +282,129 @@ def render_message_bubble(self, message: str) -> None:
 2. Test with controller
 3. Document changes
 4. Update test results
+
+
+### BUG-007: WannaCry Message Box Ugly and Too Verbose
+**Severity:** P1
+**Component:** Renderer / UI
+**Description:** WannaCry boss message uses ugly white box instead of purple theme, text too long
+**User Feedback:** "wanna crry message box is ugly and should be more brief with the purple menu background like pause menu"
+**Impact:** Inconsistent visual style, poor UX
+
+**Current:** White box with long text
+**Desired:** Purple menu style, brief message
+
+**Fix:**
+```python
+# In game_engine.py where WannaCry message is created:
+# Make message brief
+message = "💀 WANNACRY DETECTED!\n\nRansomware boss incoming!\n\nPress ENTER/A to continue"
+
+# In renderer.py render_message_bubble:
+# Force purple theme for boss messages
+is_boss_message = "WANNACRY" in message or "BOSS" in message
+if is_boss_message or is_challenge or is_menu:
+    self._render_purple_menu(message)
+```
+
+---
+
+### BUG-008: Controller A Button Doesn't Dismiss Messages
+**Severity:** P0
+**Component:** Input System
+**Description:** Message says "Press ENTER to continue" but controller A button doesn't work
+**User Feedback:** "controller cant dismiss the wannacry message because it says press enter to continue but a doesnt work"
+**Impact:** Controller users stuck on message screens
+
+**Root Cause:** A button (0) only dismisses messages in specific game states, not universally
+
+**Fix:**
+```python
+# In game_engine.py controller input handling (around line 2350):
+# A button should universally dismiss messages like ENTER
+
+if event.button == 0:
+    # Universal message dismissal (like ENTER key) - PRIORITY
+    if self.game_state.congratulations_message:
+        self.dismiss_message()
+        continue  # Don't process other A button actions
+    # ... rest of A button actions (shooting, etc.)
+```
+
+**Also update all message text:**
+- Change "Press ENTER to continue" → "Press ENTER/A to continue"
+- Change "Press SPACE to continue" → "Press SPACE/A to continue"
+
+---
+
+### ENHANCEMENT-002: Standardize A Button = ENTER Throughout Game
+**Severity:** P1
+**Component:** Input System
+**Description:** Make controller A button consistently work like ENTER key everywhere
+**User Feedback:** "any menu or controller mapping for the A key should match the enter key... make it consistent throughout the game, make sure the A button as enter wont cause issues elsewhere"
+**Impact:** Better controller UX, consistency
+
+**Areas to Check:**
+1. ✅ Message dismissal (all message types) - BUG-008
+2. Menu confirmation (pause menu, arcade results)
+3. Dialog boxes (quest dialogs, boss messages)
+4. Level entry (door interaction)
+5. Any "Press ENTER" prompts
+
+**Implementation Strategy:**
+```python
+# Create helper method in GameEngine:
+def _is_confirm_button(self, event) -> bool:
+    """Check if event is a confirm action (ENTER or A button)."""
+    if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+        return True
+    if event.type == pygame.JOYBUTTONDOWN and event.button == 0:
+        return True
+    return False
+
+# Use throughout codebase
+if self._is_confirm_button(event):
+    # Handle confirmation
+```
+
+**Potential Issues to Avoid:**
+- A button shoots projectiles - ensure message dismissal takes priority ✅
+- A button in menus vs gameplay - context matters
+- Don't break existing shooting mechanics
+
+**Solution:** Process message dismissal FIRST with `continue` to prevent other actions
+
+---
+
+## Updated Implementation Priority
+
+### Phase 1: Critical Fixes (Today)
+1. ✅ BUG-001: Fix controller pause button behavior - FIXED
+2. ✅ BUG-002: Add controller Konami code support - FIXED
+3. 🔄 BUG-008: Controller A button message dismissal - IN PROGRESS
+4. BUG-003: Fix pause menu text rendering
+
+### Phase 2: Polish (Tomorrow)
+5. BUG-007: WannaCry message styling (purple theme + brief)
+6. ENHANCEMENT-002: Standardize A=ENTER throughout
+7. BUG-004: Add Sonrai logo to pause menu
+8. BUG-005: Fix pause icon display
+9. BUG-006: Fix health regeneration
+10. ENHANCEMENT-001: Purple theme for all challenge messages
+
+### Phase 3: Testing (Day 3)
+11. TEST-001: Test all levels
+12. TEST-002: Document arcade mode access
+13. Full regression testing with controller
+
+---
+
+## Testing Checklist After New Fixes
+
+- [ ] Controller A button dismisses all messages
+- [ ] WannaCry message uses purple theme
+- [ ] WannaCry message is brief and clear
+- [ ] A button doesn't interfere with shooting
+- [ ] A button works in all menus
+- [ ] All "Press ENTER" text updated to "Press ENTER/A"
+- [ ] Controller UX feels consistent

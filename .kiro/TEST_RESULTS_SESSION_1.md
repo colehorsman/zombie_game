@@ -27,6 +27,15 @@
 
 ### P0 - Critical (Blocks Demo)
 
+#### BUG-008: Controller A Button Doesn't Dismiss Messages
+**Severity:** P0
+**Status:** ✅ FIXED
+**Description:** Controller A button didn't work to dismiss messages (WannaCry, etc.)
+**Fix:** Made A button universally dismiss messages like ENTER key
+**Testing:** Ready for retest
+
+---
+
 #### BUG-001: Controller Pause Button Behavior
 **Severity:** P0
 **Component:** Input System

@@ -2342,15 +2342,15 @@ class GameEngine:
                                 self.dismiss_message()
                                 continue
 
-                    # A button (0) - Fire (works in all modes) OR dismiss messages
+                    # A button (0) - Universal message dismissal (like ENTER) OR Fire
                     if event.button == 0:
-                        # If there's a message showing, dismiss it
-                        if (
-                            self.game_state.status == GameStatus.PAUSED
-                            and self.game_state.congratulations_message
-                        ):
+                        # PRIORITY: Universal message dismissal (works like ENTER key)
+                        if self.game_state.congratulations_message:
                             self.dismiss_message()
-                        elif self.game_state.status in (
+                            continue  # Don't process other A button actions
+                        
+                        # If no message, A button fires projectile
+                        if self.game_state.status in (
                             GameStatus.LOBBY,
                             GameStatus.PLAYING,
                             GameStatus.BOSS_BATTLE,
