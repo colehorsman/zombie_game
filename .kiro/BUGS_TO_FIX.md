@@ -408,3 +408,87 @@ if self._is_confirm_button(event):
 - [ ] A button works in all menus
 - [ ] All "Press ENTER" text updated to "Press ENTER/A"
 - [ ] Controller UX feels consistent
+
+
+### BUG-009: Start Button Doesn't Pause During Boss Battle
+**Severity:** P0
+**Component:** Input System / Boss Battle
+**Description:** Controller Start button doesn't pause when facing boss in MyHealth Sandbox
+**User Feedback:** "the start button doesnt pause when im facing the boss in the myhealth sandbox account"
+**Impact:** Can't pause during boss fights with controller
+
+**Investigation Status:** Code looks correct, BOSS_BATTLE is included in pause condition
+
+**Current Code (line ~2400):** ✅ Correct
+```python
+elif event.button == 7:
+    if self.game_state.status == GameStatus.PAUSED:
+        self.dismiss_message()
+    elif self.game_state.status in (
+        GameStatus.PLAYING,
+        GameStatus.BOSS_BATTLE,  # ✅ This IS included
+    ):
+        self._show_pause_menu()
+```
+
+**Possible Causes:**
+1. **Boss dialogue blocking input** - If boss dialogue is showing, might intercept Start button
+2. **Event handling order** - Boss dialogue might consume event before pause check
+3. **Game state not actually BOSS_BATTLE** - Might still be PLAYING during boss fight
+4. **Controller event not reaching handler** - Some other code consuming the event
+
+**Next Steps:**
+1. Add logging to confirm game state during boss battle
+2. Add logging when Start button pressed
+3. Check if boss dialogue is active when Start pressed
+4. Test with keyboard ESC key - does that work?
+
+**Temporary Workaround:** Use keyboard ESC key to pause during boss battle
+
+---
+
+### BUG-010: WannaCry Flash Doesn't Damage Player
+**Severity:** P1
+**Component:** Boss Battle / Combat System
+**Description:** WannaCry flash attack should damage player (1 heart) but does nothing
+**User Feedback:** "when the wannacry flash happens it should impact my health one heart but it doesnt do anything"
+**Impact:** Boss fight too easy, no challenge
+
+**Root Cause Found:** ❌ **NO BOSS-TO-PLAYER COLLISION DETECTION IMPLEMENTED**
+- Boss can take damage from player projectiles ✅
+- Player CANNOT take damage from boss ❌
+- No collision detection between boss and player
+- Boss has no attack methods that damage player
+
+**Expected Behavior:**
+- WannaCry flash attack hits player
+- Player loses 1 health (1 heart)
+- Visual feedback (player flashes red)
+- Invincibility frames after hit
+
+**Implementation Needed:**
+```python
+# In game_engine.py _update_boss_battle method, add:
+
+# Check boss-to-player collision
+if self.boss and not self.boss.is_defeated:
+    boss_bounds = self.boss.get_bounds()
+    player_bounds = self.player.get_bounds()
+    
+    if boss_bounds.colliderect(player_bounds):
+        # Boss touching player - deal damage
+        if not self.player.is_invincible():
+            self.player.take_damage(1)  # 1 heart damage
+            logger.info("💔 Player hit by boss!")
+            
+            # Optional: Knockback effect
+            # Push player away from boss
+```
+
+**Also need to implement:**
+1. Player invincibility frames (0.5-1 second after hit)
+2. Player visual feedback (flash red when hit)
+3. Boss attack patterns (not just collision damage)
+4. WannaCry specific "flash" attack with area of effect
+
+---
