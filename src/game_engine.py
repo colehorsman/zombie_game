@@ -1839,10 +1839,10 @@ class GameEngine:
         if self.arcade_manager.is_active():
             state = self.arcade_manager.get_state()
             if state.eliminations_count > 0:
-                # Reduce elimination count by 1
-                self.arcade_manager.combo_tracker.eliminations -= 1
+                # Reduce elimination count by 1 (penalty for getting hit)
+                self.arcade_manager.arcade_state.eliminations_count -= 1
                 logger.info(
-                    f"🎮 ARCADE: -1 elimination! Count: {self.arcade_manager.combo_tracker.eliminations}"
+                    f"🎮 ARCADE: -1 elimination penalty! Count: {self.arcade_manager.arcade_state.eliminations_count}"
                 )
             return
 

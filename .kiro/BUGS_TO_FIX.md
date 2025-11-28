@@ -631,3 +631,33 @@ def _show_game_over_screen(self):
 - [ ] All messages dismissible with A button
 
 ---
+
+
+### BUG-012: Arcade Mode Crash When Player Takes Damage
+**Severity:** P0 - CRITICAL CRASH
+**Component:** Arcade Mode / Damage System
+**Description:** Game crashes when player gets hit by zombie in arcade mode
+**User Feedback:** "i was in arcade mode just now, started the challenge zapped a zombie got hit by a zombie and the game crashed"
+**Impact:** Arcade mode unplayable
+
+**Error:**
+```
+AttributeError: 'ComboTracker' object has no attribute 'eliminations'
+File: src/game_engine.py, line 1843
+```
+
+**Root Cause:** ✅ FOUND
+Code tried to access `combo_tracker.eliminations` but should access `arcade_state.eliminations_count`
+
+**Fix:** ✅ FIXED
+```python
+# Wrong:
+self.arcade_manager.combo_tracker.eliminations -= 1
+
+# Correct:
+self.arcade_manager.arcade_state.eliminations_count -= 1
+```
+
+**Status:** ✅ FIXED - Ready for retest
+
+---
