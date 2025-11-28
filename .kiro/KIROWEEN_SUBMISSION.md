@@ -8,14 +8,16 @@
 
 **Sonrai Zombie Blaster** is a production-ready video game that makes AWS identity remediation tangible and fun. Players eliminate "zombies" (unused IAM identities) through retro platformer gameplay, triggering real Sonrai API calls to quarantine actual cloud resources.
 
-**Built with Kiro as:** Product Manager • Technical Lead • QA Engineer • Documentation Agent
+**Built in 11 days (Nov 17-28, 2024) with Kiro as:** Product Manager • Technical Lead • QA Engineer • Documentation Agent
 
 ---
 
 ## 📊 Project Statistics
 
+> **⚡ Built in 11 Days:** This entire production-ready game was built from scratch in just 11 days (November 17-28, 2024) with Kiro managing the complete development lifecycle.
+
 ### Development Metrics
-- **Timeline:** 6 weeks of active development with Kiro
+- **Timeline:** 11 days (Nov 17-28, 2024) - Built from scratch with Kiro
 - **Total Code:** ~8,000 lines (production + tests)
 - **Test Coverage:** 191 automated tests across 38 test files
 - **Pass Rate:** 92.7% (177/191 tests passing)
@@ -126,7 +128,7 @@
 
 ## 🚀 Major Features Built with Kiro
 
-### Feature 1: Arcade Mode (5 days, 7 specs)
+### Feature 1: Arcade Mode (3 days, 7 specs)
 
 **Scope:**
 - 60-second timed elimination challenge
@@ -149,12 +151,12 @@
 - [Test Files](../tests/test_arcade_*.py) - 105 tests
 
 **Metrics:**
-- **Development Time:** 5 days
+- **Development Time:** 3 days
 - **Code Generated:** 800 lines (production) + 1,200 lines (tests)
 - **Test Coverage:** 100% of arcade features
 - **Performance:** Stable 60 FPS with 20+ zombies
 
-### Feature 2: JIT Access Quest (3 days)
+### Feature 2: JIT Access Quest (2 days)
 
 **Scope:**
 - Real-time permission set queries from Sonrai API
@@ -180,7 +182,7 @@
 - **Tests:** 25 integration tests
 - **Coverage:** All quest scenarios validated
 
-### Feature 3: Performance Optimization (2 days)
+### Feature 3: Performance Optimization (1 day)
 
 **Challenge:** Game running at 15 FPS with 100 zombies
 

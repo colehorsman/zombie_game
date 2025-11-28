@@ -38,7 +38,7 @@
 
 ---
 
-### 2. Arcade Mode: 800 Lines of Code in 5 Days
+### 2. Arcade Mode: 800 Lines of Code in 3 Days
 
 **The Challenge:**
 - Complex feature with 12 distinct tasks
@@ -72,7 +72,7 @@
 - **800 lines** of production code
 - **1,200 lines** of test code
 - **105 tests** (100% passing)
-- **5 days** from spec to production
+- **3 days** from spec to production
 - **100% test coverage** of arcade features
 
 **Evidence:**

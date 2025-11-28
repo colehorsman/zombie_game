@@ -15,17 +15,20 @@
 
 ### I. Hook (200 words)
 **Opening Scene:**
-> "It's 2 AM. My game is running at 15 frames per second with just 100 zombies on screen. I need 500+ zombies at 60 FPS for the demo in three days. I turn to my AI pair programmer: 'Kiro, we have a performance problem.'"
+> "It's Day 8 of building a production-ready cloud security game. My game is running at 15 frames per second with just 100 zombies on screen. I need 500+ zombies at 60 FPS for the demo. I turn to my AI pair programmer: 'Kiro, we have a performance problem.' Four hours later, we had 60 FPS with 500+ zombies. This is the story of building an entire game in 11 days with Kiro AI."
 
 **The Twist:**
 - Kiro didn't just fix the code
 - It profiled the bottleneck, researched solutions, designed the architecture, implemented it, proved the complexity mathematically, and documented everything
-- This is the story of building a production-ready game with an AI that acts as Product Manager, Technical Lead, QA Engineer, and Documentation Agent
+- In 4 hours, we went from 15 FPS to 60 FPS
+- In 11 days total, we built an entire production-ready game
+- This is the story of building with an AI that acts as Product Manager, Technical Lead, QA Engineer, and Documentation Agent
 
 **Hook Questions:**
 - What if your AI pair programmer could plan sprints?
 - What if it could write specs before writing code?
 - What if it could manage your entire development lifecycle?
+- What if you could build a production-ready game in 11 days?
 
 ---
 
@@ -48,7 +51,7 @@
 - 191 automated tests
 - 60 FPS with 500+ entities
 - Real Sonrai API integration
-- 6 weeks of development
+- **11 days of development** (Nov 17-28, 2024) - **from scratch to production**
 
 **The Challenge:**
 - Complex game engine with physics
@@ -677,7 +680,7 @@ GitHub MCP: merge_pull_request(PR #43)
 
 **What I Built:**
 - A production-ready cloud security game
-- 8,000 lines of code in 6 weeks
+- 8,000 lines of code in 11 days
 - 191 automated tests
 - 60 FPS performance
 - Real AWS remediation
@@ -740,12 +743,12 @@ GitHub MCP: merge_pull_request(PR #43)
 ## Social Media Snippets
 
 ### Twitter/X (280 chars)
-"I built a cloud security game with @KiroAI as my Product Manager, Tech Lead, and QA Engineer. 191 tests, 60 FPS, 6 weeks. Kiro didn't just write code—it managed the entire development lifecycle. This is AI pair programming done right. 🎮🤖 #Kiroween2024"
+"I built a production-ready cloud security game with @KiroAI in 11 DAYS. 8,000 lines of code, 191 tests, 60 FPS. Kiro was my PM, Tech Lead, and QA Engineer. This is what AI pair programming should be. 🎮🤖⚡ #Kiroween2024"
 
 ### LinkedIn (1,300 chars)
 "What if your AI pair programmer could plan sprints, design architecture, write tests, and maintain documentation—not just autocomplete your code?
 
-I just spent 6 weeks building Sonrai Zombie Blaster, a cloud security game that makes AWS identity remediation fun. But this isn't a story about building a game. It's a story about building WITH Kiro AI.
+I just built Sonrai Zombie Blaster in 11 DAYS—a production-ready cloud security game that makes AWS identity remediation fun. But this isn't a story about building a game. It's a story about building WITH Kiro AI.
 
 Kiro acted as:
 • Product Manager: Sprint planning, backlog prioritization, velocity tracking
@@ -753,7 +756,7 @@ Kiro acted as:
 • QA Engineer: Generated 191 automated tests with 92.7% pass rate
 • Documentation Agent: Maintained 43 markdown files with AWS-style standards
 
-The result? 8,000 lines of production-ready code in 6 weeks, with comprehensive testing, security scanning, and documentation—all managed by Kiro.
+The result? 8,000 lines of production-ready code in 11 DAYS, with comprehensive testing, security scanning, and documentation—all managed by Kiro.
 
 This is what AI pair programming should be: not just code generation, but complete software development lifecycle management.
 

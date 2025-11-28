@@ -50,6 +50,8 @@ python3 src/main.py
 
 ## 🤖 Built with Kiro AI
 
+> **⚡ Built in 11 Days:** This entire production-ready game was built from scratch in just 11 days (Nov 17-28, 2024) with Kiro as Product Manager, Technical Lead, QA Engineer, and Documentation Agent.
+
 **This project showcases Kiro as a full-stack AI pair programmer managing the complete software development lifecycle.**
 
 ### Kiro's Roles
@@ -59,6 +61,7 @@ python3 src/main.py
 - **📚 Documentation Agent** - 43 markdown files, AWS-style standards, evidence-based claims
 
 ### Kiro Integration Stats
+- **Built in 11 days** (Nov 17-28, 2024) from scratch
 - **9 steering files** (2,432 lines) defining agent roles and workflows
 - **6 feature specs** with requirements → design → tasks breakdown
 - **7 agent hooks** for automated testing, security scanning, and code review

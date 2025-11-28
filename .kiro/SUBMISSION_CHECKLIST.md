@@ -146,7 +146,7 @@ cat > KIROWEEN_SUBMISSION_SUMMARY.md << 'EOF'
 - **Repository:** https://github.com/colehorsman/zombie_game
 
 ## Project Stats
-- **Development Time:** 6 weeks with Kiro
+- **Development Time:** 11 days with Kiro (Nov 17-28, 2024)
 - **Code Generated:** 8,000 lines (production + tests)
 - **Tests:** 191 automated tests (92.7% pass rate)
 - **Performance:** 60 FPS with 500+ entities
@@ -269,7 +269,7 @@ EOF
 ## 💪 You've Got This!
 
 **What you've accomplished:**
-- Built a production-ready game in 6 weeks
+- Built a production-ready game in 11 days
 - 8,000 lines of code with comprehensive testing
 - 60 FPS performance with 500+ entities
 - Real AWS API integration
