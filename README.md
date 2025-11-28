@@ -54,15 +54,22 @@ python3 src/main.py
 
 **This project showcases Kiro as a full-stack AI pair programmer managing the complete software development lifecycle.**
 
-### Kiro's Roles
-- **🎯 Product Manager** - Sprint planning, backlog prioritization, velocity tracking
-- **🏗️ Technical Lead** - Architecture decisions, performance optimization (15 FPS → 60 FPS)
-- **🧪 QA Engineer** - 191 automated tests, 3-layer testing strategy, 92.7% pass rate
-- **📚 Documentation Agent** - 43 markdown files, AWS-style standards, evidence-based claims
+### Kiro's 11-Agent Architecture Review Board
+- **🎯 Product Management** - Sprint planning, backlog prioritization, roadmap
+- **🏗️ Architecture** - System design, patterns, refactoring (15 FPS → 60 FPS optimization)
+- **🧪 Quality Assurance** - 191 automated tests, 3-layer testing strategy, 92.7% pass rate
+- **🔒 Security** - SAST scanning, secrets management, vulnerability prevention
+- **⚙️ Operations/SRE** - Deployment, monitoring, reliability
+- **👥 Developer Experience** - Onboarding, tooling, CONTRIBUTING.md
+- **🎨 UX/Design** - User experience, accessibility, visual consistency
+- **📚 Documentation** - 43 markdown files, AWS-style standards
+- **🔧 DevOps/Tools** - GitHub MCP, CI/CD automation
+- **📋 Development Standards** - Workflow, tech stack, best practices
+- **🎮 Product Vision** - Mission alignment, target audiences
 
 ### Kiro Integration Stats
 - **Built in 11 days** (Nov 17-28, 2024) from scratch
-- **9 steering files** (2,432 lines) defining agent roles and workflows
+- **14 steering files** (4,000+ lines) defining 11 specialized agents
 - **6 feature specs** with requirements → design → tasks breakdown
 - **7 agent hooks** for automated testing, security scanning, and code review
 - **2 complete sprints** with velocity tracking and retrospectives
