@@ -86,6 +86,9 @@ class GameState:
 
     # JIT Access Quest fields
     jit_quest: Optional['JitQuestState'] = None  # JIT quest state (only in production accounts)
+    
+    # Arcade Mode fields
+    arcade_mode: Optional['ArcadeModeState'] = None  # Arcade mode state (60-second challenge)
 
 
 @dataclass
@@ -134,3 +137,36 @@ class JitQuestState:
     quest_failed: bool = False  # Whether player left without completing
     quest_message: Optional[str] = None  # Current quest message
     quest_message_timer: float = 0.0  # Time to display message
+
+
+@dataclass
+class ArcadeModeState:
+    """State for Arcade Mode session."""
+    active: bool = False  # Whether arcade mode is active
+    in_countdown: bool = False  # Whether in 3-second countdown
+    countdown_time: float = 3.0  # Countdown timer (3 seconds)
+    time_remaining: float = 60.0  # Main timer (60 seconds)
+    session_duration: float = 0.0  # Total time elapsed in session
+    eliminations_count: int = 0  # Total zombies eliminated
+    combo_count: int = 0  # Current combo count
+    combo_multiplier: float = 1.0  # Current combo multiplier
+    highest_combo: int = 0  # Highest combo achieved
+    powerups_collected: int = 0  # Total power-ups collected
+
+
+@dataclass
+class ArcadeStats:
+    """Statistics for arcade mode session."""
+    total_eliminations: int = 0
+    eliminations_per_second: float = 0.0
+    highest_combo: int = 0
+    powerups_collected: int = 0
+
+
+@dataclass
+class QuarantineReport:
+    """Report from batch quarantine operation."""
+    total_queued: int = 0  # Total zombies in queue
+    successful: int = 0  # Successfully quarantined
+    failed: int = 0  # Failed to quarantine
+    error_messages: list = field(default_factory=list)  # List of error messages

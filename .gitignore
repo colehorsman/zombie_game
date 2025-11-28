@@ -55,3 +55,7 @@ quick_controller_test.py
 test_controller.py
 test_launcher.py
 verify_dpad.py
+
+# Security scan reports
+reports/
+*.sarif

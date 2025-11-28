@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import pygame
 
@@ -17,7 +17,16 @@ from level_manager import LevelManager
 from difficulty_config import EnvironmentDifficulty, get_difficulty_for_environment
 from approval import ApprovalManager
 from powerup import PowerUp, PowerUpManager, PowerUpType, spawn_random_powerups
-from boss import Boss
+from boss import Boss  # DEPRECATED - kept for backwards compatibility
+from cyber_boss import (
+    ScatteredSpiderBoss,
+    HeartbleedBoss,
+    WannaCryBoss,
+    create_cyber_boss,
+    BossType,
+    BOSS_LEVEL_MAP,
+    get_boss_dialogue
+)
 from save_manager import SaveManager
 from service_protection_quest import (
     ServiceProtectionQuestManager,
@@ -29,6 +38,8 @@ from service_protection_quest import (
 from hacker import Hacker
 from jit_access_quest import Auditor, AdminRole, create_jit_quest_entities
 from models import JitQuestState, PermissionSet
+from arcade_mode import ArcadeModeManager
+from combo_tracker import ComboTracker
 
 
 logger = logging.getLogger(__name__)
@@ -132,6 +143,10 @@ class GameEngine:
         self.star_power_touched_zombies = set()  # Track which zombies we've already touched during current Star Power
         self.star_power_was_active = False  # Track when Star Power ends to clear touched set
 
+        # Arcade Mode
+        self.arcade_manager = ArcadeModeManager()
+        self.combo_tracker = ComboTracker()
+
         # Count 3rd parties
         third_parties_count = 0
         if use_map and self.game_map and hasattr(self.game_map, 'third_parties'):
@@ -206,9 +221,15 @@ class GameEngine:
         self.scroll_speed = 50.0  # pixels per second
         self.scroll_offset = 0.0
 
-        # Boss battle
-        self.boss: Optional[Boss] = None
+        # Boss battle (supports both old Boss and new cyber bosses)
+        self.boss: Optional[Union[Boss, ScatteredSpiderBoss, HeartbleedBoss, WannaCryBoss]] = None
         self.boss_spawned = False
+        self.boss_type: Optional[BossType] = None
+
+        # Boss dialogue system
+        self.showing_boss_dialogue = False
+        self.boss_dialogue_content: Optional[dict] = None
+        self.boss_dialogue_shown = False
 
         # Konami code cheat (up up down down left right left right)
         self.konami_code = [pygame.K_UP, pygame.K_UP, pygame.K_DOWN, pygame.K_DOWN,
@@ -220,6 +241,10 @@ class GameEngine:
         # Pause menu (Zelda-style)
         self.pause_menu_options = ["Return to Game", "Return to Lobby", "Save Game", "Quit Game"]
         self.pause_menu_selected_index = 0
+        
+        # Arcade results menu
+        self.arcade_results_options = []
+        self.arcade_results_selected_index = 0
         
         # Controller button labels for 8BitDo SN30 Pro
         self.controller_labels = {
@@ -699,6 +724,14 @@ class GameEngine:
             if self.game_state.resource_message_timer <= 0:
                 self.game_state.resource_message = None
 
+        # Update arcade mode if active
+        if self.arcade_manager.is_active():
+            self._update_arcade_mode(delta_time)
+            # Sync arcade state to game state for rendering
+            self.game_state.arcade_mode = self.arcade_manager.get_state()
+        else:
+            self.game_state.arcade_mode = None
+
         # Handle different game states
         if self.game_state.status == GameStatus.LOBBY:
             self._update_lobby(delta_time)
@@ -1129,6 +1162,167 @@ class GameEngine:
         
         logger.info("✅ Returned to lobby")
 
+    def _update_arcade_mode(self, delta_time: float) -> None:
+        """
+        Update arcade mode logic.
+
+        Args:
+            delta_time: Time elapsed since last frame in seconds
+        """
+        # Update arcade manager (handles timer, countdown, combo tracker, etc.)
+        self.arcade_manager.update(delta_time)
+
+        # Check if session ended
+        if not self.arcade_manager.is_active():
+            # Session ended - show results screen
+            self._show_arcade_results()
+            return
+
+        # Disable quests during arcade mode
+        # (Quests are updated in _update_playing, which still runs)
+
+    def _show_arcade_results(self) -> None:
+        """Show arcade mode results screen with quarantine options."""
+        # Get final statistics
+        stats = self.arcade_manager.get_stats()
+        
+        # Build results message
+        results_message = "🎮 ARCADE MODE COMPLETE! 🎮\n\n"
+        results_message += "═══════════════════════════\n\n"
+        results_message += f"Zombies Eliminated: {stats.total_eliminations}\n"
+        results_message += f"Highest Combo: {stats.highest_combo}x\n"
+        results_message += f"Power-ups Collected: {stats.powerups_collected}\n"
+        results_message += f"Eliminations/Second: {stats.eliminations_per_second:.2f}\n\n"
+        results_message += "═══════════════════════════\n\n"
+        
+        # Check if there are zombies to quarantine
+        queue_size = len(self.arcade_manager.get_elimination_queue())
+        if queue_size > 0:
+            results_message += f"💾 {queue_size} identities queued for quarantine\n\n"
+            results_message += "Quarantine all eliminated identities?\n\n"
+            results_message += "▶ Yes - Quarantine All\n"
+            results_message += "  No - Discard Queue\n"
+            results_message += "  Replay - Try Again\n\n"
+        else:
+            results_message += "No eliminations to quarantine.\n\n"
+            results_message += "▶ Replay - Try Again\n"
+            results_message += "  Exit - Return to Lobby\n\n"
+        
+        # Add input instructions
+        if self.joystick:
+            results_message += f"{self.controller_labels['up']}/{self.controller_labels['down']} = Select\n"
+            results_message += f"{self.controller_labels['confirm']} = Confirm"
+        else:
+            results_message += "↑/↓ or W/S = Select\n"
+            results_message += "ENTER or SPACE = Confirm"
+        
+        # Pause game and show results
+        self.game_state.previous_status = self.game_state.status
+        self.game_state.status = GameStatus.PAUSED
+        self.game_state.congratulations_message = results_message
+        
+        # Initialize arcade results menu state
+        self.arcade_results_selected_index = 0
+        self.arcade_results_options = ["Yes - Quarantine All", "No - Discard Queue", "Replay - Try Again"] if queue_size > 0 else ["Replay - Try Again", "Exit - Return to Lobby"]
+        
+        logger.info(f"🎮 Arcade results shown: {stats.total_eliminations} eliminations, {queue_size} queued")
+
+    def _navigate_arcade_results_menu(self, direction: int) -> None:
+        """
+        Navigate arcade results menu selection.
+        
+        Args:
+            direction: -1 for up, 1 for down
+        """
+        if not self.arcade_results_options:
+            return
+        
+        self.arcade_results_selected_index = (self.arcade_results_selected_index + direction) % len(self.arcade_results_options)
+        
+        # Update message to show new selection
+        self._update_arcade_results_display()
+        
+        logger.debug(f"🎮 Arcade menu: selected option {self.arcade_results_selected_index}: {self.arcade_results_options[self.arcade_results_selected_index]}")
+
+    def _update_arcade_results_display(self) -> None:
+        """Update the arcade results message to reflect current menu selection."""
+        stats = self.arcade_manager.get_stats()
+        queue_size = len(self.arcade_manager.get_elimination_queue())
+        
+        # Build results message
+        message = "🎮 ARCADE MODE COMPLETE! 🎮\n\n"
+        message += "═══════════════════════════\n\n"
+        message += f"Zombies Eliminated: {stats.total_eliminations}\n"
+        message += f"Highest Combo: {stats.highest_combo}x\n"
+        message += f"Power-ups Collected: {stats.powerups_collected}\n"
+        message += f"Eliminations/Second: {stats.eliminations_per_second:.2f}\n\n"
+        message += "═══════════════════════════\n\n"
+        
+        # Add menu options with selection indicator
+        if queue_size > 0:
+            message += f"💾 {queue_size} identities queued for quarantine\n\n"
+            message += "Quarantine all eliminated identities?\n\n"
+            for i, option in enumerate(self.arcade_results_options):
+                if i == self.arcade_results_selected_index:
+                    message += f"▶ {option}\n"
+                else:
+                    message += f"  {option}\n"
+            message += "\n"
+        else:
+            message += "No eliminations to quarantine.\n\n"
+            for i, option in enumerate(self.arcade_results_options):
+                if i == self.arcade_results_selected_index:
+                    message += f"▶ {option}\n"
+                else:
+                    message += f"  {option}\n"
+            message += "\n"
+        
+        # Add input instructions
+        if self.joystick:
+            message += f"{self.controller_labels['up']}/{self.controller_labels['down']} = Select\n"
+            message += f"{self.controller_labels['confirm']} = Confirm"
+        else:
+            message += "↑/↓ or W/S = Select\n"
+            message += "ENTER or SPACE = Confirm"
+        
+        self.game_state.congratulations_message = message
+
+    def _execute_arcade_results_option(self) -> None:
+        """Execute the selected arcade results menu option."""
+        if not self.arcade_results_options or self.arcade_results_selected_index >= len(self.arcade_results_options):
+            return
+        
+        selected_option = self.arcade_results_options[self.arcade_results_selected_index]
+        logger.info(f"🎮 Arcade results: executing option '{selected_option}'")
+        
+        if selected_option == "Yes - Quarantine All":
+            # TODO: Implement batch quarantine (Task 11)
+            logger.info("🔄 Batch quarantine not yet implemented - clearing queue")
+            self.arcade_manager.clear_elimination_queue()
+            self._return_to_lobby()
+        
+        elif selected_option == "No - Discard Queue":
+            # Discard queue and return to lobby
+            logger.info("🗑️  Discarding elimination queue")
+            self.arcade_manager.clear_elimination_queue()
+            self._return_to_lobby()
+        
+        elif selected_option == "Replay - Try Again":
+            # Restart arcade mode
+            logger.info("🔄 Restarting arcade mode")
+            self.arcade_manager.start_session()
+            # Clear menu state
+            self.arcade_results_options = []
+            self.arcade_results_selected_index = 0
+            # Resume game
+            self.game_state.congratulations_message = None
+            self.game_state.status = GameStatus.PLAYING
+        
+        elif selected_option == "Exit - Return to Lobby":
+            # Return to lobby without quarantine
+            logger.info("🏠 Exiting arcade mode to lobby")
+            self._return_to_lobby()
+
     def _update_playing(self, delta_time: float) -> None:
         """
         Update game logic during PLAYING state.
@@ -1423,6 +1617,22 @@ class GameEngine:
         Args:
             zombie: The zombie that was hit
         """
+        # ARCADE MODE: Queue elimination instead of immediate quarantine
+        if self.arcade_manager.is_active():
+            # Hide zombie immediately for visual feedback
+            zombie.is_hidden = True
+            
+            # Queue for batch quarantine at end of session
+            # Note: arcade_manager.queue_elimination also updates combo tracker internally
+            self.arcade_manager.queue_elimination(zombie)
+            
+            # Update game state counters
+            self.game_state.zombies_remaining -= 1
+            
+            logger.info(f"🎮 ARCADE: Queued {zombie.identity_name} for batch quarantine (combo: {self.arcade_manager.combo_tracker.get_combo_count()}x)")
+            return
+        
+        # NORMAL MODE: Immediate quarantine
         # NOTE: Approval system removed - zombies always quarantine when health reaches 0
         # The approval mechanic was blocking gameplay in production environments
         
@@ -1690,8 +1900,22 @@ class GameEngine:
 
                 # Handle pause menu navigation (if paused with menu active)
                 if self.game_state.status == GameStatus.PAUSED:
+                    # Check if we're showing arcade results menu
+                    if self.arcade_results_options and self.game_state.congratulations_message and "ARCADE MODE COMPLETE" in self.game_state.congratulations_message:
+                        # UP arrow or W - move selection up
+                        if event.key in (pygame.K_UP, pygame.K_w):
+                            self._navigate_arcade_results_menu(-1)
+                            continue
+                        # DOWN arrow or S - move selection down
+                        elif event.key in (pygame.K_DOWN, pygame.K_s):
+                            self._navigate_arcade_results_menu(1)
+                            continue
+                        # ENTER or SPACE - execute selected option
+                        elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                            self._execute_arcade_results_option()
+                            continue
                     # Check if we're showing the actual pause menu (not a different message)
-                    if self.game_state.congratulations_message and "PAUSED" in self.game_state.congratulations_message:
+                    elif self.game_state.congratulations_message and "PAUSED" in self.game_state.congratulations_message:
                         # UP arrow - move selection up
                         if event.key == pygame.K_UP:
                             self._navigate_pause_menu(-1)
@@ -1752,6 +1976,15 @@ class GameEngine:
                         logger.info("🎮 KONAMI CODE ACTIVATED! Spawning boss...")
                         self._spawn_boss()
                         self.konami_input = []  # Reset
+
+                # Handle boss dialogue dismissal (ENTER key only)
+                if event.key == pygame.K_RETURN:
+                    if self.showing_boss_dialogue and self.boss_dialogue_content:
+                        # Dismiss dialogue and spawn the cyber boss
+                        logger.info("📖 Boss dialogue dismissed - spawning boss!")
+                        self.showing_boss_dialogue = False
+                        self._spawn_cyber_boss()
+                        continue
 
                 # Handle message dismissal and quest trigger (ENTER or SPACE key)
                 if event.key in (pygame.K_RETURN, pygame.K_SPACE):
@@ -1828,7 +2061,22 @@ class GameEngine:
                     logger.info(f"🎮 Controller button pressed: {event.button}")
                     # Handle pause menu navigation with controller
                     if self.game_state.status == GameStatus.PAUSED:
-                        if self.game_state.congratulations_message and "PAUSED" in self.game_state.congratulations_message:
+                        # Check if we're showing arcade results menu
+                        if self.arcade_results_options and self.game_state.congratulations_message and "ARCADE MODE COMPLETE" in self.game_state.congratulations_message:
+                            # D-pad UP (11) - navigate up
+                            if event.button == 11:
+                                self._navigate_arcade_results_menu(-1)
+                                continue
+                            # D-pad DOWN (12) - navigate down
+                            elif event.button == 12:
+                                self._navigate_arcade_results_menu(1)
+                                continue
+                            # A button (0) or B button (1) - confirm selection
+                            elif event.button in (0, 1):
+                                self._execute_arcade_results_option()
+                                continue
+                        # Check if we're showing the actual pause menu
+                        elif self.game_state.congratulations_message and "PAUSED" in self.game_state.congratulations_message:
                             # D-pad UP (11) - navigate up
                             if event.button == 11:
                                 self._navigate_pause_menu(-1)
@@ -2233,11 +2481,35 @@ class GameEngine:
         return self.quest_manager.get_active_quest() if self.quest_manager else None
 
     def _spawn_boss(self) -> None:
-        """Spawn the wizard boss - drops from sky with clouds."""
+        """Spawn a boss - cyber attack themed boss with dialogue, or fallback to wizard boss."""
         if self.boss_spawned:
             return
 
         self.boss_spawned = True
+
+        # Check if current level has a cyber boss
+        current_level = self.game_state.current_level
+        self.boss_type = BOSS_LEVEL_MAP.get(current_level)
+
+        if self.boss_type:
+            # Cyber boss - show educational dialogue first
+            logger.info(f"🕷️  Preparing {self.boss_type.value} boss for level {current_level}")
+
+            # Get dialogue content
+            self.boss_dialogue_content = get_boss_dialogue(self.boss_type)
+
+            # Show dialogue (boss will spawn after ENTER is pressed)
+            self.showing_boss_dialogue = True
+            self.boss_dialogue_shown = True
+
+            # Pause game during dialogue
+            self.game_state.status = GameStatus.BOSS_BATTLE
+
+            logger.info(f"📖 Showing boss dialogue for {self.boss_type.value}")
+            return  # Don't spawn boss yet - wait for dialogue to be dismissed
+
+        # Fallback: Old wizard boss (for levels without cyber boss mapping)
+        logger.info(f"🧙 Spawning fallback wizard boss for level {current_level}")
 
         # Calculate boss spawn position (near player, above screen so he can drop down)
         if self.use_map and self.game_map:
@@ -2282,6 +2554,64 @@ class GameEngine:
         self.game_state.status = GameStatus.BOSS_BATTLE
         logger.info(f"🧙 Wizard Boss spawning at ({boss_pos.x}, {boss_pos.y}) - dropping from sky!")
 
+    def _spawn_cyber_boss(self) -> None:
+        """Actually spawn the cyber boss after dialogue is dismissed."""
+        if not self.boss_type:
+            logger.error("Cannot spawn cyber boss: boss_type not set!")
+            return
+
+        # Calculate spawn positions based on boss type
+        if self.boss_type == BossType.SCATTERED_SPIDER:
+            # Scattered Spider: 5 spiders in a formation
+            if self.use_map and self.game_map:
+                level_width = self.game_map.map_width
+                tiles_high = self.game_map.map_height // 16
+                ground_height = 8
+                ground_y = (tiles_high - ground_height) * 16
+            else:
+                level_width = self.screen_width
+                ground_y = self.screen_height // 2
+
+            # Create Scattered Spider boss (factory creates spawn positions internally)
+            self.boss = create_cyber_boss(self.boss_type, level_width, ground_y)
+            logger.info(f"🕷️  Scattered Spider boss spawned with 5 mini-spiders!")
+
+        else:
+            # Other cyber bosses (Heartbleed, WannaCry, etc.)
+            # Calculate level dimensions and boss spawn position
+            if self.use_map and self.game_map:
+                # Spawn boss to the right of player's current position
+                boss_x = self.player.position.x + 400  # 400px to the right of player
+                tiles_high = self.game_map.map_height // 16
+                ground_height = 8
+                ground_y = (tiles_high - ground_height) * 16
+                boss_y = ground_y - 100
+            else:
+                # Classic mode - spawn in center of screen
+                boss_x = self.screen_width // 2
+                ground_y = self.screen_height // 2
+                boss_y = ground_y - 100
+
+            # Create cyber boss at calculated position
+            from cyber_boss import Vector2
+            if self.boss_type == BossType.HEARTBLEED:
+                boss = HeartbleedBoss(Vector2(boss_x, boss_y))
+                boss.ground_y = ground_y
+                self.boss = boss
+            elif self.boss_type == BossType.WANNACRY:
+                boss = WannaCryBoss(Vector2(boss_x, boss_y))
+                boss.ground_y = ground_y
+                self.boss = boss
+            else:
+                # Fallback to factory for other types
+                level_width = self.screen_width
+                self.boss = create_cyber_boss(self.boss_type, level_width, ground_y)
+
+            logger.info(f"🎮 {self.boss_type.value} boss spawned at ({boss_x}, {boss_y})!")
+
+        # Boss is active, battle begins
+        self.game_state.status = GameStatus.BOSS_BATTLE
+
     def _update_boss_battle(self, delta_time: float) -> None:
         """
         Update game logic during boss battle.
@@ -2319,23 +2649,64 @@ class GameEngine:
 
         # Check projectile collisions with boss
         if self.boss:
-            boss_bounds = self.boss.get_bounds()
-            for projectile in self.projectiles[:]:
-                proj_bounds = projectile.get_bounds()
-                if proj_bounds.colliderect(boss_bounds):
-                    # Hit boss
-                    self.projectiles.remove(projectile)
-                    defeated = self.boss.take_damage(projectile.damage)
-                    if defeated:
-                        # Boss defeated
-                        logger.info("Boss defeated!")
+            # Handle swarm boss (Scattered Spider) - check collision with each spider
+            if isinstance(self.boss, ScatteredSpiderBoss):
+                for projectile in self.projectiles[:]:
+                    proj_bounds = projectile.get_bounds()
+                    hit = False
+
+                    # Check collision with each spider in the swarm
+                    for spider in self.boss.get_all_spiders():
+                        spider_bounds = pygame.Rect(
+                            spider.position.x,
+                            spider.position.y,
+                            spider.width,
+                            spider.height
+                        )
+                        if proj_bounds.colliderect(spider_bounds):
+                            # Hit a spider
+                            spider.health -= projectile.damage
+                            hit = True
+
+                            if spider.health <= 0:
+                                # Spider defeated
+                                self.boss.spiders.remove(spider)
+                                logger.info(f"🕷️  Mini-spider defeated! {len(self.boss.spiders)} remaining")
+
+                            break  # Projectile can only hit one spider
+
+                    if hit and projectile in self.projectiles:
+                        self.projectiles.remove(projectile)
+
+            else:
+                # Standard boss collision
+                boss_bounds = self.boss.get_bounds()
+                for projectile in self.projectiles[:]:
+                    proj_bounds = projectile.get_bounds()
+                    if proj_bounds.colliderect(boss_bounds):
+                        # Hit boss
+                        self.projectiles.remove(projectile)
+                        defeated = self.boss.take_damage(projectile.damage)
+                        if defeated:
+                            # Boss defeated
+                            logger.info("Boss defeated!")
 
         # Update camera - follow player, but also show boss if boss is far away
         if self.use_map and self.game_map:
             # During boss battle, camera should show both player and boss
             if self.boss and not self.boss.is_defeated:
                 # Center camera between player and boss
-                center_x = (self.player.position.x + self.boss.position.x) / 2
+                if isinstance(self.boss, ScatteredSpiderBoss):
+                    # For swarm boss, use average position of all spiders
+                    spiders = self.boss.get_all_spiders()
+                    if spiders:
+                        avg_spider_x = sum(s.position.x for s in spiders) / len(spiders)
+                        center_x = (self.player.position.x + avg_spider_x) / 2
+                    else:
+                        center_x = self.player.position.x
+                else:
+                    # Standard boss - use boss position
+                    center_x = (self.player.position.x + self.boss.position.x) / 2
                 self.game_map.update_camera(center_x, self.player.position.y)
             else:
                 self.game_map.update_camera(self.player.position.x, self.player.position.y)

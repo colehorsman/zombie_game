@@ -1,4 +1,9 @@
-"""Boss entity implementation - NES-style Wizard."""
+"""Boss entity implementation - NES-style Wizard.
+
+DEPRECATED: This wizard boss is being replaced by cyber-attack themed bosses.
+The code is preserved for reference but should not be used in new implementations.
+See cyber_boss.py for the new boss system.
+"""
 
 import pygame
 import logging
@@ -9,6 +14,7 @@ from models import Vector2
 logger = logging.getLogger(__name__)
 
 
+# DEPRECATED: Wizard boss - preserved for reference, use cyber_boss.py instead
 class Boss:
     """Represents a boss enemy - NES-style Wizard with hat and 'W' on shirt."""
 

@@ -7,6 +7,7 @@ from typing import List, Optional
 import requests
 
 from models import UnusedIdentity, QuarantineResult
+from api_validator import APIValidator, ValidationError
 
 
 logger = logging.getLogger(__name__)
@@ -23,10 +24,19 @@ class SonraiAPIClient:
             api_url: GraphQL endpoint URL for the Sonrai API
             org_id: Organization ID
             api_token: API authentication token
+
+        Raises:
+            ValidationError: If any parameters are invalid
         """
+        # Validate all initialization parameters
+        APIValidator.validate_url(api_url, "api_url")
+        APIValidator.validate_string_field(org_id, "org_id", allow_empty=False)
+        APIValidator.validate_token(api_token, "api_token")
+
         self.api_url = api_url
         self.org_id = org_id
         self.api_token = api_token
+        logger.info("Initialized SonraiAPIClient with validated parameters")
 
     def authenticate(self) -> bool:
         """
@@ -296,13 +306,19 @@ class SonraiAPIClient:
             response.raise_for_status()
 
             data = response.json()
-            identities = []
 
-            # Check for GraphQL errors
-            if data and "errors" in data:
-                error_msg = data["errors"][0].get("message", "Unknown GraphQL error")
-                logger.error(f"GraphQL error: {error_msg}")
-                raise Exception(f"GraphQL error: {error_msg}")
+            # Validate response structure
+            try:
+                APIValidator.validate_graphql_response(
+                    data,
+                    required_fields=["data.UnusedIdentities.items"],
+                    response_type="UnusedIdentities"
+                )
+            except ValidationError as e:
+                logger.error(f"Invalid API response: {e}")
+                raise Exception(f"API response validation failed: {e}")
+
+            identities = []
 
             # Parse GraphQL response
             if data and "data" in data and data["data"] and "UnusedIdentities" in data["data"]:
@@ -803,7 +819,13 @@ class SonraiAPIClient:
 
         Returns:
             List of service names that are NOT protected (e.g., ["bedrock-agentcore", "s3", "rds"])
+
+        Raises:
+            ValidationError: If account_id is invalid
         """
+        # Validate account ID parameter
+        APIValidator.validate_account_id(account_id)
+
         try:
             # Fetch real scope for the account
             logger.info(f"Fetching unprotected services for account {account_id}...")

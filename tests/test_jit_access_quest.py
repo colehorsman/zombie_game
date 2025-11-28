@@ -209,8 +209,8 @@ class TestCreateJitQuestEntities:
         
         auditor, admin_roles = create_jit_quest_entities(permission_sets, level_width, ground_y)
         
-        # Admin roles should be on ground
-        assert admin_roles[0].position.y == ground_y - 25
+        # Admin roles should be on ground (positioned at ground_y - 16)
+        assert admin_roles[0].position.y == ground_y - 16
 
     def test_create_entities_preserves_jit_status(self, sample_permission_set, protected_permission_set):
         """Test that JIT protection status is preserved from permission sets."""

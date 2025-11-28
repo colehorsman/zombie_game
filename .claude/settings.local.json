@@ -10,7 +10,12 @@
       "Bash(python3 -m pytest:*)",
       "Bash(python3:*)",
       "Bash(git checkout:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(pkill:*)",
+      "Bash(tee:*)",
+      "Bash(find:*)",
+      "Bash(md5sum:*)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []

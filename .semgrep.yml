@@ -1,0 +1,87 @@
+# Semgrep configuration for advanced SAST
+# Semgrep finds bugs and enforces code standards
+# https://semgrep.dev/
+
+rules:
+  # Use community rulesets for Python security
+  - id: python-security
+    pattern-either:
+      # SQL Injection detection
+      - pattern: |
+          $CURSOR.execute($QUERY)
+      - pattern: |
+          $CURSOR.executemany($QUERY, ...)
+    message: "Potential SQL injection - use parameterized queries"
+    languages: [python]
+    severity: ERROR
+
+  # Command injection detection
+  - id: command-injection
+    pattern-either:
+      - pattern: os.system($CMD)
+      - pattern: subprocess.call($CMD, shell=True)
+      - pattern: subprocess.run($CMD, shell=True)
+      - pattern: subprocess.Popen($CMD, shell=True)
+    message: "Potential command injection - avoid shell=True and validate inputs"
+    languages: [python]
+    severity: ERROR
+
+  # Path traversal detection
+  - id: path-traversal
+    pattern-either:
+      - pattern: open($PATH, ...)
+      - pattern: os.path.join($BASE, $USER_INPUT)
+    message: "Potential path traversal - validate file paths from user input"
+    languages: [python]
+    severity: WARNING
+
+  # Hardcoded secrets detection
+  - id: hardcoded-password
+    pattern-either:
+      - pattern: password = "..."
+      - pattern: api_key = "..."
+      - pattern: secret = "..."
+      - pattern: token = "..."
+    message: "Potential hardcoded secret - use environment variables"
+    languages: [python]
+    severity: ERROR
+
+  # Insecure random number generation
+  - id: weak-random
+    pattern: random.random()
+    message: "Use secrets module for cryptographic randomness, not random module"
+    languages: [python]
+    severity: WARNING
+
+  # Pickle deserialization (RCE risk)
+  - id: unsafe-pickle
+    pattern-either:
+      - pattern: pickle.loads($DATA)
+      - pattern: pickle.load($FILE)
+    message: "Pickle deserialization can lead to RCE - use json instead"
+    languages: [python]
+    severity: ERROR
+
+  # Eval/exec usage (code injection risk)
+  - id: dangerous-eval
+    pattern-either:
+      - pattern: eval($EXPR)
+      - pattern: exec($CODE)
+    message: "eval/exec can execute arbitrary code - extremely dangerous"
+    languages: [python]
+    severity: ERROR
+
+  # Missing timeout in requests
+  - id: requests-without-timeout
+    pattern: requests.$METHOD(...)
+    pattern-not: requests.$METHOD(..., timeout=$T, ...)
+    message: "HTTP requests should have a timeout to prevent hangs"
+    languages: [python]
+    severity: WARNING
+
+  # Debug mode enabled
+  - id: debug-enabled
+    pattern: debug = True
+    message: "Debug mode should not be enabled in production"
+    languages: [python]
+    severity: WARNING
