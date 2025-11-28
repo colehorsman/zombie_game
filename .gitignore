@@ -1,5 +1,9 @@
 # Environment variables
 .env
+.env.local
+
+# Kiro steering files with secrets (should use env vars instead)
+.kiro/steering/*-secrets.md
 
 # Game save files
 .zombie_save.json
