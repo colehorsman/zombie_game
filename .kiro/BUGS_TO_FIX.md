@@ -226,6 +226,47 @@ def render_message_bubble(self, message: str) -> None:
 
 ## P2 - Medium Priority
 
+### FEATURE-004: Unquarantine Identities on Game Over
+**Severity:** P2
+**Component:** Game Over System / Sonrai API
+**Description:** When game over occurs, unquarantine all identities that were quarantined during gameplay
+**User Feedback:** "the identities that got quarantined should be unquarantined. for example there were 2 that i had quarantined. those identities would be unquarantined when game over occurs"
+**Impact:** Better "security breach" narrative, cleaner API state
+
+**Design:**
+When player dies (game over):
+1. Track all quarantined identities during level
+2. Call Sonrai API to unquarantine each one
+3. Show message: "⚠️ X identities reactivated!"
+4. Reset quarantine tracking
+
+**Sonrai Agent Task:**
+- Provide GraphQL mutation to unquarantine identity
+- Similar to `ChangeQuarantineStatus` but with `quarantine: false`
+- Need identity SRN and scope
+
+**Implementation:**
+```python
+def _unquarantine_all_identities(self):
+    """Unquarantine all identities when game over occurs."""
+    for identity_id in self.quarantined_identities:
+        # Get zombie to find SRN and scope
+        zombie = next((z for z in self.zombies if z.identity_id == identity_id), None)
+        if zombie:
+            self.api_client.unquarantine_identity(zombie.identity_id, zombie.scope)
+
+    logger.info(f"⚠️ Unquarantined {len(self.quarantined_identities)} identities")
+```
+
+**Benefits:**
+- Realistic "security breach" consequence
+- Clean up API state after game over
+- Educational: shows what happens when security fails
+
+**Priority:** P2 - Nice to have, not critical for demo
+
+---
+
 ### TEST-001: Verify Zombie Quarantine in All Levels
 **Status:** Needs testing
 **Tested:** MyHealth Sandbox ✅
