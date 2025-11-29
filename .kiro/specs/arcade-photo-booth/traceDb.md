@@ -1,0 +1,20 @@
+# TRACEABILITY DB
+
+## COVERAGE ANALYSIS
+
+Total requirements: 0
+Coverage: NaN
+
+## TRACEABILITY
+
+## DATA
+
+### ACCEPTANCE CRITERIA (0 total)
+
+### IMPORTANT ACCEPTANCE CRITERIA (0 total)
+
+### CORRECTNESS PROPERTIES (0 total)
+
+### IMPLEMENTATION TASKS (0 total)
+
+### IMPLEMENTED PBTS (0 total)

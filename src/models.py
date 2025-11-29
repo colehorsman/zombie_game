@@ -53,9 +53,7 @@ class UnusedIdentity:
     identity_type: str  # IAM user, role, service account
     last_used: Optional[datetime]
     risk_score: float
-    scope: str = (
-        None  # Full scope path (e.g., "aws/r-ui1v/ou-ui1v-abc123/577945324761")
-    )
+    scope: str = None  # Full scope path (e.g., "aws/r-ui1v/ou-ui1v-abc123/577945324761")
     account: str = None  # AWS account number
 
 
@@ -74,23 +72,15 @@ class GameState:
     congratulations_message: Optional[str] = None
     powerup_message: Optional[str] = None  # Power-up collection message
     powerup_message_timer: float = 0.0  # Time remaining to show power-up message
-    resource_message: Optional[str] = (
-        None  # Resource interaction message (S3, RDS, etc.)
-    )
+    resource_message: Optional[str] = None  # Resource interaction message (S3, RDS, etc.)
     resource_message_timer: float = 0.0  # Time remaining to show resource message
     play_time: float = 0.0
-    pending_elimination: Optional["Zombie"] = (
-        None  # Zombie waiting for elimination message
-    )
+    pending_elimination: Optional["Zombie"] = None  # Zombie waiting for elimination message
     elimination_delay: float = 0.0  # Countdown timer before showing message
     current_level: int = 1  # Current level number (1-7)
     environment_type: str = "sandbox"  # Environment type (sandbox, production, etc)
-    completed_levels: set = field(
-        default_factory=set
-    )  # Set of completed level account IDs
-    current_level_account_id: Optional[str] = (
-        None  # Account ID of current level being played
-    )
+    completed_levels: set = field(default_factory=set)  # Set of completed level account IDs
+    current_level_account_id: Optional[str] = None  # Account ID of current level being played
 
     # Service Protection Quest fields
     quest_message: Optional[str] = None  # Current quest message
@@ -100,14 +90,14 @@ class GameState:
     services_protected: int = 0  # Count of protected services
 
     # JIT Access Quest fields
-    jit_quest: Optional["JitQuestState"] = (
-        None  # JIT quest state (only in production accounts)
-    )
+    jit_quest: Optional["JitQuestState"] = None  # JIT quest state (only in production accounts)
 
     # Arcade Mode fields
-    arcade_mode: Optional["ArcadeModeState"] = (
-        None  # Arcade mode state (60-second challenge)
-    )
+    arcade_mode: Optional["ArcadeModeState"] = None  # Arcade mode state (60-second challenge)
+
+    # Photo Booth fields
+    photo_booth_consent_active: bool = False  # True when showing consent prompt
+    photo_booth_path: Optional[str] = None  # Path to generated photo booth image
 
 
 @dataclass
