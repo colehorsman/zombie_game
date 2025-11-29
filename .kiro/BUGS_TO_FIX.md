@@ -1204,19 +1204,25 @@ elif event.button == 7:
 ---
 
 
-### BUG-022: Player Spawns Inside Wall
+### ✅ BUG-022: Player Spawns Inside Wall
+**Status:** ✅ FIXED
 **Severity:** P0 - CRITICAL
 **Component:** Spawn System / Lobby
 **Description:** Player spawns inside wall, can't move or enter rooms
 **User Feedback:** "i got spawned in a wall. so i cant go in the room and i gant get out of the room"
 **Impact:** Game unplayable, must restart
 
-**Root Cause:** Random/center spawn point can be inside walls
+**Root Cause:** Center spawn point (1800, 1350) was inside walls
 
-**Fix Needed:**
-- Define consistent, safe spawn point
-- Ensure spawn point is in open area
-- Test spawn point doesn't collide with walls
+**Fix Applied:**
+- Changed spawn to (100, 150) - Far top-left corner
+- Confirmed working by user: "bingo - spawn spot works"
+- Consistent spawn point every game
+- Open lobby area, no wall collisions
+
+**Commits:** 9eae64e, 2310192
+**Branch:** feature/game-over-screen-FEATURE-001
+**Fixed:** November 28, 2024
 
 ---
 
