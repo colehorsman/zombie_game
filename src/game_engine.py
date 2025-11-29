@@ -1969,7 +1969,7 @@ class GameEngine:
             "All zombies have been released!\n"
             "All 3rd parties are now allowed!\n"
             "Services are unprotected!\n\n"
-            f"Zombies Eliminated: {self.game_state.zombies_eliminated}\n\n"
+            f"Zombies Quarantined: {self.game_state.zombies_quarantined}\n\n"
             "▶ Retry Level\n"
             "  Return to Lobby"
         )
@@ -1996,7 +1996,7 @@ class GameEngine:
             "All zombies have been released!\n"
             "All 3rd parties are now allowed!\n"
             "Services are unprotected!\n\n"
-            f"Zombies Eliminated: {self.game_state.zombies_eliminated}\n\n"
+            f"Zombies Quarantined: {self.game_state.zombies_quarantined}\n\n"
             f"{retry_text}\n"
             f"{lobby_text}"
         )
