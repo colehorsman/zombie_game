@@ -87,9 +87,7 @@ class GameMap:
         self.zoom_speed = 2.0  # How fast to transition zoom
 
         # Zombie reveal radius (pixels) - smaller radius means you have to get closer
-        self.reveal_radius = (
-            reveal_radius  # Can be customized per environment difficulty
-        )
+        self.reveal_radius = reveal_radius  # Can be customized per environment difficulty
 
     def _generate_rooms_from_accounts(
         self, tiles_wide: int, tiles_high: int
@@ -108,9 +106,7 @@ class GameMap:
         total_zombies = sum(self.account_data.values())
 
         # Sort accounts by zombie count (largest first)
-        sorted_accounts = sorted(
-            self.account_data.items(), key=lambda x: x[1], reverse=True
-        )
+        sorted_accounts = sorted(self.account_data.items(), key=lambda x: x[1], reverse=True)
 
         # Calculate room sizes proportionally
         # Leave space for hallways (20% of map)
@@ -138,9 +134,7 @@ class GameMap:
 
             # Ensure room fits within map bounds
             if current_y + room_height > usable_height:
-                print(
-                    f"Warning: Room {i} ({account_name}) would exceed map bounds, skipping"
-                )
+                print(f"Warning: Room {i} ({account_name}) would exceed map bounds, skipping")
                 continue
 
             # Add room (ensuring it's within bounds)
@@ -167,9 +161,7 @@ class GameMap:
         total_zombies = sum(self.account_data.values())
         num_accounts = len(self.account_data)
 
-        print(
-            f"Creating map for {num_accounts} AWS accounts with {total_zombies} total zombies"
-        )
+        print(f"Creating map for {num_accounts} AWS accounts with {total_zombies} total zombies")
 
         # Base map dimensions - scale based on zombie count
         # Minimum size for small accounts, scale up for larger
@@ -367,24 +359,18 @@ class GameMap:
                 wx = castle_x + 80 + col * 55
                 wy = castle_y + 120 + row * 45
                 # Window frame
-                pygame.draw.rect(
-                    self.map_surface, CASTLE_DARK, (wx - 3, wy - 3, 26, 32)
-                )
+                pygame.draw.rect(self.map_surface, CASTLE_DARK, (wx - 3, wy - 3, 26, 32))
                 # Window glow
                 pygame.draw.rect(self.map_surface, WINDOW_YELLOW, (wx, wy, 20, 26))
 
         # Tower windows - scaled up
-        pygame.draw.rect(
-            self.map_surface, WINDOW_YELLOW, (castle_x + 22, castle_y + 85, 14, 20)
-        )
+        pygame.draw.rect(self.map_surface, WINDOW_YELLOW, (castle_x + 22, castle_y + 85, 14, 20))
         pygame.draw.rect(
             self.map_surface,
             WINDOW_YELLOW,
             (castle_x + castle_width - 36, castle_y + 85, 14, 20),
         )
-        pygame.draw.rect(
-            self.map_surface, WINDOW_YELLOW, (center_x + 25, castle_y + 65, 14, 20)
-        )
+        pygame.draw.rect(self.map_surface, WINDOW_YELLOW, (center_x + 25, castle_y + 65, 14, 20))
 
         # Draw castle entrance (arched door) - scaled up
         door_width = 50
@@ -396,9 +382,7 @@ class GameMap:
             CASTLE_DARK,
             (door_x, door_y + 18, door_width, door_height - 18),
         )
-        pygame.draw.ellipse(
-            self.map_surface, CASTLE_DARK, (door_x, door_y, door_width, 40)
-        )
+        pygame.draw.ellipse(self.map_surface, CASTLE_DARK, (door_x, door_y, door_width, 40))
 
         # Draw "CONTROL TOWER" label - BIGGER for screenshots
         try:
@@ -515,9 +499,7 @@ class GameMap:
         # Also store ground segments for zombie placement
         ground_y = (tiles_high - ground_height) * self.tile_size
         for x in range(0, tiles_wide, 12):  # Ground segments every 12 tiles
-            self.platform_positions.append(
-                (x * self.tile_size, ground_y, 12 * self.tile_size)
-            )
+            self.platform_positions.append((x * self.tile_size, ground_y, 12 * self.tile_size))
 
         print(f"Created {len(self.platform_positions)} randomized platform segments")
 
@@ -525,11 +507,7 @@ class GameMap:
         self.rooms = [(0, 0, tiles_wide, tiles_high)]
         self.room_accounts = {
             0: {
-                "name": (
-                    list(self.account_data.keys())[0]
-                    if self.account_data
-                    else "Default"
-                ),
+                "name": (list(self.account_data.keys())[0] if self.account_data else "Default"),
                 "zombie_count": total_zombies,
                 "chamber_num": 1,
                 "total_chambers": 1,
@@ -614,186 +592,160 @@ class GameMap:
     def _draw_platformer_background_decorations(
         self, tiles_wide: int, tiles_high: int, tile_map: list, ground_height: int
     ) -> None:
-        """Draw cyberpunk background decorations: stars, cityscape, clouds, data streams."""
-        # Colors for decorations
+        """Draw dramatic thunderstorm dusk sky with clouds and lightning."""
+        # Colors for thunderstorm at dusk
         STAR_BRIGHT = (255, 255, 220)
         STAR_DIM = (180, 180, 160)
         STAR_PURPLE = (200, 150, 255)
-        BUILDING_DARK = (20, 12, 30)
-        BUILDING_MID = (35, 22, 50)
-        BUILDING_LIGHT = (50, 35, 70)
-        WINDOW_GLOW = (255, 200, 100)
-        NEON_PURPLE = (180, 100, 255)
-        NEON_CYAN = (100, 255, 255)
-        NEON_PINK = (255, 100, 180)
-        CLOUD_DARK = (40, 25, 55)
-        CLOUD_LIGHT = (60, 40, 80)
+
+        # Storm cloud colors
+        CLOUD_DARK = (30, 25, 40)  # Dark storm clouds
+        CLOUD_MID = (50, 45, 65)  # Mid-tone clouds
+        CLOUD_LIGHT = (70, 65, 85)  # Lighter cloud edges
+        CLOUD_PURPLE = (60, 40, 80)  # Purple-tinted storm clouds
+
+        # Lightning colors
+        LIGHTNING_BRIGHT = (255, 255, 255)
+        LIGHTNING_GLOW = (200, 200, 255)
+        LIGHTNING_PURPLE = (180, 150, 255)
+
+        # Dusk horizon colors
+        HORIZON_ORANGE = (180, 80, 40)
+        HORIZON_PINK = (150, 60, 80)
+        HORIZON_PURPLE = (100, 50, 90)
 
         random.seed(123)  # Consistent decorations
 
-        # === LAYER 1: Stars (top 40% of sky) ===
         sky_height = (tiles_high - ground_height) * self.tile_size
-        star_zone_height = int(sky_height * 0.5)
 
-        for _ in range(80):  # 80 stars
+        # === LAYER 1: Sparse Stars (only visible through cloud gaps, top 30%) ===
+        star_zone_height = int(sky_height * 0.3)
+
+        for _ in range(40):  # Fewer stars (storm obscures most)
             star_x = random.randint(0, self.map_width - 1)
             star_y = random.randint(0, star_zone_height)
 
-            # Check if this position is sky (not platform)
             tile_x = star_x // self.tile_size
             tile_y = star_y // self.tile_size
             if tile_y < tiles_high and tile_x < tiles_wide:
-                if tile_map[tile_y][tile_x] == 0:  # Sky tile
-                    # Vary star appearance
+                if tile_map[tile_y][tile_x] == 0:
                     star_type = random.randint(0, 10)
-                    if star_type < 5:
-                        # Small dim star (1px)
+                    if star_type < 6:
                         self.map_surface.set_at((star_x, star_y), STAR_DIM)
-                    elif star_type < 8:
-                        # Medium bright star (cross pattern)
+                    elif star_type < 9:
                         self.map_surface.set_at((star_x, star_y), STAR_BRIGHT)
-                        self.map_surface.set_at((star_x - 1, star_y), STAR_DIM)
-                        self.map_surface.set_at((star_x + 1, star_y), STAR_DIM)
-                        self.map_surface.set_at((star_x, star_y - 1), STAR_DIM)
-                        self.map_surface.set_at((star_x, star_y + 1), STAR_DIM)
                     else:
-                        # Purple tinted star
                         self.map_surface.set_at((star_x, star_y), STAR_PURPLE)
-                        self.map_surface.set_at((star_x + 1, star_y), STAR_DIM)
 
-        # === LAYER 2: Distant Cityscape Silhouette (behind platforms) ===
-        city_base_y = int(sky_height * 0.6)  # City starts at 60% down the sky
-        building_x = 0
+        # === LAYER 2: Dusk Horizon Glow (bottom of sky) ===
+        horizon_start = int(sky_height * 0.7)
+        for y in range(horizon_start, int(sky_height)):
+            progress = (y - horizon_start) / (sky_height - horizon_start)
+            # Blend from purple to orange/pink at horizon
+            r = int(HORIZON_PURPLE[0] + (HORIZON_ORANGE[0] - HORIZON_PURPLE[0]) * progress)
+            g = int(HORIZON_PURPLE[1] + (HORIZON_ORANGE[1] - HORIZON_PURPLE[1]) * progress)
+            b = int(HORIZON_PURPLE[2] + (HORIZON_ORANGE[2] - HORIZON_PURPLE[2]) * progress)
+            pygame.draw.line(self.map_surface, (r, g, b), (0, y), (self.map_width, y))
 
-        while building_x < self.map_width:
-            # Random building dimensions
-            building_width = random.randint(30, 80)
-            building_height = random.randint(60, 180)
-            building_top = city_base_y - building_height
+        # === LAYER 3: Large Storm Clouds (dramatic, layered) ===
+        # Draw multiple layers of clouds for depth
 
-            # Draw building silhouette (dark)
-            pygame.draw.rect(
-                self.map_surface,
-                BUILDING_DARK,
-                (building_x, building_top, building_width, building_height),
-            )
-
-            # Add building details
-            # Roof variations
-            roof_type = random.randint(0, 3)
-            if roof_type == 0:
-                # Flat roof with antenna
-                antenna_x = building_x + building_width // 2
-                pygame.draw.line(
-                    self.map_surface,
-                    BUILDING_MID,
-                    (antenna_x, building_top),
-                    (antenna_x, building_top - 15),
-                    2,
-                )
-                # Blinking light on antenna
-                pygame.draw.circle(
-                    self.map_surface, NEON_PURPLE, (antenna_x, building_top - 15), 2
-                )
-            elif roof_type == 1:
-                # Pointed roof
-                points = [
-                    (building_x, building_top),
-                    (building_x + building_width // 2, building_top - 20),
-                    (building_x + building_width, building_top),
-                ]
-                pygame.draw.polygon(self.map_surface, BUILDING_MID, points)
-
-            # Windows (glowing)
-            window_rows = building_height // 20
-            window_cols = building_width // 15
-            for row in range(window_rows):
-                for col in range(window_cols):
-                    if random.random() < 0.6:  # 60% of windows lit
-                        win_x = building_x + 5 + col * 15
-                        win_y = building_top + 10 + row * 20
-                        # Window glow color varies
-                        win_color = random.choice(
-                            [WINDOW_GLOW, NEON_CYAN, NEON_PURPLE, NEON_PINK]
-                        )
-                        pygame.draw.rect(
-                            self.map_surface, win_color, (win_x, win_y, 8, 10)
-                        )
-
-            # Gap between buildings
-            building_x += building_width + random.randint(5, 25)
-
-        # === LAYER 3: Neon Signs (scattered on buildings) ===
+        # Background clouds (darker, larger)
         for _ in range(8):
-            sign_x = random.randint(50, self.map_width - 100)
-            sign_y = random.randint(city_base_y - 150, city_base_y - 50)
+            cloud_x = random.randint(-50, self.map_width)
+            cloud_y = random.randint(int(sky_height * 0.15), int(sky_height * 0.5))
+            cloud_width = random.randint(150, 300)
+            cloud_height = random.randint(60, 120)
 
-            # Check if position is in sky
-            tile_x = sign_x // self.tile_size
-            tile_y = sign_y // self.tile_size
-            if tile_y < tiles_high and tile_x < tiles_wide:
-                if tile_map[tile_y][tile_x] == 0:
-                    sign_color = random.choice([NEON_PURPLE, NEON_CYAN, NEON_PINK])
-                    sign_width = random.randint(20, 50)
-                    # Horizontal neon bar
-                    pygame.draw.rect(
-                        self.map_surface, sign_color, (sign_x, sign_y, sign_width, 4)
-                    )
-                    # Glow effect (larger, dimmer)
-                    glow_color = tuple(c // 3 for c in sign_color)
-                    pygame.draw.rect(
-                        self.map_surface,
-                        glow_color,
-                        (sign_x - 2, sign_y - 2, sign_width + 4, 8),
-                    )
+            # Draw cloud as overlapping ellipses
+            for i in range(5):
+                cx = cloud_x + random.randint(0, cloud_width)
+                cy = cloud_y + random.randint(-10, cloud_height // 2)
+                rx = random.randint(40, 80)
+                ry = random.randint(25, 50)
+                pygame.draw.ellipse(
+                    self.map_surface, CLOUD_DARK, (cx - rx, cy - ry, rx * 2, ry * 2)
+                )
 
-        # === LAYER 4: Floating Clouds/Data Streams ===
+        # Mid-layer clouds (medium tone)
+        for _ in range(10):
+            cloud_x = random.randint(-30, self.map_width)
+            cloud_y = random.randint(int(sky_height * 0.2), int(sky_height * 0.6))
+            cloud_width = random.randint(100, 200)
+
+            for i in range(4):
+                cx = cloud_x + i * (cloud_width // 4) + random.randint(-10, 10)
+                cy = cloud_y + random.randint(-15, 15)
+                rx = random.randint(30, 60)
+                ry = random.randint(20, 40)
+                pygame.draw.ellipse(self.map_surface, CLOUD_MID, (cx - rx, cy - ry, rx * 2, ry * 2))
+
+        # Foreground clouds (lighter edges, smaller)
         for _ in range(12):
-            cloud_x = random.randint(0, self.map_width - 100)
-            cloud_y = random.randint(int(sky_height * 0.2), int(sky_height * 0.7))
+            cloud_x = random.randint(0, self.map_width - 80)
+            cloud_y = random.randint(int(sky_height * 0.25), int(sky_height * 0.65))
 
-            # Check if position is in sky
-            tile_x = cloud_x // self.tile_size
-            tile_y = cloud_y // self.tile_size
+            for i in range(3):
+                cx = cloud_x + i * 35 + random.randint(-5, 5)
+                cy = cloud_y + random.randint(-8, 8)
+                r = random.randint(18, 35)
+                pygame.draw.circle(self.map_surface, CLOUD_LIGHT, (cx, cy), r)
+                # Purple tint on some clouds
+                if random.random() < 0.3:
+                    pygame.draw.circle(self.map_surface, CLOUD_PURPLE, (cx, cy - 5), r - 5)
+
+        # === LAYER 4: Lightning Bolts (dramatic, jagged) ===
+        for _ in range(6):  # 6 lightning bolts across the level
+            bolt_x = random.randint(100, self.map_width - 100)
+            bolt_start_y = random.randint(int(sky_height * 0.1), int(sky_height * 0.3))
+            bolt_end_y = random.randint(int(sky_height * 0.5), int(sky_height * 0.75))
+
+            # Draw lightning bolt with jagged path
+            points = [(bolt_x, bolt_start_y)]
+            current_x = bolt_x
+            current_y = bolt_start_y
+
+            while current_y < bolt_end_y:
+                # Jagged movement
+                current_x += random.randint(-25, 25)
+                current_y += random.randint(15, 40)
+                points.append((current_x, min(current_y, bolt_end_y)))
+
+            # Draw glow (wider, dimmer)
+            if len(points) > 1:
+                pygame.draw.lines(self.map_surface, LIGHTNING_GLOW, False, points, 5)
+                pygame.draw.lines(self.map_surface, LIGHTNING_PURPLE, False, points, 3)
+                pygame.draw.lines(self.map_surface, LIGHTNING_BRIGHT, False, points, 1)
+
+            # Add branching bolts
+            if len(points) > 2 and random.random() < 0.7:
+                branch_start = random.choice(points[1:-1])
+                branch_points = [branch_start]
+                bx, by = branch_start
+                for _ in range(3):
+                    bx += random.randint(-20, 20)
+                    by += random.randint(10, 25)
+                    branch_points.append((bx, by))
+                pygame.draw.lines(self.map_surface, LIGHTNING_GLOW, False, branch_points, 3)
+                pygame.draw.lines(self.map_surface, LIGHTNING_BRIGHT, False, branch_points, 1)
+
+        # === LAYER 5: Rain streaks (subtle, angled) ===
+        for _ in range(100):
+            rain_x = random.randint(0, self.map_width)
+            rain_y = random.randint(int(sky_height * 0.3), int(sky_height * 0.9))
+            rain_length = random.randint(8, 20)
+
+            tile_x = rain_x // self.tile_size
+            tile_y = rain_y // self.tile_size
             if tile_y < tiles_high and tile_x < tiles_wide:
                 if tile_map[tile_y][tile_x] == 0:
-                    # Draw pixelated cloud (8-bit style)
-                    cloud_width = random.randint(40, 100)
-                    cloud_height = random.randint(15, 30)
-
-                    # Cloud is made of overlapping circles/ellipses
-                    for i in range(3):
-                        cx = cloud_x + i * (cloud_width // 3)
-                        cy = cloud_y + random.randint(-5, 5)
-                        cr = random.randint(12, 20)
-                        pygame.draw.circle(self.map_surface, CLOUD_DARK, (cx, cy), cr)
-                        pygame.draw.circle(
-                            self.map_surface, CLOUD_LIGHT, (cx, cy - 3), cr - 3
-                        )
-
-        # === LAYER 5: Data Stream Lines (vertical, like Matrix) ===
-        for _ in range(15):
-            stream_x = random.randint(0, self.map_width)
-            stream_start_y = random.randint(0, int(sky_height * 0.3))
-            stream_length = random.randint(30, 100)
-
-            # Check if position is in sky
-            tile_x = stream_x // self.tile_size
-            tile_y = stream_start_y // self.tile_size
-            if tile_y < tiles_high and tile_x < tiles_wide:
-                if tile_map[tile_y][tile_x] == 0:
-                    # Draw data stream (fading vertical line)
-                    for i in range(stream_length):
-                        y = stream_start_y + i
-                        if y < sky_height:
-                            # Fade from bright to dim
-                            alpha = 1.0 - (i / stream_length)
-                            color = (
-                                int(100 * alpha),
-                                int(255 * alpha),
-                                int(200 * alpha),
-                            )
-                            self.map_surface.set_at((stream_x, y), color)
+                    # Angled rain (wind from left)
+                    end_x = rain_x + rain_length // 3
+                    end_y = rain_y + rain_length
+                    rain_color = (100, 100, 120, 80)  # Semi-transparent blue-gray
+                    pygame.draw.line(
+                        self.map_surface, (80, 80, 100), (rain_x, rain_y), (end_x, end_y), 1
+                    )
 
     def _draw_ground_top_tile(self, x: int, y: int) -> None:
         """Draw the top layer of ground (grass-like)."""
@@ -802,54 +754,39 @@ class GameMap:
         BLACK = (0, 0, 0)
 
         # Main ground top
-        pygame.draw.rect(
-            self.map_surface, GROUND_TOP, (x, y, self.tile_size, self.tile_size)
-        )
+        pygame.draw.rect(self.map_surface, GROUND_TOP, (x, y, self.tile_size, self.tile_size))
 
         # Add grass-like details
         for i in range(3):
             grass_x = x + 2 + i * 5
-            pygame.draw.line(
-                self.map_surface, GRASS_DARK, (grass_x, y), (grass_x, y + 3), 1
-            )
+            pygame.draw.line(self.map_surface, GRASS_DARK, (grass_x, y), (grass_x, y + 3), 1)
 
         # Black outline
-        pygame.draw.rect(
-            self.map_surface, BLACK, (x, y, self.tile_size, self.tile_size), 1
-        )
+        pygame.draw.rect(self.map_surface, BLACK, (x, y, self.tile_size, self.tile_size), 1)
 
     def _draw_floor_tile(self, x: int, y: int, base_color: tuple) -> None:
         """Draw a simple Mario-style floor tile."""
         # Fill with base color
-        pygame.draw.rect(
-            self.map_surface, base_color, (x, y, self.tile_size, self.tile_size)
-        )
+        pygame.draw.rect(self.map_surface, base_color, (x, y, self.tile_size, self.tile_size))
 
         # Add subtle border for tile definition
         border_color = tuple(max(0, c - 20) for c in base_color)
-        pygame.draw.rect(
-            self.map_surface, border_color, (x, y, self.tile_size, self.tile_size), 1
-        )
+        pygame.draw.rect(self.map_surface, border_color, (x, y, self.tile_size, self.tile_size), 1)
 
     def _draw_wall_tile(self, x: int, y: int) -> None:
-        """Draw a Mario-style wall block with purple theme."""
-        WALL_PURPLE = (60, 40, 90)
-        WALL_HIGHLIGHT = (100, 70, 140)
-        WALL_SHADOW = (40, 25, 60)
+        """Draw a Mario-style wall block with purple theme - BRIGHT for visibility."""
+        # Brighter colors for better visibility
+        WALL_PURPLE = (100, 70, 150)  # Brighter purple
+        WALL_HIGHLIGHT = (160, 120, 200)  # Bright highlight
+        WALL_SHADOW = (60, 40, 100)  # Visible shadow
         BLACK = (0, 0, 0)
 
         # Main block
-        pygame.draw.rect(
-            self.map_surface, WALL_PURPLE, (x, y, self.tile_size, self.tile_size)
-        )
+        pygame.draw.rect(self.map_surface, WALL_PURPLE, (x, y, self.tile_size, self.tile_size))
 
         # Top and left highlights (3 pixels thick like Mario)
-        pygame.draw.line(
-            self.map_surface, WALL_HIGHLIGHT, (x, y), (x + self.tile_size - 1, y), 3
-        )
-        pygame.draw.line(
-            self.map_surface, WALL_HIGHLIGHT, (x, y), (x, y + self.tile_size - 1), 3
-        )
+        pygame.draw.line(self.map_surface, WALL_HIGHLIGHT, (x, y), (x + self.tile_size - 1, y), 3)
+        pygame.draw.line(self.map_surface, WALL_HIGHLIGHT, (x, y), (x, y + self.tile_size - 1), 3)
 
         # Bottom and right shadows
         pygame.draw.line(
@@ -868,9 +805,7 @@ class GameMap:
         )
 
         # Black outline
-        pygame.draw.rect(
-            self.map_surface, BLACK, (x, y, self.tile_size, self.tile_size), 1
-        )
+        pygame.draw.rect(self.map_surface, BLACK, (x, y, self.tile_size, self.tile_size), 1)
 
     def _add_room_labels(self) -> None:
         """Add AWS account labels to rooms."""
@@ -901,19 +836,13 @@ class GameMap:
                     # Render zombie count
                     count_text = f"{zombie_count} zombies"
                     count_surface = small_font.render(count_text, True, WHITE)
-                    count_rect = count_surface.get_rect(
-                        center=(center_x, center_y + 10)
-                    )
+                    count_rect = count_surface.get_rect(center=(center_x, center_y + 10))
 
                     # Draw shadows
                     name_shadow = font.render(friendly_name, True, (0, 0, 0))
                     count_shadow = small_font.render(count_text, True, (0, 0, 0))
-                    self.map_surface.blit(
-                        name_shadow, (name_rect.x + 2, name_rect.y + 2)
-                    )
-                    self.map_surface.blit(
-                        count_shadow, (count_rect.x + 2, count_rect.y + 2)
-                    )
+                    self.map_surface.blit(name_shadow, (name_rect.x + 2, name_rect.y + 2))
+                    self.map_surface.blit(count_shadow, (count_rect.x + 2, count_rect.y + 2))
 
                     # Draw text
                     self.map_surface.blit(name_surface, name_rect)
@@ -1006,9 +935,7 @@ class GameMap:
 
         # Place collectibles on some platforms (not all - keep it somewhat infrequent)
         # Place on roughly every 5th-8th platform
-        for i, (platform_x, platform_y, platform_width) in enumerate(
-            self.platform_positions
-        ):
+        for i, (platform_x, platform_y, platform_width) in enumerate(self.platform_positions):
             # Skip most platforms - only place power-up on ~15% of platforms
             if random.randint(1, 100) > 15:
                 continue
@@ -1035,9 +962,7 @@ class GameMap:
         third_parties = []
 
         if not self.third_party_data:
-            logger.info(
-                "No 3rd party data provided, skipping 3rd party entity creation"
-            )
+            logger.info("No 3rd party data provided, skipping 3rd party entity creation")
             return third_parties
 
         # Check if we have org-level 3rd parties (under "all" key)
@@ -1075,9 +1000,7 @@ class GameMap:
 
                 for wall_idx, wall in enumerate(walls):
                     # Distribute extra parties among first walls
-                    num_on_this_wall = parties_per_wall + (
-                        1 if wall_idx < extra_parties else 0
-                    )
+                    num_on_this_wall = parties_per_wall + (1 if wall_idx < extra_parties else 0)
 
                     for wall_position in range(num_on_this_wall):
                         if party_index >= num_parties:
@@ -1127,23 +1050,15 @@ class GameMap:
                             patrol_max = (ry + rh) * self.tile_size
 
                         # Ensure position is within map bounds
-                        hallway_tile_x = max(
-                            2, min(hallway_tile_x, self.tiles_wide - 3)
-                        )
-                        hallway_tile_y = max(
-                            2, min(hallway_tile_y, self.tiles_high - 3)
-                        )
+                        hallway_tile_x = max(2, min(hallway_tile_x, self.tiles_wide - 3))
+                        hallway_tile_y = max(2, min(hallway_tile_y, self.tiles_high - 3))
 
                         # Check if this is a walkable position
                         max_attempts = 20
                         position_found = False
                         for attempt in range(max_attempts):
-                            test_x = (
-                                hallway_tile_x + (attempt % 3) - 1
-                            ) * self.tile_size
-                            test_y = (
-                                hallway_tile_y + (attempt // 3) - 1
-                            ) * self.tile_size
+                            test_x = (hallway_tile_x + (attempt % 3) - 1) * self.tile_size
+                            test_y = (hallway_tile_y + (attempt // 3) - 1) * self.tile_size
 
                             if self.is_walkable(int(test_x), int(test_y)):
                                 third_party_x = test_x
@@ -1164,9 +1079,7 @@ class GameMap:
                         )
 
                         # Store patrol information for pacing along wall
-                        third_party.patrol_axis = (
-                            patrol_axis  # 'horizontal' or 'vertical'
-                        )
+                        third_party.patrol_axis = patrol_axis  # 'horizontal' or 'vertical'
                         third_party.patrol_min = patrol_min
                         third_party.patrol_max = patrol_max
 
@@ -1177,9 +1090,7 @@ class GameMap:
                     f"Created {len(third_parties)} 3rd party entities surrounding MyHealth Production"
                 )
             else:
-                logger.warning(
-                    "MyHealth Production room not found, 3rd parties not created"
-                )
+                logger.warning("MyHealth Production room not found, 3rd parties not created")
 
             return third_parties
 
@@ -1245,9 +1156,7 @@ class GameMap:
                 )
                 third_parties.append(third_party)
 
-        logger.info(
-            f"Created {len(third_parties)} 3rd party entities across all accounts"
-        )
+        logger.info(f"Created {len(third_parties)} 3rd party entities across all accounts")
         return third_parties
 
     def _load_actual_floorplan(self, image_path: str) -> None:
@@ -1415,13 +1324,9 @@ class GameMap:
         self.map_surface.fill(AISLE_COLOR)
         # Add subtle grid pattern for concrete floor feel
         for x in range(0, self.map_width, 50):
-            pygame.draw.line(
-                self.map_surface, (170, 190, 200), (x, 0), (x, self.map_height), 1
-            )
+            pygame.draw.line(self.map_surface, (170, 190, 200), (x, 0), (x, self.map_height), 1)
         for y in range(0, self.map_height, 50):
-            pygame.draw.line(
-                self.map_surface, (170, 190, 200), (0, y), (self.map_width, y), 1
-            )
+            pygame.draw.line(self.map_surface, (170, 190, 200), (0, y), (self.map_width, y), 1)
 
         # Define exhibit areas with realistic re:invent + zombie theme
         areas = [
@@ -1492,17 +1397,13 @@ class GameMap:
                     stripe_start = (x + i, y)
                     stripe_end = (x, y + i)
                     if stripe_start[0] <= x + w and stripe_end[1] <= y + h:
-                        pygame.draw.line(
-                            self.map_surface, BLOOD_RED, stripe_start, stripe_end, 2
-                        )
+                        pygame.draw.line(self.map_surface, BLOOD_RED, stripe_start, stripe_end, 2)
 
             # Add label with appropriate color
             label_color = (
                 TEXT_COLOR if is_safe else (255, 200, 200)
             )  # Slight red tint for danger zones
-            self._draw_text_centered(
-                label, x + w // 2, y + h // 2, label_color, size=28
-            )
+            self._draw_text_centered(label, x + w // 2, y + h // 2, label_color, size=28)
 
         # Draw AWS logo/branding areas
         self._draw_aws_branding()
@@ -1510,9 +1411,7 @@ class GameMap:
         # Add directional markers
         self._draw_directional_markers()
 
-    def _draw_text_centered(
-        self, text: str, x: int, y: int, color: tuple, size: int = 24
-    ) -> None:
+    def _draw_text_centered(self, text: str, x: int, y: int, color: tuple, size: int = 24) -> None:
         """Draw centered text with optional multi-line support."""
         try:
             font = pygame.font.Font(None, size)
@@ -1522,9 +1421,7 @@ class GameMap:
 
             for i, line in enumerate(lines):
                 text_surface = font.render(line, True, color)
-                text_rect = text_surface.get_rect(
-                    center=(x, start_y + i * size + size // 2)
-                )
+                text_rect = text_surface.get_rect(center=(x, start_y + i * size + size // 2))
                 self.map_surface.blit(text_surface, text_rect)
         except:
             pass  # Fallback if font rendering fails
@@ -1562,9 +1459,7 @@ class GameMap:
         self._draw_biohazard(150, 50, 40, WARNING_YELLOW)
         self._draw_biohazard(self.map_width - 150, 50, 40, WARNING_YELLOW)
         self._draw_biohazard(150, self.map_height - 50, 40, WARNING_YELLOW)
-        self._draw_biohazard(
-            self.map_width - 150, self.map_height - 50, 40, WARNING_YELLOW
-        )
+        self._draw_biohazard(self.map_width - 150, self.map_height - 50, 40, WARNING_YELLOW)
 
     def _draw_biohazard(self, x: int, y: int, size: int, color: tuple) -> None:
         """Draw a biohazard symbol (8-bit style)."""
@@ -1578,9 +1473,7 @@ class GameMap:
             rad = math.radians(angle)
             outer_x = x + int(size * 0.7 * math.cos(rad))
             outer_y = y + int(size * 0.7 * math.sin(rad))
-            pygame.draw.circle(
-                self.map_surface, color, (outer_x, outer_y), size // 3, 2
-            )
+            pygame.draw.circle(self.map_surface, color, (outer_x, outer_y), size // 3, 2)
 
     def _draw_blood_splatter(self, x: int, y: int, size: int) -> None:
         """Draw a blood splatter (8-bit style)."""
@@ -1654,9 +1547,7 @@ class GameMap:
             entrance_rect = entrance_text.get_rect(center=(entrance_x, entrance_y))
             # Black outline
             outline_text = font.render("⬇ EVACUATION ROUTE ⬇", True, (0, 0, 0))
-            self.map_surface.blit(
-                outline_text, (entrance_rect.x - 2, entrance_rect.y - 2)
-            )
+            self.map_surface.blit(outline_text, (entrance_rect.x - 2, entrance_rect.y - 2))
             self.map_surface.blit(entrance_text, entrance_rect)
         except:
             pass
@@ -1778,12 +1669,7 @@ class GameMap:
         tile_y = y // self.tile_size
 
         # Check bounds
-        if (
-            tile_x < 0
-            or tile_x >= self.tiles_wide
-            or tile_y < 0
-            or tile_y >= self.tiles_high
-        ):
+        if tile_x < 0 or tile_x >= self.tiles_wide or tile_y < 0 or tile_y >= self.tiles_high:
             return False
 
         # Check tile map (0 = walkable floor, 1 = wall)
@@ -1840,9 +1726,7 @@ class GameMap:
             account_zombies = zombies_by_account.get(account_num, [])
 
             if not account_zombies:
-                logger.warning(
-                    f"No zombies found for account {account_num} (room {room_index})"
-                )
+                logger.warning(f"No zombies found for account {account_num} (room {room_index})")
                 continue
 
             # Get room bounds (in tiles)
@@ -1860,13 +1744,8 @@ class GameMap:
                 min_distance = max(min_distance, 128)
 
                 # Get list of platform positions to place zombies on
-                if (
-                    not hasattr(self, "platform_positions")
-                    or not self.platform_positions
-                ):
-                    logger.error(
-                        "No platform positions available for zombie placement!"
-                    )
+                if not hasattr(self, "platform_positions") or not self.platform_positions:
+                    logger.error("No platform positions available for zombie placement!")
                     continue
 
                 logger.info(
@@ -1886,9 +1765,9 @@ class GameMap:
                         if platform_index >= len(self.platform_positions):
                             platform_index = 0  # Wrap around
 
-                        platform_x, platform_y, platform_width = (
-                            self.platform_positions[platform_index]
-                        )
+                        platform_x, platform_y, platform_width = self.platform_positions[
+                            platform_index
+                        ]
 
                         # Place zombie randomly along this platform
                         # Add some padding from platform edges
@@ -1932,11 +1811,9 @@ class GameMap:
 
                     if not position_found:
                         # Fallback: place on any platform (ignore distance)
-                        platform_x, platform_y, platform_width = (
-                            self.platform_positions[
-                                platform_index % len(self.platform_positions)
-                            ]
-                        )
+                        platform_x, platform_y, platform_width = self.platform_positions[
+                            platform_index % len(self.platform_positions)
+                        ]
                         x = platform_x + platform_width // 2
                         y = platform_y - 16
                         zombie.position = Vector2(x, y)
@@ -2021,12 +1898,8 @@ class GameMap:
             self.camera_y = player_y - self.screen_height // 2
 
             # Clamp camera to map bounds
-            self.camera_x = max(
-                0, min(self.camera_x, self.map_width - self.screen_width)
-            )
-            self.camera_y = max(
-                0, min(self.camera_y, self.map_height - self.screen_height)
-            )
+            self.camera_x = max(0, min(self.camera_x, self.map_width - self.screen_width))
+            self.camera_y = max(0, min(self.camera_y, self.map_height - self.screen_height))
 
     def toggle_landing_zone_view(self) -> None:
         """Toggle between normal view and landing zone (zoomed out) view."""
@@ -2114,9 +1987,7 @@ class GameMap:
 
         return (screen_x, screen_y)
 
-    def is_on_screen(
-        self, world_x: float, world_y: float, width: int, height: int
-    ) -> bool:
+    def is_on_screen(self, world_x: float, world_y: float, width: int, height: int) -> bool:
         """
         Check if an object is visible on screen.
 

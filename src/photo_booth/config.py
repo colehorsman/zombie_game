@@ -4,8 +4,53 @@ Photo Booth Configuration.
 Loads settings from environment variables with sensible defaults.
 """
 
+import logging
 import os
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
+
+
+def detect_best_camera() -> int:
+    """
+    Auto-detect the best available camera.
+
+    Prefers external cameras (higher index, typically better FPS) over built-in.
+    Returns the camera index with the highest FPS, or 0 if detection fails.
+    """
+    try:
+        import cv2
+    except ImportError:
+        return 0
+
+    best_camera = 0
+    best_fps = 0.0
+
+    # Check first 5 camera indices
+    for i in range(5):
+        try:
+            cap = cv2.VideoCapture(i)
+            if cap.isOpened():
+                ret, _ = cap.read()
+                if ret:
+                    fps = cap.get(cv2.CAP_PROP_FPS)
+                    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    logger.info(f"📷 Camera {i}: {width}x{height} @ {fps} FPS")
+
+                    # Prefer higher FPS (external cameras usually have better FPS)
+                    # Also prefer higher index if FPS is similar (external usually higher index)
+                    if fps > best_fps or (fps == best_fps and i > best_camera):
+                        best_fps = fps
+                        best_camera = i
+                cap.release()
+        except Exception:
+            pass
+
+    if best_fps > 0:
+        logger.info(f"📷 Selected camera {best_camera} (best FPS: {best_fps})")
+
+    return best_camera
 
 
 @dataclass
@@ -26,9 +71,18 @@ class PhotoBoothConfig:
     @classmethod
     def from_env(cls) -> "PhotoBoothConfig":
         """Load configuration from environment variables."""
+        # Auto-detect camera if not explicitly set
+        camera_env = os.getenv("PHOTO_BOOTH_CAMERA_INDEX")
+        if camera_env is not None:
+            camera_index = int(camera_env)
+        elif os.getenv("PHOTO_BOOTH_AUTO_DETECT_CAMERA", "true").lower() == "true":
+            camera_index = detect_best_camera()
+        else:
+            camera_index = 0
+
         return cls(
             enabled=os.getenv("PHOTO_BOOTH_ENABLED", "true").lower() == "true",
-            camera_index=int(os.getenv("PHOTO_BOOTH_CAMERA_INDEX", "0")),
+            camera_index=camera_index,
             event_name=os.getenv("PHOTO_BOOTH_EVENT_NAME", "AWS re:Invent 2025"),
             booth_number=os.getenv("PHOTO_BOOTH_BOOTH_NUMBER", "435"),
             qr_url=os.getenv("PHOTO_BOOTH_QR_URL", "https://sonraisecurity.com/zombie-blaster"),

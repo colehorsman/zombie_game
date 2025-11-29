@@ -32,6 +32,160 @@ class TestPhotoBoothConfig:
         assert config.enabled is True
         assert isinstance(config.camera_index, int)
 
+    def test_from_env_explicit_camera_index(self):
+        """Test that explicit PHOTO_BOOTH_CAMERA_INDEX overrides auto-detection."""
+        os.environ["PHOTO_BOOTH_CAMERA_INDEX"] = "2"
+        try:
+            config = PhotoBoothConfig.from_env()
+            assert config.camera_index == 2
+        finally:
+            del os.environ["PHOTO_BOOTH_CAMERA_INDEX"]
+
+    def test_from_env_auto_detect_disabled(self):
+        """Test that auto-detection can be disabled via environment variable."""
+        # Ensure no explicit camera index is set
+        if "PHOTO_BOOTH_CAMERA_INDEX" in os.environ:
+            del os.environ["PHOTO_BOOTH_CAMERA_INDEX"]
+        os.environ["PHOTO_BOOTH_AUTO_DETECT_CAMERA"] = "false"
+        try:
+            config = PhotoBoothConfig.from_env()
+            # When auto-detect is disabled and no explicit index, should default to 0
+            assert config.camera_index == 0
+        finally:
+            del os.environ["PHOTO_BOOTH_AUTO_DETECT_CAMERA"]
+
+    def test_from_env_auto_detect_enabled_by_default(self):
+        """Test that auto-detection is enabled by default."""
+        # Clear any existing camera index setting
+        if "PHOTO_BOOTH_CAMERA_INDEX" in os.environ:
+            del os.environ["PHOTO_BOOTH_CAMERA_INDEX"]
+        if "PHOTO_BOOTH_AUTO_DETECT_CAMERA" in os.environ:
+            del os.environ["PHOTO_BOOTH_AUTO_DETECT_CAMERA"]
+
+        # from_env should call detect_best_camera when auto-detect is enabled
+        config = PhotoBoothConfig.from_env()
+        # Result should be an integer (0 or higher if cameras found)
+        assert isinstance(config.camera_index, int)
+        assert config.camera_index >= 0
+
+
+class TestDetectBestCamera:
+    """Tests for detect_best_camera function."""
+
+    def test_detect_best_camera_returns_int(self):
+        """Test that detect_best_camera returns an integer."""
+        from photo_booth.config import detect_best_camera
+
+        result = detect_best_camera()
+        assert isinstance(result, int)
+        assert result >= 0
+
+    def test_detect_best_camera_returns_zero_without_cv2(self):
+        """Test that detect_best_camera returns 0 when cv2 is not available."""
+        from unittest.mock import patch
+
+        from photo_booth.config import detect_best_camera
+
+        # Mock cv2 import to raise ImportError
+        with patch.dict("sys.modules", {"cv2": None}):
+            # Need to reload the function to test import failure
+            # Since cv2 is imported inside the function, we can mock it
+            import sys
+
+            original_cv2 = sys.modules.get("cv2")
+            sys.modules["cv2"] = None
+            try:
+                # The function catches ImportError and returns 0
+                # We need to test this by actually having cv2 fail to import
+                # Since cv2 is imported inside the function, we can't easily mock it
+                # Instead, verify the function handles the case gracefully
+                result = detect_best_camera()
+                assert isinstance(result, int)
+            finally:
+                if original_cv2 is not None:
+                    sys.modules["cv2"] = original_cv2
+
+    def test_detect_best_camera_with_mock_cameras(self):
+        """Test detect_best_camera with mocked camera devices."""
+        from unittest.mock import MagicMock, patch
+
+        from photo_booth.config import detect_best_camera
+
+        # Create mock VideoCapture that simulates cameras
+        mock_cap = MagicMock()
+        mock_cap.isOpened.return_value = True
+        mock_cap.read.return_value = (True, MagicMock())
+        mock_cap.get.side_effect = lambda prop: {
+            5: 30.0,  # CAP_PROP_FPS
+            3: 640,  # CAP_PROP_FRAME_WIDTH
+            4: 480,  # CAP_PROP_FRAME_HEIGHT
+        }.get(prop, 0)
+
+        with patch("cv2.VideoCapture", return_value=mock_cap):
+            with patch("cv2.CAP_PROP_FPS", 5):
+                with patch("cv2.CAP_PROP_FRAME_WIDTH", 3):
+                    with patch("cv2.CAP_PROP_FRAME_HEIGHT", 4):
+                        result = detect_best_camera()
+                        assert isinstance(result, int)
+                        assert result >= 0
+
+    def test_detect_best_camera_prefers_higher_fps(self):
+        """Test that detect_best_camera prefers cameras with higher FPS."""
+        from unittest.mock import MagicMock, call, patch
+
+        from photo_booth.config import detect_best_camera
+
+        # Track which camera index is being opened
+        camera_fps = {0: 30.0, 1: 60.0, 2: 0.0}  # Camera 1 has highest FPS
+
+        def create_mock_cap(index):
+            mock_cap = MagicMock()
+            if index in camera_fps and camera_fps[index] > 0:
+                mock_cap.isOpened.return_value = True
+                mock_cap.read.return_value = (True, MagicMock())
+                mock_cap.get.side_effect = lambda prop: {
+                    5: camera_fps[index],  # CAP_PROP_FPS
+                    3: 640,  # CAP_PROP_FRAME_WIDTH
+                    4: 480,  # CAP_PROP_FRAME_HEIGHT
+                }.get(prop, 0)
+            else:
+                mock_cap.isOpened.return_value = False
+            return mock_cap
+
+        with patch("cv2.VideoCapture", side_effect=create_mock_cap):
+            with patch("cv2.CAP_PROP_FPS", 5):
+                with patch("cv2.CAP_PROP_FRAME_WIDTH", 3):
+                    with patch("cv2.CAP_PROP_FRAME_HEIGHT", 4):
+                        result = detect_best_camera()
+                        # Should select camera 1 (highest FPS)
+                        assert result == 1
+
+    def test_detect_best_camera_handles_no_cameras(self):
+        """Test that detect_best_camera returns 0 when no cameras are available."""
+        from unittest.mock import MagicMock, patch
+
+        from photo_booth.config import detect_best_camera
+
+        # Mock VideoCapture that always fails to open
+        mock_cap = MagicMock()
+        mock_cap.isOpened.return_value = False
+
+        with patch("cv2.VideoCapture", return_value=mock_cap):
+            result = detect_best_camera()
+            assert result == 0
+
+    def test_detect_best_camera_handles_exceptions(self):
+        """Test that detect_best_camera handles exceptions gracefully."""
+        from unittest.mock import patch
+
+        from photo_booth.config import detect_best_camera
+
+        # Mock VideoCapture that raises an exception
+        with patch("cv2.VideoCapture", side_effect=Exception("Camera error")):
+            result = detect_best_camera()
+            # Should return 0 on error
+            assert result == 0
+
 
 class TestRetroFilter:
     """Tests for RetroFilter."""

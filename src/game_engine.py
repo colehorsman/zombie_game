@@ -599,12 +599,16 @@ class GameEngine:
                 # BUG FIX: Ensure all zombies are in correct state before pausing
                 # Reset any quarantine/hidden flags that might have been set incorrectly
                 # This prevents zombies from becoming unshootable after quest success
-                for zombie in self.zombies:
-                    if zombie.is_quarantining or zombie.is_hidden:
-                        # If zombie is still in the list but marked as quarantining/hidden, reset it
-                        zombie.is_quarantining = False
-                        zombie.is_hidden = False
-                        logger.warning(f"Reset quarantine/hidden flags on {zombie.identity_name}")
+                # BUT: Skip this during arcade mode - eliminated zombies should stay hidden!
+                if not self.arcade_manager.is_active():
+                    for zombie in self.zombies:
+                        if zombie.is_quarantining or zombie.is_hidden:
+                            # If zombie is still in the list but marked as quarantining/hidden, reset it
+                            zombie.is_quarantining = False
+                            zombie.is_hidden = False
+                            logger.warning(
+                                f"Reset quarantine/hidden flags on {zombie.identity_name}"
+                            )
 
                 # Pause game to show success message
                 self.game_state.previous_status = (
@@ -1359,74 +1363,93 @@ class GameEngine:
 
     def _start_arcade_mode(self) -> None:
         """Start arcade mode session with initialization."""
-        logger.info("🎮 ========== STARTING ARCADE MODE SESSION ==========")
-        logger.info(f"🎮 Current game state: {self.game_state.status}")
-        logger.info(f"🎮 Current level: {self.game_state.current_level}")
-        logger.info(f"🎮 Current account: {self.game_state.current_level_account_id}")
-        logger.info(f"🎮 Has game_map: {self.game_map is not None}")
-        logger.info(f"🎮 Zombie count: {len(self.zombies)}")
+        try:
+            logger.info("🎮 ========== STARTING ARCADE MODE SESSION ==========")
+            logger.info(f"🎮 Current game state: {self.game_state.status}")
+            logger.info(f"🎮 Current level: {self.game_state.current_level}")
+            logger.info(f"🎮 Current account: {self.game_state.current_level_account_id}")
+            logger.info(f"🎮 Has game_map: {self.game_map is not None}")
+            logger.info(f"🎮 Zombie count: {len(self.zombies)}")
 
-        # Show photo booth consent prompt if enabled
-        if self.photo_booth and self.photo_booth.state != PhotoBoothState.DISABLED:
-            self.photo_booth.reset()
-            self.photo_booth.show_consent_prompt()
-            self.game_state.photo_booth_consent_active = True
-            logger.info("📸 Photo booth consent prompt shown")
-            # Don't start arcade yet - wait for consent
-            return
+            # Show photo booth consent prompt if enabled
+            # Check PhotoBoothState is available (may be None if import failed)
+            if (
+                self.photo_booth
+                and PhotoBoothState
+                and self.photo_booth.state != PhotoBoothState.DISABLED
+            ):
+                self.photo_booth.reset()
+                self.photo_booth.show_consent_prompt()
+                self.game_state.photo_booth_consent_active = True
+                logger.info("📸 Photo booth consent prompt shown")
+                # Don't start arcade yet - wait for consent
+                return
 
-        # Continue with arcade start
-        self._begin_arcade_session()
+            # Continue with arcade start
+            self._begin_arcade_session()
+        except Exception as e:
+            logger.error(f"🎮 ❌ ARCADE MODE START FAILED: {e}", exc_info=True)
+            # Try to recover by starting without photo booth
+            self.game_state.photo_booth_consent_active = False
+            self._begin_arcade_session()
 
     def _begin_arcade_session(self) -> None:
         """Begin the actual arcade session after consent (if applicable)."""
-        # Clear consent flag
-        self.game_state.photo_booth_consent_active = False
+        try:
+            # Clear consent flag
+            self.game_state.photo_booth_consent_active = False
 
-        # Start arcade manager
-        self.arcade_manager.start_session()
-        logger.info(f"🎮 Arcade manager started. Is active: {self.arcade_manager.is_active()}")
+            # Start arcade manager
+            self.arcade_manager.start_session()
+            logger.info(f"🎮 Arcade manager started. Is active: {self.arcade_manager.is_active()}")
 
-        # Start photo booth arcade tracking for timed captures
-        if self.photo_booth and self.photo_booth.is_consent_complete():
-            self.photo_booth.start_arcade_tracking()
-            logger.info("📸 Photo booth arcade tracking started")
+            # Start photo booth arcade tracking for timed captures
+            if self.photo_booth and self.photo_booth.is_consent_complete():
+                self.photo_booth.start_arcade_tracking()
+                logger.info("📸 Photo booth arcade tracking started")
 
-        # Make all zombies visible for arcade mode
-        visible_count = 0
-        for zombie in self.zombies:
-            if zombie.is_hidden:
-                zombie.is_hidden = False
-                visible_count += 1
-        logger.info(f"🎮 Made {visible_count} zombies visible for arcade mode")
+            # Make all zombies visible for arcade mode
+            visible_count = 0
+            for zombie in self.zombies:
+                if zombie.is_hidden:
+                    zombie.is_hidden = False
+                    visible_count += 1
+            logger.info(f"🎮 Made {visible_count} zombies visible for arcade mode")
 
-        # Calculate initial zombie count based on level width
-        if self.game_map:
-            initial_count = self.arcade_manager.calculate_initial_zombie_count(
-                self.game_map.map_width
+            # Calculate initial zombie count based on level width
+            if self.game_map:
+                initial_count = self.arcade_manager.calculate_initial_zombie_count(
+                    self.game_map.map_width
+                )
+                logger.info(
+                    f"🎮 Arcade mode: {initial_count} zombies calculated for level width {self.game_map.map_width}"
+                )
+            else:
+                logger.warning("🎮 ⚠️  No game_map available for arcade mode!")
+
+            # Spawn arcade power-ups
+            if self.game_map:
+                ground_y = 800
+                arcade_powerups = self.arcade_manager.spawn_arcade_powerups(
+                    self.game_map.map_width,
+                    ground_y,
+                    count=10,  # More power-ups for arcade mode
+                )
+                self.powerups.extend(arcade_powerups)
+                logger.info(f"🎁 Spawned {len(arcade_powerups)} arcade power-ups")
+
+            # Show confirmation message (use resource_message to avoid blocking shooting)
+            self.game_state.resource_message = (
+                "🎮 ARCADE MODE ACTIVATED!\n\nEliminate as many zombies as possible in 60 seconds!"
             )
-            logger.info(
-                f"🎮 Arcade mode: {initial_count} zombies calculated for level width {self.game_map.map_width}"
-            )
-        else:
-            logger.warning("🎮 ⚠️  No game_map available for arcade mode!")
+            self.game_state.resource_message_timer = 3.0
 
-        # Spawn arcade power-ups
-        if self.game_map:
-            ground_y = 800
-            arcade_powerups = self.arcade_manager.spawn_arcade_powerups(
-                self.game_map.map_width,
-                ground_y,
-                count=10,  # More power-ups for arcade mode
-            )
-            self.powerups.extend(arcade_powerups)
-            logger.info(f"🎁 Spawned {len(arcade_powerups)} arcade power-ups")
-
-        # Show confirmation message (use resource_message to avoid blocking shooting)
-        self.game_state.resource_message = (
-            "🎮 ARCADE MODE ACTIVATED!\n\nEliminate as many zombies as possible in 60 seconds!"
-        )
-        self.game_state.resource_message_timer = 3.0
+            logger.info("✅ Arcade session started successfully")
+        except Exception as e:
+            logger.error(f"🎮 ❌ BEGIN ARCADE SESSION FAILED: {e}", exc_info=True)
+            # Show error to user
+            self.game_state.resource_message = f"❌ Arcade mode failed to start: {e}"
+            self.game_state.resource_message_timer = 5.0
 
         logger.info("✅ Arcade mode initialized successfully")
         logger.info("🎮 ==================================================")
@@ -1715,7 +1738,9 @@ class GameEngine:
         # Map mode: update camera and reveal nearby zombies
         if self.use_map and self.game_map:
             self.game_map.update_camera(self.player.position.x, self.player.position.y)
-            self.game_map.reveal_nearby_zombies(self.player.position, self.zombies)
+            # Skip reveal during arcade mode - eliminated zombies should stay hidden
+            if not self.arcade_manager.is_active():
+                self.game_map.reveal_nearby_zombies(self.player.position, self.zombies)
 
         # Update zombies with AI (only if not in boss battle)
         if self.game_state.status != GameStatus.BOSS_BATTLE:
@@ -1727,11 +1752,12 @@ class GameEngine:
         for third_party in third_parties:
             third_party.update(delta_time, self.game_map)
 
-        # Update service protection quests
-        self._update_quests(delta_time)
+        # Update service protection quests (skip during arcade mode)
+        if not self.arcade_manager.is_active():
+            self._update_quests(delta_time)
 
-        # Update JIT Access Quest
-        self._update_jit_quest(delta_time)
+            # Update JIT Access Quest
+            self._update_jit_quest(delta_time)
 
         # Update projectiles
         for projectile in self.projectiles[:]:
@@ -1929,12 +1955,11 @@ class GameEngine:
 
         # ARCADE MODE: Subtract from elimination count instead of respawning
         if self.arcade_manager.is_active():
-            state = self.arcade_manager.get_state()
-            if state.eliminations_count > 0:
+            if self.arcade_manager.eliminations_count > 0:
                 # Reduce elimination count by 1 (penalty for getting hit)
-                self.arcade_manager.arcade_state.eliminations_count -= 1
+                self.arcade_manager.eliminations_count -= 1
                 logger.info(
-                    f"🎮 ARCADE: -1 elimination penalty! Count: {self.arcade_manager.arcade_state.eliminations_count}"
+                    f"🎮 ARCADE: -1 elimination penalty! Count: {self.arcade_manager.eliminations_count}"
                 )
             return
 
@@ -2230,12 +2255,13 @@ class GameEngine:
             self.game_state.error_message = f"Error: {str(e)}"
             logger.error(f"Exception during block: {e}")
 
-    def handle_input(self, events: List[pygame.event.Event]) -> None:
+    def handle_input(self, events: List[pygame.event.Event], screen: pygame.Surface = None) -> None:
         """
         Handle input events (keyboard and 8-bit controller).
 
         Args:
             events: List of Pygame events
+            screen: Optional pygame surface for screenshot capture
         """
         for event in events:
             if event.type == pygame.QUIT:
@@ -2426,7 +2452,8 @@ class GameEngine:
 
                 # F12 - Screenshot
                 if event.key == pygame.K_F12:
-                    self.evidence_capture.take_screenshot(self.screen)
+                    if screen:
+                        self.evidence_capture.take_screenshot(screen)
                     continue
 
                 # F9 - Toggle Recording
@@ -2469,9 +2496,10 @@ class GameEngine:
                         self.game_map.toggle_landing_zone_view()
                         if self.game_map.landing_zone_view:
                             logger.info("🗺️ Entered Landing Zone View (zoomed out)")
-                            # Reveal all zombies in landing zone view
-                            for zombie in self.zombies:
-                                zombie.is_hidden = False
+                            # Reveal all zombies in landing zone view (but not during arcade mode)
+                            if not self.arcade_manager.is_active():
+                                for zombie in self.zombies:
+                                    zombie.is_hidden = False
                         else:
                             logger.info("🔍 Exited Landing Zone View (normal zoom)")
 
@@ -2504,7 +2532,8 @@ class GameEngine:
                 # Evidence capture - works even without joystick initialized
                 # X button (2) = Screenshot
                 if event.button == 2:
-                    self.evidence_capture.take_screenshot(self.screen)
+                    if screen:
+                        self.evidence_capture.take_screenshot(screen)
                     continue
                 # Y button (3) = Toggle Recording
                 elif event.button == 3:
@@ -2752,8 +2781,10 @@ class GameEngine:
                         if not self.game_map.landing_zone_view:
                             self.game_map.toggle_landing_zone_view()
                             logger.info("🗺️ Right stick UP - Entered Landing Zone View")
-                            for zombie in self.zombies:
-                                zombie.is_hidden = False
+                            # Reveal zombies (but not during arcade mode)
+                            if not self.arcade_manager.is_active():
+                                for zombie in self.zombies:
+                                    zombie.is_hidden = False
                     elif right_stick_y > 0.5:  # Right stick DOWN = zoom in
                         if self.game_map.landing_zone_view:
                             self.game_map.toggle_landing_zone_view()
