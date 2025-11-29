@@ -269,8 +269,15 @@ class GameEngine:
         if PHOTO_BOOTH_AVAILABLE:
             self.photo_booth = PhotoBoothController()
             self.photo_booth.initialize()
-            print(f"📸 Photo booth initialized, state = {self.photo_booth.state}")
-            logger.info("📸 Photo booth initialized")
+            print(
+                f"📸 Photo booth initialized: state={self.photo_booth.state}, "
+                f"camera_available={self.photo_booth.is_camera_available}, "
+                f"webcam_open={self.photo_booth._webcam is not None and self.photo_booth._webcam.isOpened() if self.photo_booth._webcam else 'No webcam'}"
+            )
+            logger.info(
+                f"📸 Photo booth initialized: state={self.photo_booth.state}, "
+                f"camera_available={self.photo_booth.is_camera_available}"
+            )
 
         # Game over menu
         self.game_over_menu_active = False
@@ -1359,7 +1366,11 @@ class GameEngine:
             elapsed = self.photo_booth.get_arcade_elapsed_time()
             if int(elapsed) % 5 == 0 and int(elapsed) > 0:  # Log every 5 seconds
                 logger.info(
-                    f"📸 Photo booth status: consent_complete={self.photo_booth.is_consent_complete()}, elapsed={elapsed:.1f}s, gameplay_captured={self.photo_booth.gameplay_captured}"
+                    f"📸 Photo booth status: consent_complete={self.photo_booth.is_consent_complete()}, "
+                    f"elapsed={elapsed:.1f}s, gameplay_captured={self.photo_booth.gameplay_captured}, "
+                    f"selfie_opted_in={self.photo_booth.selfie_opted_in}, "
+                    f"selfie_captured={self.photo_booth.selfie_captured}, "
+                    f"camera_available={self.photo_booth.is_camera_available}"
                 )
 
             if self.photo_booth.is_consent_complete():
@@ -1375,8 +1386,12 @@ class GameEngine:
 
                 # Capture selfie shortly after gameplay screenshot
                 if self.photo_booth.should_capture_selfie():
-                    self.photo_booth.capture_selfie()
-                    logger.info("📸 Captured selfie during arcade mode")
+                    logger.info(
+                        f"📸 About to capture selfie: opted_in={self.photo_booth.selfie_opted_in}, "
+                        f"camera_available={self.photo_booth.is_camera_available}"
+                    )
+                    result = self.photo_booth.capture_selfie()
+                    logger.info(f"📸 Captured selfie during arcade mode, result={result}")
 
         # Disable quests during arcade mode
         # (Quests are updated in _update_playing, which still runs)
@@ -1500,6 +1515,15 @@ class GameEngine:
 
         # Generate photo booth composite if enabled and minimum time passed
         if self.photo_booth and self.photo_booth.is_consent_complete():
+            logger.info(
+                f"📸 Photo booth end-of-arcade status: "
+                f"state={self.photo_booth.state}, "
+                f"selfie_opted_in={self.photo_booth.selfie_opted_in}, "
+                f"selfie_captured={self.photo_booth.selfie_captured}, "
+                f"gameplay_captured={self.photo_booth.gameplay_captured}, "
+                f"selfie_image={self.photo_booth._selfie_image is not None}, "
+                f"camera_available={self.photo_booth.is_camera_available}"
+            )
             if self.photo_booth.has_minimum_arcade_time():
                 # Only generate if we have a gameplay screenshot
                 if self.photo_booth.gameplay_captured:
@@ -2590,21 +2614,29 @@ class GameEngine:
                     f"📸 CONSENT CHECK: active={consent_active}, photo_booth={self.photo_booth is not None}, button={event.button}"
                 )
                 if consent_active and self.photo_booth:
-                    if event.button == 0:  # A button = Yes
-                        logger.info("📸 User opted IN to selfie (controller A)")
+                    logger.info(
+                        f"📸 PRE-CONSENT: state={self.photo_booth.state}, "
+                        f"camera_available={self.photo_booth.is_camera_available}, "
+                        f"webcam_exists={self.photo_booth._webcam is not None}"
+                    )
+                    # Accept EITHER A (0) or B (1) as "Yes" for selfie - some controllers have swapped buttons
+                    # This ensures the user can opt-in regardless of button mapping
+                    if event.button == 0 or event.button == 1:
+                        logger.info(f"📸 User opted IN to selfie (button {event.button})")
                         self.photo_booth.handle_consent_input(opted_in=True)
-                        self._begin_arcade_session()
-                        continue
-                    elif event.button == 1:  # B button = No
-                        logger.info("📸 User opted OUT of selfie (controller B)")
-                        self.photo_booth.handle_consent_input(opted_in=False)
+                        logger.info(
+                            f"📸 POST-CONSENT: selfie_opted_in={self.photo_booth.selfie_opted_in}, "
+                            f"state={self.photo_booth.state}"
+                        )
                         self._begin_arcade_session()
                         continue
 
                 # Handle photo booth summary dismissal (INSERT COIN TO CONTINUE)
                 if getattr(self.game_state, "photo_booth_summary_active", False):
-                    if event.button == 0:  # A button = dismiss
-                        logger.info("📸 User dismissed photo booth summary (controller A)")
+                    if event.button == 0 or event.button == 1:  # A or B button = dismiss
+                        logger.info(
+                            f"📸 User dismissed photo booth summary (button {event.button})"
+                        )
                         self._dismiss_photo_booth_summary()
                         continue
 
