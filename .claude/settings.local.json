@@ -27,7 +27,11 @@
       "Bash(git reset:*)",
       "Bash(tree:*)",
       "Bash(git pull:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "Bash(fi)",
+      "Bash(timeout 8 python3:*)",
+      "Bash(pgrep:*)",
+      "Bash(timeout 10 python3:*)"
     ],
     "deny": [],
     "ask": []
