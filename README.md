@@ -3,18 +3,26 @@
 > An 8-bit video game that transforms cloud security remediation into engaging gameplay through real-time Sonrai API integration.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-177%2F191%20passing-green.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-579%20passing-green.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+<!-- TODO: Add gameplay GIF here - show zombie elimination + "Identity Quarantined!" popup -->
+<!-- ![Gameplay Demo](assets/demo.gif) -->
+
+---
 
 ## What is This?
 
-Every AWS organization accumulates unused identities—forgotten contractor accounts, dead project roles, orphaned IAM users. Each represents a security risk. Traditional dashboards and tickets fail to motivate cleanup because the problem is invisible.
+**The Problem:** Every AWS organization accumulates unused identities—forgotten contractor accounts, dead project roles, orphaned IAM users. Each represents a security risk. Traditional dashboards and tickets fail to motivate cleanup because the problem is invisible.
 
-**Sonrai Zombie Blaster** makes identity cleanup tangible and engaging:
+**The Solution:** Sonrai Zombie Blaster makes identity cleanup tangible and engaging:
 - **Visualize** unused identities as zombies in a retro 8-bit game
 - **Eliminate** them through side-scrolling platformer gameplay
 - **Trigger** real Sonrai API calls to quarantine actual identities
 - **Learn** security concepts through interactive quests
+
+<!-- TODO: Add side-by-side screenshot - Lobby view (AWS org overview) | Level view (platformer action) -->
+<!-- ![Game Modes](assets/game-modes.png) -->
 
 ---
 
@@ -50,34 +58,22 @@ python3 src/main.py
 
 ---
 
-## 🤖 Built with Kiro AI
+## 🎓 Learn Sonrai Cloud Permissions Firewall
 
-> **⚡ Built in 11 Days:** This entire production-ready game was built from scratch in just 11 days (Nov 17-28, 2024) with Kiro as Product Manager, Technical Lead, QA Engineer, and Documentation Agent.
+This game teaches [Sonrai Cloud Permissions Firewall](https://sonraisecurity.com/) concepts through gameplay:
 
-**This project showcases Kiro as a full-stack AI pair programmer managing the complete software development lifecycle.**
+| Game Action | What You Learn | Sonrai API |
+|-------------|----------------|------------|
+| 🧟 Shoot zombie | Quarantine unused IAM identities | `ChangeQuarantineStatus` |
+| 🚫 Block vendor | Revoke risky third-party access | `DenyThirdPartyAccess` |
+| 🏆 Win Hacker Race | Protect sensitive services (Bedrock, SageMaker) | `ProtectService` |
+| ⏱️ Complete JIT Quest | Enable just-in-time admin access | `SetJitConfiguration` |
+| 🛡️ Purple shields | Recognize exempted/protected identities | Policy exemptions |
 
-### Kiro's 11-Agent Architecture Review Board
-- **🎯 Product Management** - Sprint planning, backlog prioritization, roadmap
-- **🏗️ Architecture** - System design, patterns, refactoring (15 FPS → 60 FPS optimization)
-- **🧪 Quality Assurance** - 191 automated tests, 3-layer testing strategy, 92.7% pass rate
-- **🔒 Security** - SAST scanning, secrets management, vulnerability prevention
-- **⚙️ Operations/SRE** - Deployment, monitoring, reliability
-- **👥 Developer Experience** - Onboarding, tooling, CONTRIBUTING.md
-- **🎨 UX/Design** - User experience, accessibility, visual consistency
-- **📚 Documentation** - 43 markdown files, AWS-style standards
-- **🔧 DevOps/Tools** - GitHub MCP, CI/CD automation
-- **📋 Development Standards** - Workflow, tech stack, best practices
-- **🎮 Product Vision** - Mission alignment, target audiences
+**Every action triggers real API calls** — when you eliminate a zombie, that identity is actually quarantined in Sonrai.
 
-### Kiro Integration Stats
-- **Built in 11 days** (Nov 17-28, 2024) from scratch
-- **14 steering files** (4,000+ lines) defining 11 specialized agents
-- **6 feature specs** with requirements → design → tasks breakdown
-- **7 agent hooks** for automated testing, security scanning, and code review
-- **2 complete sprints** with velocity tracking and retrospectives
-- **GitHub MCP integration** for issue tracking and CI/CD monitoring
-
-**[📖 See Full Kiro Submission Details](.kiro/KIROWEEN_SUBMISSION.md)**
+<!-- TODO: Add screenshot of quest completion with API confirmation message -->
+<!-- ![Quest Completion](assets/quest-api-call.png) -->
 
 ---
 
@@ -87,133 +83,41 @@ python3 src/main.py
 - **Real API Integration** - Every action triggers actual Sonrai GraphQL mutations
 - **Side Quests** - Service Protection (hacker race) + JIT Access (auditor challenge)
 - **Performance** - 60 FPS with 500+ entities through spatial grid optimization
-- **Comprehensive Testing** - 191 automated tests with 92.7% pass rate
+- **Comprehensive Testing** - 579 automated tests
 
 ---
 
 ## 📖 Documentation
 
 <details>
-<summary><b>� Gettinng Started</b></summary>
+<summary><b>📚 Browse All Documentation</b></summary>
 
-### Quick Setup
-- **[60-Second Quickstart](docs/guides/QUICKSTART.md)** - Get running immediately
-- **[Configuration Guide](docs/guides/CONFIGURATION.md)** - Environment variables and settings
+### Getting Started
+- **[Quickstart Guide](docs/guides/QUICKSTART.md)** - Detailed setup instructions
+- **[Claude AI Guide](docs/guides/CLAUDE.md)** - AI-assisted development
+- **[re:Invent Guide](docs/guides/REINVENT_GUIDE.md)** - Conference demo setup
 
-### For Developers
-- **[Claude AI Guide](docs/guides/CLAUDE.md)** - Working with Claude Code on this project
-- **[Development Workflow](.kiro/steering/development-workflow.md)** - Best practices and patterns
+### Technical
+- **[Architecture](docs/ARCHITECTURE.md)** - System design deep dive
+- **[Sonrai API Integration](docs/sonrai-api/INTEGRATION_GUIDE.md)** - GraphQL queries & mutations
+- **[API Quick Reference](docs/sonrai-api/QUICK_REFERENCE.md)** - Common operations
 
-</details>
-
-<details>
-<summary><b>🏗️ Architecture & Technical Deep Dive</b></summary>
-
-### System Design
-- **[System Architecture](docs/architecture/ARCHITECTURE.md)** - Technical deep dive
-- **[Performance Optimization](docs/architecture/PERFORMANCE.md)** - Spatial grid and scaling
-- **[Design Patterns](docs/architecture/PATTERNS.md)** - State machines, factories, strategies
-
-### Technical Showcase
-- **[Project Showcase](docs/architecture/PROJECT_SHOWCASE.md)** - Achievements and innovation
-- **[Hackathon Submission](docs/reference/HACKATHON_SUBMISSION.md)** - Complete technical narrative
-
-</details>
-
-<details>
-<summary><b>🐛 Bug Reports & Fixes</b></summary>
-
-### Recent Fixes
-- **[Collision Bug Fix](docs/bug-reports/BUG_FIX_COLLISION_AFTER_QUEST.md)** - Spatial grid recreation fix
-- **[Bug Reports](docs/bug-reports/)** - All documented bugs and resolutions
-
-### Known Issues
-See [BACKLOG.md](docs/BACKLOG.md) for current bugs and their status.
-
-</details>
-
-<details>
-<summary><b>🔒 Security</b></summary>
-
-### Security Scanning
-- **[Security Documentation](docs/reference/SECURITY.md)** - Comprehensive security scanning guide
-- **[Public Release Checklist](docs/reference/PUBLIC_RELEASE_CHECKLIST.md)** - Security verification
-
-### Security Tools
-- SAST (Bandit, Semgrep)
-- Dependency scanning (Safety, pip-audit)
-- Secret detection (Gitleaks)
-- CI/CD integration
-
-</details>
-
-<details>
-<summary><b>📋 Product Backlog</b></summary>
-
-### Current Sprint
-- **[Product Backlog](docs/BACKLOG.md)** - Features, bugs, and roadmap
-- **[Implementation Status](.kiro/specs/arcade-mode/IMPLEMENTATION_STATUS.md)** - Arcade mode progress
-
-### Priorities
-- 🔴 P0: Critical (blocking issues)
-- 🟠 P1: High (next release)
-- 🟡 P2: Medium (schedule when possible)
-- 🟢 P3: Low (future consideration)
-
-</details>
-
-<details>
-<summary><b>🤝 Contributing</b></summary>
-
-### How to Contribute
-- **[Contribution Guide](docs/community/CONTRIBUTING.md)** - How to contribute
-- **[Development Workflow](docs/community/DEVELOPMENT.md)** - Best practices
-- **[Code Standards](docs/community/STANDARDS.md)** - Style and quality guidelines
-
-### Testing
-- **[Beta Testing Strategy](.kiro/steering/beta-testing-strategy.md)** - Automated testing approach
-- **[QA Reports](docs/qa-reports/)** - Quality assurance documentation
-
-</details>
-
-<details>
-<summary><b>📚 API Reference</b></summary>
-
-### Sonrai Integration
-- **[API Integration Guide](docs/sonrai-api/INTEGRATION_GUIDE.md)** - Complete integration docs
-- **[Quick Reference](docs/sonrai-api/QUICK_REFERENCE.md)** - Common queries and mutations
-- **[Query Examples](docs/sonrai-api/queries/)** - GraphQL query library
-
-### Game Mechanics
-- **[Game Mechanics](docs/reference/MECHANICS.md)** - Power-ups, quests, controls
+### Gameplay
+- **[Controller Mapping](docs/CONTROLLER_BUTTON_MAPPING.md)** - Gamepad controls
+- **[Power-ups](docs/POWERUPS.md)** - Collectibles and abilities
 - **[Cheat Codes](docs/CHEAT_CODES.md)** - Testing shortcuts
+- **[Glossary](docs/GLOSSARY.md)** - Game terminology
 
-</details>
+### Operations
+- **[Deployment](docs/DEPLOYMENT.md)** - Production deployment guide
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues & solutions
+- **[Contributing](docs/CONTRIBUTING.md)** - How to contribute
+- **[Security](docs/security/SECURITY.md)** - Security practices
 
-<details>
-<summary><b>🎯 Project Information</b></summary>
-
-### Overview
-- **[Project Summary](docs/reference/PROJECT_SUMMARY.md)** - Executive summary
-- **[Repository Structure](docs/reference/REPOSITORY_STRUCTURE.md)** - Codebase organization
+### Reference
+- **[Backlog](docs/BACKLOG.md)** - Features & roadmap
 - **[Changelog](docs/reference/CHANGELOG.md)** - Version history
-
-### Documentation Hub
-- **[Complete Documentation](docs/README.md)** - Central documentation hub
-- **[Documentation Standards](docs/DOCUMENTATION_STANDARDS.md)** - Writing guidelines
-
-</details>
-
-<details>
-<summary><b>🔧 Troubleshooting</b></summary>
-
-### Common Issues
-- **[Troubleshooting Guide](docs/reference/TROUBLESHOOTING.md)** - Solutions to common problems
-- **[QA Reports](docs/qa-reports/)** - Test results and known issues
-
-### Support
-- [GitHub Issues](../../issues) - Report bugs
-- [Discussions](../../discussions) - Ask questions
+- **[Project Showcase](docs/reference/PROJECT_SHOWCASE.md)** - Achievements & metrics
 
 </details>
 
@@ -295,6 +199,42 @@ Every game action triggers actual Sonrai GraphQL mutations:
 
 ---
 
+## 🤖 Built with Kiro AI
+
+<details>
+<summary><b>Development Process & Kiroween Submission Details</b></summary>
+
+> **⚡ Built in 11 Days:** This entire production-ready game was built from scratch in just 11 days (Nov 17-28, 2024) with Kiro as Product Manager, Technical Lead, QA Engineer, and Documentation Agent.
+
+**This project showcases Kiro as a full-stack AI pair programmer managing the complete software development lifecycle.**
+
+### Kiro's 11-Agent Architecture Review Board
+- **🎯 Product Management** - Sprint planning, backlog prioritization, roadmap
+- **🏗️ Architecture** - System design, patterns, refactoring (15 FPS → 60 FPS optimization)
+- **🧪 Quality Assurance** - 579 automated tests, comprehensive test coverage
+- **🔒 Security** - SAST scanning, secrets management, vulnerability prevention
+- **⚙️ Operations/SRE** - Deployment, monitoring, reliability
+- **👥 Developer Experience** - Onboarding, tooling, CONTRIBUTING.md
+- **🎨 UX/Design** - User experience, accessibility, visual consistency
+- **📚 Documentation** - 31 markdown files, AWS-style standards
+- **🔧 DevOps/Tools** - GitHub MCP, CI/CD automation
+- **📋 Development Standards** - Workflow, tech stack, best practices
+- **🎮 Product Vision** - Mission alignment, target audiences
+
+### Kiro Integration Stats
+- **Built in 11 days** (Nov 17-28, 2024) from scratch
+- **14 steering files** (4,000+ lines) defining 11 specialized agents
+- **6 feature specs** with requirements → design → tasks breakdown
+- **7 agent hooks** for automated testing, security scanning, and code review
+- **2 complete sprints** with velocity tracking and retrospectives
+- **GitHub MCP integration** for issue tracking and CI/CD monitoring
+
+**[📖 See Full Kiro Submission Details](.kiro/KIROWEEN_SUBMISSION.md)**
+
+</details>
+
+---
+
 ## 📄 License
 
 MIT License - see [LICENSE](LICENSE) for details.
@@ -309,20 +249,11 @@ This project is open source and available for:
 
 ## 🔗 Quick Links
 
-### Documentation
-- **[Complete Documentation Hub](docs/README.md)** - Central navigation
-- **[60-Second Quickstart](docs/guides/QUICKSTART.md)** - Get running immediately
-- **[Hackathon Submission](docs/reference/HACKATHON_SUBMISSION.md)** - Full technical narrative
-
-### Development
-- **[Product Backlog](docs/BACKLOG.md)** - Features and roadmap
-- **[Claude AI Guide](docs/guides/CLAUDE.md)** - AI-assisted development
-- **[Security Scanning](docs/reference/SECURITY.md)** - Security tools and processes
-
-### Community
-- **[GitHub Issues](../../issues)** - Bug reports and feature requests
-- **[Discussions](../../discussions)** - Questions and ideas
-- **[Contributing Guide](docs/community/CONTRIBUTING.md)** - How to contribute
+| Getting Started | Technical | Community |
+|-----------------|-----------|-----------|
+| [Quickstart](docs/guides/QUICKSTART.md) | [Architecture](docs/ARCHITECTURE.md) | [Contributing](docs/CONTRIBUTING.md) |
+| [Controls](docs/CONTROLLER_BUTTON_MAPPING.md) | [API Guide](docs/sonrai-api/INTEGRATION_GUIDE.md) | [GitHub Issues](../../issues) |
+| [Troubleshooting](docs/TROUBLESHOOTING.md) | [Deployment](docs/DEPLOYMENT.md) | [Backlog](docs/BACKLOG.md) |
 
 ---
 
@@ -332,9 +263,9 @@ This project is open source and available for:
 |--------|--------|
 | Core Game | ✅ 100% Complete |
 | Quests | ✅ 2/2 Implemented |
-| Tests | 🟢 177/191 Passing (92.7%) |
-| Documentation | 🟢 Comprehensive |
-| Performance | ✅ 60 FPS Target Met |
+| Tests | 🟢 579 Passing |
+| Documentation | 🟢 31 Docs |
+| Performance | ✅ 60 FPS @ 500+ entities |
 
 **Current Focus:** Visual polish, bug fixes, arcade mode enhancements
 
