@@ -6,21 +6,21 @@ Supports both controller (X/Y buttons) and keyboard (F12/F9) input.
 
 Usage:
     evidence = EvidenceCapture()
-    
+
     # Screenshot
     filename = evidence.take_screenshot(screen)
-    
+
     # Recording
     evidence.toggle_recording(current_time)  # Start
     evidence.capture_frame(screen, current_time)  # Each frame
     filename = evidence.toggle_recording(current_time)  # Stop and save
 """
 
-import os
-import math
 import logging
+import math
+import os
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 import pygame
 
@@ -244,9 +244,7 @@ class EvidenceCapture:
             flash_surface.set_alpha(int(self.flash_alpha))
             screen.blit(flash_surface, (0, 0))
 
-    def render_recording_indicator(
-        self, screen: pygame.Surface, current_time: float
-    ) -> None:
+    def render_recording_indicator(self, screen: pygame.Surface, current_time: float) -> None:
         """Render red recording dot and timer in top-right corner."""
         if not self.is_recording:
             return

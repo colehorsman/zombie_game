@@ -11,8 +11,8 @@ Currently, capturing gameplay evidence requires external tools (macOS screenshot
 ## User Stories
 
 ### US-1: Screenshot Capture
-**As a** player  
-**I want** to capture screenshots with a button press  
+**As a** player
+**I want** to capture screenshots with a button press
 **So that** I can save memorable moments instantly
 
 **Acceptance Criteria:**
@@ -24,8 +24,8 @@ Currently, capturing gameplay evidence requires external tools (macOS screenshot
 - [ ] Works in all game states (lobby, level, pause, menus)
 
 ### US-2: Screen Recording
-**As a** player  
-**I want** to record gameplay clips  
+**As a** player
+**I want** to record gameplay clips
 **So that** I can create demo videos easily
 
 **Acceptance Criteria:**
@@ -37,8 +37,8 @@ Currently, capturing gameplay evidence requires external tools (macOS screenshot
 - [ ] Auto-stop at max length with notification
 
 ### US-3: Recording Status Indicator
-**As a** player  
-**I want** to see when recording is active  
+**As a** player
+**I want** to see when recording is active
 **So that** I know my gameplay is being captured
 
 **Acceptance Criteria:**
@@ -48,8 +48,8 @@ Currently, capturing gameplay evidence requires external tools (macOS screenshot
 - [ ] Dot pulses/blinks for visibility
 
 ### US-4: Evidence Organization
-**As a** developer  
-**I want** evidence files organized clearly  
+**As a** developer
+**I want** evidence files organized clearly
 **So that** I can find and use them easily
 
 **Acceptance Criteria:**

@@ -28,6 +28,7 @@ from cyber_boss import (
     get_boss_dialogue,
 )
 from difficulty_config import EnvironmentDifficulty, get_difficulty_for_environment
+from evidence_capture import EvidenceCapture
 from game_map import GameMap
 from hacker import Hacker
 from jit_access_quest import AdminRole, Auditor, create_jit_quest_entities
@@ -47,7 +48,6 @@ from service_protection_quest import (
 )
 from sonrai_client import SonraiAPIClient
 from zombie import Zombie
-from evidence_capture import EvidenceCapture
 
 logger = logging.getLogger(__name__)
 

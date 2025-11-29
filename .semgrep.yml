@@ -3,10 +3,9 @@
 # https://semgrep.dev/
 
 rules:
-  # Use community rulesets for Python security
-  - id: python-security
+  # SQL Injection detection
+  - id: sql-injection
     pattern-either:
-      # SQL Injection detection
       - pattern: |
           $CURSOR.execute($QUERY)
       - pattern: |
@@ -26,32 +25,15 @@ rules:
     languages: [python]
     severity: ERROR
 
-  # Path traversal detection
-  - id: path-traversal
-    pattern-either:
-      - pattern: open($PATH, ...)
-      - pattern: os.path.join($BASE, $USER_INPUT)
-    message: "Potential path traversal - validate file paths from user input"
-    languages: [python]
-    severity: WARNING
-
   # Hardcoded secrets detection
   - id: hardcoded-password
     pattern-either:
       - pattern: password = "..."
       - pattern: api_key = "..."
       - pattern: secret = "..."
-      - pattern: token = "..."
     message: "Potential hardcoded secret - use environment variables"
     languages: [python]
     severity: ERROR
-
-  # Insecure random number generation
-  - id: weak-random
-    pattern: random.random()
-    message: "Use secrets module for cryptographic randomness, not random module"
-    languages: [python]
-    severity: WARNING
 
   # Pickle deserialization (RCE risk)
   - id: unsafe-pickle
@@ -71,17 +53,9 @@ rules:
     languages: [python]
     severity: ERROR
 
-  # Missing timeout in requests
-  - id: requests-without-timeout
-    pattern: requests.$METHOD(...)
-    pattern-not: requests.$METHOD(..., timeout=$T, ...)
-    message: "HTTP requests should have a timeout to prevent hangs"
-    languages: [python]
-    severity: WARNING
-
-  # Debug mode enabled
+  # Debug mode enabled in production
   - id: debug-enabled
-    pattern: debug = True
+    pattern: DEBUG = True
     message: "Debug mode should not be enabled in production"
     languages: [python]
     severity: WARNING

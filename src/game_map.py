@@ -366,7 +366,9 @@ class GameMap:
         # Tower windows - scaled up
         pygame.draw.rect(self.map_surface, WINDOW_YELLOW, (castle_x + 22, castle_y + 85, 14, 20))
         pygame.draw.rect(
-            self.map_surface, WINDOW_YELLOW, (castle_x + castle_width - 36, castle_y + 85, 14, 20)
+            self.map_surface,
+            WINDOW_YELLOW,
+            (castle_x + castle_width - 36, castle_y + 85, 14, 20),
         )
         pygame.draw.rect(self.map_surface, WINDOW_YELLOW, (center_x + 25, castle_y + 65, 14, 20))
 
@@ -376,7 +378,9 @@ class GameMap:
         door_x = castle_x + (castle_width - door_width) // 2
         door_y = castle_y + castle_height - door_height
         pygame.draw.rect(
-            self.map_surface, CASTLE_DARK, (door_x, door_y + 18, door_width, door_height - 18)
+            self.map_surface,
+            CASTLE_DARK,
+            (door_x, door_y + 18, door_width, door_height - 18),
         )
         pygame.draw.ellipse(self.map_surface, CASTLE_DARK, (door_x, door_y, door_width, 40))
 

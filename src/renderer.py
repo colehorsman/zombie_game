@@ -466,7 +466,11 @@ class Renderer:
 
         # Antenna
         pygame.draw.line(
-            self.screen, AWS_ORANGE, (x + tower_width // 2, y), (x + tower_width // 2, y + 5), 2
+            self.screen,
+            AWS_ORANGE,
+            (x + tower_width // 2, y),
+            (x + tower_width // 2, y + 5),
+            2,
         )
 
         # Label
