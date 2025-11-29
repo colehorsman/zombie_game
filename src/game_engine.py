@@ -801,6 +801,7 @@ class GameEngine:
         # Update camera to follow player
         if self.use_map and self.game_map:
             self.game_map.update_camera(self.player.position.x, self.player.position.y)
+            self.game_map.update_zoom(delta_time)
 
         # Update player (top-down movement - no gravity)
         self.player.update(delta_time, is_platformer_mode=False)
@@ -2354,6 +2355,18 @@ class GameEngine:
                         logger.info("🏠 L key pressed - returning to lobby")
                         self._return_to_lobby()
 
+                # M key - Toggle Landing Zone View (lobby only)
+                elif event.key == pygame.K_m:
+                    if self.game_state.status == GameStatus.LOBBY and self.game_map:
+                        self.game_map.toggle_landing_zone_view()
+                        if self.game_map.landing_zone_view:
+                            logger.info("🗺️ Entered Landing Zone View (zoomed out)")
+                            # Reveal all zombies in landing zone view
+                            for zombie in self.zombies:
+                                zombie.is_hidden = False
+                        else:
+                            logger.info("🔍 Exited Landing Zone View (normal zoom)")
+
             elif event.type == pygame.KEYUP:
                 self.keys_pressed.discard(event.key)
 
@@ -2592,6 +2605,21 @@ class GameEngine:
                         controller_up = True  # Stick Y-axis: negative = UP
                     elif axis_y > 0.3:
                         controller_down = True  # Stick Y-axis: positive = DOWN
+
+                # Right analog stick (axis 3 or 4) - zoom control in lobby
+                # Axis 3 is typically right stick Y on most controllers
+                if self.joystick.get_numaxes() > 3 and self.game_map:
+                    right_stick_y = self.joystick.get_axis(3)
+                    if right_stick_y < -0.5:  # Right stick UP = zoom out
+                        if not self.game_map.landing_zone_view:
+                            self.game_map.toggle_landing_zone_view()
+                            logger.info("🗺️ Right stick UP - Entered Landing Zone View")
+                            for zombie in self.zombies:
+                                zombie.is_hidden = False
+                    elif right_stick_y > 0.5:  # Right stick DOWN = zoom in
+                        if self.game_map.landing_zone_view:
+                            self.game_map.toggle_landing_zone_view()
+                            logger.info("🔍 Right stick DOWN - Exited Landing Zone View")
 
             # Horizontal movement (keyboard or controller)
             if keyboard_left or controller_left:

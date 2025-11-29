@@ -129,7 +129,15 @@ class Renderer:
         if game_map:
             # Convert world coordinates to screen coordinates
             screen_x, screen_y = game_map.world_to_screen(player.position.x, player.position.y)
-            self.screen.blit(player.sprite, (screen_x, screen_y))
+
+            # Scale sprite if in landing zone view (zoomed out)
+            if game_map.landing_zone_view and game_map.zoom < 1.0:
+                scaled_width = max(1, int(player.width * game_map.zoom))
+                scaled_height = max(1, int(player.height * game_map.zoom))
+                scaled_sprite = pygame.transform.scale(player.sprite, (scaled_width, scaled_height))
+                self.screen.blit(scaled_sprite, (screen_x, screen_y))
+            else:
+                self.screen.blit(player.sprite, (screen_x, screen_y))
         else:
             # Use screen coordinates directly
             self.screen.blit(player.sprite, (int(player.position.x), int(player.position.y)))
@@ -157,8 +165,17 @@ class Renderer:
                         zombie.position.x, zombie.position.y
                     )
 
-                    # Apply flash effect if active
-                    self.screen.blit(zombie.sprite, (screen_x, screen_y))
+                    # Scale sprite if in landing zone view (zoomed out)
+                    if game_map.landing_zone_view and game_map.zoom < 1.0:
+                        scaled_width = max(1, int(zombie.width * game_map.zoom))
+                        scaled_height = max(1, int(zombie.height * game_map.zoom))
+                        scaled_sprite = pygame.transform.scale(
+                            zombie.sprite, (scaled_width, scaled_height)
+                        )
+                        self.screen.blit(scaled_sprite, (screen_x, screen_y))
+                    else:
+                        self.screen.blit(zombie.sprite, (screen_x, screen_y))
+
                     if zombie.is_flashing:
                         self._apply_flash_effect(screen_x, screen_y, zombie.width, zombie.height)
 
@@ -208,8 +225,16 @@ class Renderer:
                         third_party.position.x, third_party.position.y
                     )
 
-                    # Render sprite
-                    self.screen.blit(third_party.sprite, (screen_x, screen_y))
+                    # Scale sprite if in landing zone view (zoomed out)
+                    if game_map.landing_zone_view and game_map.zoom < 1.0:
+                        scaled_width = max(1, int(third_party.width * game_map.zoom))
+                        scaled_height = max(1, int(third_party.height * game_map.zoom))
+                        scaled_sprite = pygame.transform.scale(
+                            third_party.sprite, (scaled_width, scaled_height)
+                        )
+                        self.screen.blit(scaled_sprite, (screen_x, screen_y))
+                    else:
+                        self.screen.blit(third_party.sprite, (screen_x, screen_y))
 
                     # Apply flash effect if active
                     if third_party.is_flashing:
@@ -371,6 +396,120 @@ class Renderer:
         except:
             pass
 
+    def render_landing_zone_overlay(self, game_map: GameMap) -> None:
+        """
+        Render the Landing Zone view title and AWS Control Tower visual.
+
+        Args:
+            game_map: Game map instance to check if in landing zone view
+        """
+        if not game_map.landing_zone_view:
+            return
+
+        # AWS brand colors
+        AWS_ORANGE = (255, 153, 0)
+        WHITE = (255, 255, 255)
+
+        # Draw title banner at top
+        banner_height = 50
+        banner_surface = pygame.Surface((self.width, banner_height), pygame.SRCALPHA)
+        banner_surface.fill((20, 15, 30, 230))  # Semi-transparent dark purple
+        self.screen.blit(banner_surface, (0, 0))
+
+        # Draw title text
+        try:
+            title_font = pygame.font.Font(None, 36)
+            title_text = title_font.render("AWS Landing Zone Overview", True, AWS_ORANGE)
+            title_rect = title_text.get_rect(center=(self.width // 2, 25))
+            self.screen.blit(title_text, title_rect)
+
+            # Draw subtitle with organization info
+            subtitle_font = pygame.font.Font(None, 20)
+            num_accounts = len(game_map.rooms) if hasattr(game_map, "rooms") else 0
+            total_zombies = (
+                sum(info.get("zombie_count", 0) for info in game_map.room_accounts.values())
+                if hasattr(game_map, "room_accounts")
+                else 0
+            )
+            subtitle_text = subtitle_font.render(
+                f"{num_accounts} AWS Accounts | {total_zombies} Zombie Identities | Press M to exit",
+                True,
+                WHITE,
+            )
+            subtitle_rect = subtitle_text.get_rect(center=(self.width // 2, 45))
+            self.screen.blit(subtitle_text, subtitle_rect)
+        except:
+            pass
+
+        # Draw legend at bottom (Control Tower is now rendered on the map itself)
+        self._draw_landing_zone_legend()
+
+    def _draw_control_tower_icon(self, x: int, y: int) -> None:
+        """Draw a simplified AWS Control Tower icon."""
+        AWS_ORANGE = (255, 153, 0)
+        TOWER_BLUE = (66, 133, 244)
+        WHITE = (255, 255, 255)
+
+        tower_width = 40
+        tower_height = 60
+
+        # Background panel
+        panel_surface = pygame.Surface((tower_width + 20, tower_height + 25), pygame.SRCALPHA)
+        panel_surface.fill((20, 15, 30, 200))
+        self.screen.blit(panel_surface, (x - 5, y - 5))
+
+        # Draw tower (stepped pyramid shape)
+        pygame.draw.rect(self.screen, TOWER_BLUE, (x, y + 45, tower_width, 10))
+        pygame.draw.rect(self.screen, TOWER_BLUE, (x + 5, y + 30, tower_width - 10, 15))
+        pygame.draw.rect(self.screen, TOWER_BLUE, (x + 10, y + 15, tower_width - 20, 15))
+        pygame.draw.rect(self.screen, AWS_ORANGE, (x + 15, y + 5, tower_width - 30, 10))
+
+        # Antenna
+        pygame.draw.line(
+            self.screen, AWS_ORANGE, (x + tower_width // 2, y), (x + tower_width // 2, y + 5), 2
+        )
+
+        # Label
+        try:
+            font = pygame.font.Font(None, 14)
+            text = font.render("Control", True, WHITE)
+            self.screen.blit(text, (x + 2, y + 58))
+            text2 = font.render("Tower", True, WHITE)
+            self.screen.blit(text2, (x + 7, y + 68))
+        except:
+            pass
+
+    def _draw_landing_zone_legend(self) -> None:
+        """Draw a legend for the landing zone view."""
+        WHITE = (255, 255, 255)
+        ZOMBIE_GREEN = (0, 200, 0)
+        PIPE_GREEN = (34, 139, 34)
+        THIRD_PARTY_BLUE = (100, 150, 255)
+
+        legend_x = self.width - 200
+        legend_y = self.height - 80
+
+        # Background
+        legend_surface = pygame.Surface((190, 75), pygame.SRCALPHA)
+        legend_surface.fill((20, 15, 30, 200))
+        self.screen.blit(legend_surface, (legend_x - 5, legend_y - 5))
+
+        try:
+            font = pygame.font.Font(None, 16)
+            pygame.draw.circle(self.screen, ZOMBIE_GREEN, (legend_x + 8, legend_y + 10), 5)
+            text = font.render("= Zombie Identity", True, WHITE)
+            self.screen.blit(text, (legend_x + 20, legend_y + 5))
+
+            pygame.draw.rect(self.screen, PIPE_GREEN, (legend_x + 3, legend_y + 25, 10, 10))
+            text = font.render("= Account Entry Point", True, WHITE)
+            self.screen.blit(text, (legend_x + 20, legend_y + 25))
+
+            pygame.draw.rect(self.screen, THIRD_PARTY_BLUE, (legend_x + 3, legend_y + 45, 10, 10))
+            text = font.render("= 3rd Party Integration", True, WHITE)
+            self.screen.blit(text, (legend_x + 20, legend_y + 45))
+        except:
+            pass
+
     def render_zombie_labels(
         self, zombies: List[Zombie], game_map: Optional[GameMap] = None
     ) -> None:
@@ -381,6 +520,10 @@ class Renderer:
             zombies: List of zombies to render labels for
             game_map: Game map for coordinate conversion (None for screen coordinates)
         """
+        # Skip labels in landing zone view (too cluttered when zoomed out)
+        if game_map and game_map.landing_zone_view:
+            return
+
         for zombie in zombies:
             # Skip hidden zombies
             if zombie.is_hidden:
