@@ -3096,6 +3096,129 @@ class GameEngine:
         # Boss is active, battle begins
         self.game_state.status = GameStatus.BOSS_BATTLE
 
+    def _check_boss_player_collision(self) -> None:
+        """Check if boss is touching player and apply damage."""
+        if not self.boss or self.boss.is_defeated:
+            return
+
+        # Don't damage if player is invincible
+        if self.player.is_invincible:
+            return
+
+        player_bounds = self.player.get_bounds()
+        player_center_x = self.player.position.x + self.player.width // 2
+        player_center_y = self.player.position.y + self.player.height // 2
+
+        # Handle Scattered Spider (swarm of 5 spiders)
+        if isinstance(self.boss, ScatteredSpiderBoss):
+            for spider in self.boss.get_all_spiders():
+                spider_bounds = pygame.Rect(
+                    int(spider.position.x),
+                    int(spider.position.y),
+                    spider.width,
+                    spider.height,
+                )
+                if player_bounds.colliderect(spider_bounds):
+                    # Spider touched player - deal damage
+                    if self.player.take_damage(1):
+                        logger.info(
+                            f"🕷️ Player hit by {spider.movement_type} spider! "
+                            f"Health: {self.player.current_health}/{self.player.max_health}"
+                        )
+                    return  # Only take damage from one spider per frame
+
+        # Handle WannaCry special attacks (puddles and sob wave)
+        elif isinstance(self.boss, WannaCryBoss):
+            # Check direct boss contact
+            boss_bounds = self.boss.get_bounds()
+            if player_bounds.colliderect(boss_bounds):
+                if self.player.take_damage(1):
+                    logger.info(
+                        f"💧 Player touched by WannaCry! "
+                        f"Health: {self.player.current_health}/{self.player.max_health}"
+                    )
+                return
+
+            # Check puddle damage (tears on ground)
+            for puddle in self.boss.puddles:
+                puddle_bounds = pygame.Rect(
+                    int(puddle["x"] - puddle["radius"]),
+                    int(puddle["y"] - 10),
+                    int(puddle["radius"] * 2),
+                    20,
+                )
+                if player_bounds.colliderect(puddle_bounds):
+                    if self.player.take_damage(1):
+                        logger.info(
+                            f"💦 Player stepped in tear puddle! "
+                            f"Health: {self.player.current_health}/{self.player.max_health}"
+                        )
+                    return
+
+            # Check sob wave damage (expanding circle attack)
+            if self.boss.sob_wave and self.boss.sob_wave.get("active", False):
+                wave = self.boss.sob_wave
+                wave_center_x = wave["x"]
+                wave_center_y = wave["y"]
+                wave_radius = wave["radius"]
+
+                # Calculate distance from player center to wave center
+                import math
+
+                dist = math.sqrt(
+                    (player_center_x - wave_center_x) ** 2 + (player_center_y - wave_center_y) ** 2
+                )
+
+                # Player is hit if within the wave ring (outer edge)
+                wave_thickness = 30  # Wave is 30 pixels thick
+                if wave_radius - wave_thickness <= dist <= wave_radius + wave_thickness:
+                    if self.player.take_damage(1):
+                        logger.info(
+                            f"😭 Player hit by sob wave! "
+                            f"Health: {self.player.current_health}/{self.player.max_health}"
+                        )
+                    return
+
+        # Handle Heartbleed special attacks (bleeding particles)
+        elif isinstance(self.boss, HeartbleedBoss):
+            # Check direct boss contact
+            boss_bounds = self.boss.get_bounds()
+            if player_bounds.colliderect(boss_bounds):
+                if self.player.take_damage(1):
+                    logger.info(
+                        f"💔 Player touched by Heartbleed! "
+                        f"Health: {self.player.current_health}/{self.player.max_health}"
+                    )
+                return
+
+            # Check bleeding particle damage
+            for particle in self.boss.bleeding_particles:
+                particle_bounds = pygame.Rect(
+                    int(particle["x"] - 5),
+                    int(particle["y"] - 5),
+                    10,
+                    10,
+                )
+                if player_bounds.colliderect(particle_bounds):
+                    if self.player.take_damage(1):
+                        logger.info(
+                            f"💉 Player hit by bleeding data! "
+                            f"Health: {self.player.current_health}/{self.player.max_health}"
+                        )
+                    return
+
+        else:
+            # Standard boss collision (fallback for other bosses)
+            boss_bounds = self.boss.get_bounds()
+            if player_bounds.colliderect(boss_bounds):
+                # Boss touched player - deal damage
+                if self.player.take_damage(1):
+                    boss_name = getattr(self.boss, "name", "Boss")
+                    logger.info(
+                        f"💀 Player hit by {boss_name}! "
+                        f"Health: {self.player.current_health}/{self.player.max_health}"
+                    )
+
     def _update_boss_battle(self, delta_time: float) -> None:
         """
         Update game logic during boss battle.
@@ -3114,6 +3237,7 @@ class GameEngine:
 
         # Update player (platformer mode - with gravity)
         self.player.update(delta_time, is_platformer_mode=True)
+        self.player.update_invincibility(delta_time)  # Update invincibility timer
 
         # Debug: Log health when low
         if self.player.current_health <= 3:
@@ -3132,6 +3256,10 @@ class GameEngine:
         # Update boss
         if self.boss:
             self.boss.update(delta_time, self.player.position, self.game_map)
+
+        # Check boss-to-player collision (boss damages player)
+        if self.boss and not self.boss.is_defeated:
+            self._check_boss_player_collision()
 
         # Update projectiles
         for projectile in self.projectiles[:]:

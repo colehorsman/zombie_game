@@ -1,8 +1,9 @@
 """Player character implementation."""
 
-import pygame
 import logging
 from typing import Optional
+
+import pygame
 
 from models import Vector2
 
@@ -74,7 +75,7 @@ class Player:
         # Invincibility frames (after taking damage)
         self.is_invincible: bool = False
         self.invincibility_timer: float = 0.0
-        self.invincibility_duration: float = 1.5  # seconds
+        self.invincibility_duration: float = 0.5  # seconds (reduced for faster gameplay)
         self.flash_timer: float = 0.0
         self.flash_interval: float = 0.1  # Flash every 0.1s during invincibility
         self.is_visible: bool = True  # For flashing effect
@@ -474,9 +475,7 @@ class Player:
         Returns:
             Pygame Rect representing the player's bounds
         """
-        return pygame.Rect(
-            int(self.position.x), int(self.position.y), self.width, self.height
-        )
+        return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
 
     # ========== Health System Methods ==========
 
@@ -527,9 +526,7 @@ class Player:
     def full_heal(self) -> None:
         """Restore player to full health."""
         self.current_health = self.max_health
-        logger.info(
-            f"💚 Player fully healed! Health: {self.current_health}/{self.max_health}"
-        )
+        logger.info(f"💚 Player fully healed! Health: {self.current_health}/{self.max_health}")
 
     def update_invincibility(self, delta_time: float) -> None:
         """

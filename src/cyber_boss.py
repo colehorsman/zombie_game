@@ -4,12 +4,14 @@ This module implements bosses themed after famous cyber attacks with educational
 dialogue and unique mechanics.
 """
 
-import pygame
 import logging
 import math
 import time
-from typing import Optional, List
 from enum import Enum
+from typing import List, Optional
+
+import pygame
+
 from models import Vector2
 
 logger = logging.getLogger(__name__)
@@ -28,14 +30,15 @@ class BossType(Enum):
 
 
 # Map boss types to level numbers
+# Level order: Sandbox(1) → Stage(2) → Automation(3) → WebApp(4) → ProdData(5) → Prod(6) → Org(7)
 BOSS_LEVEL_MAP = {
-    1: BossType.WANNACRY,
-    2: BossType.HEARTBLEED,
-    3: BossType.SANDWORM,
-    4: BossType.VOLT_TYPHOON,
-    5: BossType.BLACKCAT,
-    6: BossType.MIDNIGHT_BLIZZARD,
-    7: BossType.SCATTERED_SPIDER,
+    1: BossType.WANNACRY,  # Sandbox - Ransomware attack
+    2: BossType.HEARTBLEED,  # Stage - Red Queen (data leak)
+    3: BossType.SCATTERED_SPIDER,  # Automation - Swarm of 5 spiders
+    4: BossType.VOLT_TYPHOON,  # WebApp
+    5: BossType.BLACKCAT,  # Production Data
+    6: BossType.MIDNIGHT_BLIZZARD,  # Production
+    7: BossType.SANDWORM,  # Org - Final boss
 }
 
 
@@ -138,9 +141,7 @@ class MiniSpider:
             start_y = center_y + (i - 1.5) * 3  # Scaled spacing
             end_x = start_x + int(leg_length * math.cos(rad))
             end_y = start_y + int(leg_length * math.sin(rad))
-            pygame.draw.line(
-                sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width
-            )
+            pygame.draw.line(sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width)
 
         # Right legs (top to bottom)
         for i, angle in enumerate([45, 20, -20, -45]):
@@ -149,9 +150,7 @@ class MiniSpider:
             start_y = center_y + (i - 1.5) * 3  # Scaled spacing
             end_x = start_x + int(leg_length * math.cos(rad))
             end_y = start_y + int(leg_length * math.sin(rad))
-            pygame.draw.line(
-                sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width
-            )
+            pygame.draw.line(sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width)
 
         # Eyes (red) - scaled up
         eye_color = (255, 20, 20)
@@ -192,9 +191,7 @@ class MiniSpider:
 
             # Create temp surface for this ring
             temp = pygame.Surface((glow_width, glow_height), pygame.SRCALPHA)
-            pygame.draw.circle(
-                temp, color_with_alpha, (center_x, center_y), int(radius)
-            )
+            pygame.draw.circle(temp, color_with_alpha, (center_x, center_y), int(radius))
             glow.blit(temp, (0, 0))
 
         return glow
@@ -338,9 +335,7 @@ class MiniSpider:
 
     def get_bounds(self) -> pygame.Rect:
         """Get the bounding rectangle for collision detection."""
-        return pygame.Rect(
-            int(self.position.x), int(self.position.y), self.width, self.height
-        )
+        return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
 
 
 class ScatteredSpiderBoss:
@@ -364,9 +359,7 @@ class ScatteredSpiderBoss:
         for i in range(5):
             spider = MiniSpider(
                 position=(
-                    spawn_positions[i]
-                    if i < len(spawn_positions)
-                    else Vector2(100 * i, 100)
+                    spawn_positions[i] if i < len(spawn_positions) else Vector2(100 * i, 100)
                 ),
                 movement_type=movement_types[i],
                 color_variant=i,
@@ -466,9 +459,7 @@ class HeartbleedBoss:
         self.flash_timer = 0.0
 
         # Health-based phase changes
-        self.current_phase = (
-            1  # Phase 1: 100-150 HP, Phase 2: 50-99 HP, Phase 3: 1-49 HP
-        )
+        self.current_phase = 1  # Phase 1: 100-150 HP, Phase 2: 50-99 HP, Phase 3: 1-49 HP
 
         # Create visuals
         self.sprite = self._create_red_queen_sprite()
@@ -589,9 +580,7 @@ class HeartbleedBoss:
         # === NECK (connecting head to body) ===
         neck_top = head_y + 8
         neck_bottom = dress_top
-        pygame.draw.line(
-            sprite, skin_tone, (center_x, neck_top), (center_x, neck_bottom), 6
-        )
+        pygame.draw.line(sprite, skin_tone, (center_x, neck_top), (center_x, neck_bottom), 6)
 
         # === BLACK HAIR FIRST (drawn behind face - Harley Quinn flowing style) ===
         # Hair volume on top of head (fuller, more dramatic)
@@ -649,34 +638,24 @@ class HeartbleedBoss:
 
         # Cheekbones (subtle highlight circles)
         cheek_y = head_y + 2
-        pygame.draw.circle(
-            sprite, (255, 180, 180), (center_x - 6, cheek_y), 3, 1
-        )  # Left cheek
-        pygame.draw.circle(
-            sprite, (255, 180, 180), (center_x + 6, cheek_y), 3, 1
-        )  # Right cheek
+        pygame.draw.circle(sprite, (255, 180, 180), (center_x - 6, cheek_y), 3, 1)  # Left cheek
+        pygame.draw.circle(sprite, (255, 180, 180), (center_x + 6, cheek_y), 3, 1)  # Right cheek
 
         # Feminine eyes with eyelashes
         eye_y = head_y - 2
         # Left eye
         pygame.draw.circle(sprite, card_black, (center_x - 4, eye_y), 2)
-        pygame.draw.circle(
-            sprite, (255, 255, 255), (center_x - 5, eye_y - 1), 1
-        )  # Eye shine
+        pygame.draw.circle(sprite, (255, 255, 255), (center_x - 5, eye_y - 1), 1)  # Eye shine
         # Right eye
         pygame.draw.circle(sprite, card_black, (center_x + 4, eye_y), 2)
-        pygame.draw.circle(
-            sprite, (255, 255, 255), (center_x + 5, eye_y - 1), 1
-        )  # Eye shine
+        pygame.draw.circle(sprite, (255, 255, 255), (center_x + 5, eye_y - 1), 1)  # Eye shine
 
         # Elegant eyebrows (curved, thinner)
         pygame.draw.arc(sprite, card_black, (center_x - 8, eye_y - 5, 6, 3), 0, 3.14, 2)
         pygame.draw.arc(sprite, card_black, (center_x + 2, eye_y - 5, 6, 3), 0, 3.14, 2)
 
         # Small feminine nose
-        pygame.draw.line(
-            sprite, card_black, (center_x, eye_y + 2), (center_x, eye_y + 4), 1
-        )
+        pygame.draw.line(sprite, card_black, (center_x, eye_y + 2), (center_x, eye_y + 4), 1)
 
         # Red lips (fuller, more feminine)
         # Upper lip (slight M-shape)
@@ -813,9 +792,7 @@ class HeartbleedBoss:
         }
         self.bleeding_particles.append(particle)
 
-    def update(
-        self, delta_time: float, player_position: Vector2, game_map=None
-    ) -> None:
+    def update(self, delta_time: float, player_position: Vector2, game_map=None) -> None:
         """Update boss logic."""
         if self.is_defeated:
             return
@@ -910,9 +887,7 @@ class HeartbleedBoss:
 
     def get_bounds(self) -> pygame.Rect:
         """Get bounding box for collision detection."""
-        return pygame.Rect(
-            int(self.position.x), int(self.position.y), self.width, self.height
-        )
+        return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
 
 
 class WannaCryBoss:
@@ -1232,9 +1207,7 @@ class WannaCryBoss:
         """Spawn a falling tear droplet."""
         # Tears fall from eyes
         tear = {
-            "x": self.position.x
-            + self.width // 2
-            + (10 if time.time() % 2 < 1 else -10),
+            "x": self.position.x + self.width // 2 + (10 if time.time() % 2 < 1 else -10),
             "y": self.position.y + 25,  # Eye level
             "vx": (time.time() % 40 - 20) * 2,  # Slight horizontal spread
             "vy": 100.0,  # Falling speed
@@ -1269,9 +1242,7 @@ class WannaCryBoss:
         puddle = {"x": x, "y": y, "lifetime": 5.0, "alpha": 200, "radius": 20}
         self.puddles.append(puddle)
 
-    def update(
-        self, delta_time: float, player_position: Vector2, game_map=None
-    ) -> None:
+    def update(self, delta_time: float, player_position: Vector2, game_map=None) -> None:
         """Update boss logic."""
         if self.is_defeated:
             return
@@ -1297,9 +1268,7 @@ class WannaCryBoss:
 
         # Constant crying - spawn tears periodically
         self.tear_spawn_timer += delta_time
-        tears_per_second = (
-            2 + (self.current_phase - 1) * 2
-        )  # More tears in higher phases
+        tears_per_second = 2 + (self.current_phase - 1) * 2  # More tears in higher phases
         if self.tear_spawn_timer >= (1.0 / tears_per_second):
             self._spawn_tear_particle()
             self.tear_spawn_timer = 0.0
@@ -1392,9 +1361,7 @@ class WannaCryBoss:
 
     def get_bounds(self) -> pygame.Rect:
         """Get bounding box for collision detection."""
-        return pygame.Rect(
-            int(self.position.x), int(self.position.y), self.width, self.height
-        )
+        return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
 
     def get_sob_wave_bounds(self) -> Optional[pygame.Rect]:
         """Get sob wave collision bounds if active."""
