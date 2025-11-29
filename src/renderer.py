@@ -1547,18 +1547,82 @@ class Renderer:
 
     def render_message_bubble(self, message: str) -> None:
         """
-        Render a beautiful purple vertical menu or message bubble.
+        Render a beautiful purple message bubble or menu.
+
+        All messages now use the consistent purple theme for visual consistency.
 
         Args:
             message: The message text to display
         """
-        # Check if this is a pause menu (contains menu options with ▶)
+        # Replace emojis with ASCII alternatives that render properly in pygame
+        message = self._replace_emojis_with_ascii(message)
+
+        # Check if this is a menu (contains menu options with ▶)
         is_menu = "▶" in message or ("Return to Game" in message and "Quit Game" in message)
 
         if is_menu:
             self._render_purple_menu(message)
         else:
-            self._render_message_box(message)
+            # Use purple theme for ALL messages (consistent UX)
+            self._render_purple_message(message)
+
+    def _replace_emojis_with_ascii(self, message: str) -> str:
+        """
+        Replace emojis with ASCII alternatives that render in pygame fonts.
+
+        Args:
+            message: Original message with emojis
+
+        Returns:
+            Message with ASCII replacements
+        """
+        replacements = {
+            "⏸️": "[PAUSED]",
+            "⏸": "[PAUSED]",
+            "🎮": "[GAME]",
+            "💀": "[!]",
+            "🔓": "[UNLOCKED]",
+            "⚠️": "[!]",
+            "⚠": "[!]",
+            "✅": "[OK]",
+            "❌": "[X]",
+            "🏆": "[TROPHY]",
+            "⭐": "[*]",
+            "🎯": "[TARGET]",
+            "🔥": "[!]",
+            "💔": "[DAMAGE]",
+            "🕷️": "[BOSS]",
+            "🕷": "[BOSS]",
+            "⏱": "[TIME]",
+            "⏱️": "[TIME]",
+            "🧟": "[ZOMBIE]",
+            "🛡️": "[SHIELD]",
+            "🛡": "[SHIELD]",
+            "👾": "[ENEMY]",
+            "🚀": "[GO]",
+            "💥": "[!]",
+            "🎉": "[!]",
+            "📊": "[STATS]",
+            "🔒": "[LOCKED]",
+            "🔑": "[KEY]",
+            "❤️": "[HEART]",
+            "❤": "[HEART]",
+            "💜": "[*]",
+            "🟣": "[*]",
+            "═": "=",
+            "║": "|",
+            "╔": "+",
+            "╗": "+",
+            "╚": "+",
+            "╝": "+",
+            "─": "-",
+            "│": "|",
+        }
+
+        for emoji, ascii_alt in replacements.items():
+            message = message.replace(emoji, ascii_alt)
+
+        return message
 
     def _render_purple_menu(self, message: str) -> None:
         """
@@ -1682,6 +1746,128 @@ class Renderer:
                 footer_x = menu_x + (menu_width - footer_surface.get_width()) // 2
                 self.screen.blit(footer_surface, (footer_x, current_y))
                 current_y += 25
+
+    def _render_purple_message(self, message: str) -> None:
+        """
+        Render a purple-themed message box (non-menu messages).
+
+        Uses the same visual style as the pause menu for consistency.
+
+        Args:
+            message: Message text to display
+        """
+        # Purple color scheme (same as menu)
+        PURPLE_DARK = (60, 40, 80)
+        PURPLE_LIGHT = (120, 80, 160)
+        PURPLE_GLOW = (180, 120, 240)
+        WHITE = (255, 255, 255)
+        GOLD = (255, 215, 0)
+        GRAY = (180, 180, 180)
+
+        # Parse message into lines (respect newlines)
+        raw_lines = message.split("\n")
+
+        # Process lines - identify title, body, and footer
+        title_lines = []
+        body_lines = []
+        footer_lines = []
+
+        for line in raw_lines:
+            stripped = line.strip()
+            if not stripped:
+                continue
+
+            # Footer detection (control hints)
+            if any(
+                hint in stripped.upper()
+                for hint in ["ENTER", "PRESS", "SPACE", "BUTTON", "CONTINUE"]
+            ):
+                footer_lines.append(stripped)
+            # Title detection (first non-empty lines, often with markers)
+            elif not body_lines and (
+                stripped.startswith("[")
+                or stripped.startswith("=")
+                or stripped.isupper()
+                or len(title_lines) < 2
+            ):
+                title_lines.append(stripped)
+            else:
+                body_lines.append(stripped)
+
+        # If no clear title, use first line as title
+        if not title_lines and body_lines:
+            title_lines = [body_lines.pop(0)]
+
+        # Calculate dimensions
+        padding = 25
+        line_height = 28
+        title_height = len(title_lines) * 32 + 15 if title_lines else 0
+        body_height = len(body_lines) * line_height + 10 if body_lines else 0
+        footer_height = len(footer_lines) * 22 + 10 if footer_lines else 30  # Default footer
+
+        # Calculate width based on content
+        max_text_width = 300
+        for line in title_lines + body_lines + footer_lines:
+            test_surface = self.combo_font.render(line, True, WHITE)
+            max_text_width = max(max_text_width, test_surface.get_width() + 60)
+
+        menu_width = min(max_text_width, self.width - 100)
+        total_height = title_height + body_height + footer_height + padding * 2
+
+        # Center on screen
+        menu_x = (self.width - menu_width) // 2
+        menu_y = (self.height - total_height) // 2
+
+        # Draw semi-transparent dark overlay
+        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 180))
+        self.screen.blit(overlay, (0, 0))
+
+        # Draw message background (dark purple)
+        menu_rect = pygame.Rect(menu_x, menu_y, menu_width, total_height)
+        pygame.draw.rect(self.screen, PURPLE_DARK, menu_rect)
+
+        # Draw glowing border (light purple)
+        pygame.draw.rect(self.screen, PURPLE_LIGHT, menu_rect, 4)
+
+        # Inner glow effect
+        inner_rect = pygame.Rect(menu_x + 4, menu_y + 4, menu_width - 8, total_height - 8)
+        pygame.draw.rect(self.screen, PURPLE_GLOW, inner_rect, 2)
+
+        # Render title (gold, centered)
+        current_y = menu_y + padding
+        for title_line in title_lines:
+            title_surface = self.name_font.render(title_line, True, GOLD)
+            title_x = menu_x + (menu_width - title_surface.get_width()) // 2
+            self.screen.blit(title_surface, (title_x, current_y))
+            current_y += 32
+
+        if title_lines:
+            current_y += 10
+
+        # Render body (white, centered)
+        for body_line in body_lines:
+            body_surface = self.label_font.render(body_line, True, WHITE)
+            body_x = menu_x + (menu_width - body_surface.get_width()) // 2
+            self.screen.blit(body_surface, (body_x, current_y))
+            current_y += line_height
+
+        if body_lines:
+            current_y += 5
+
+        # Render footer (gray, smaller, centered)
+        if footer_lines:
+            for footer_line in footer_lines:
+                footer_surface = self.small_font.render(footer_line, True, GRAY)
+                footer_x = menu_x + (menu_width - footer_surface.get_width()) // 2
+                self.screen.blit(footer_surface, (footer_x, current_y))
+                current_y += 22
+        else:
+            # Default footer
+            default_footer = "Press ENTER/A to continue"
+            footer_surface = self.small_font.render(default_footer, True, GRAY)
+            footer_x = menu_x + (menu_width - footer_surface.get_width()) // 2
+            self.screen.blit(footer_surface, (footer_x, current_y))
 
     def _render_message_box(self, message: str) -> None:
         """
