@@ -439,13 +439,27 @@ class GameMap:
         # Create map surface
         self.map_surface = pygame.Surface((self.map_width, self.map_height))
 
-        # Platformer color palette
-        SKY_BLUE = (100, 140, 200)
-        SKY_LIGHT = (120, 160, 220)
-        GROUND_PURPLE = (80, 60, 100)
-        GROUND_LIGHT = (100, 80, 120)
-        GROUND_TOP = (120, 90, 140)
+        # Cyberpunk/Sonrai color palette - much more visually interesting!
+        # Sky gradient from deep purple (top) to orange/pink horizon
+        SKY_TOP = (25, 15, 45)  # Deep purple/black (night sky)
+        SKY_MID = (60, 30, 80)  # Rich purple
+        SKY_HORIZON = (120, 50, 90)  # Pink/magenta horizon
+        SKY_GLOW = (180, 80, 60)  # Orange glow near horizon
+
+        # Ground colors - Sonrai purple theme
+        GROUND_PURPLE = (50, 30, 70)
+        GROUND_LIGHT = (70, 45, 95)
+        GROUND_TOP = (90, 55, 120)
         BLACK = (0, 0, 0)
+
+        # Cloud/building colors for background elements
+        CLOUD_DARK = (40, 25, 55)
+        CLOUD_LIGHT = (70, 45, 90)
+        BUILDING_DARK = (20, 12, 30)
+        BUILDING_LIGHT = (35, 22, 50)
+        STAR_COLOR = (255, 255, 200)
+        NEON_PURPLE = (180, 100, 255)
+        NEON_CYAN = (100, 255, 255)
 
         # Create tile map (0 = air/sky, 1 = ground/platform)
         tile_map = [[0 for _ in range(tiles_wide)] for _ in range(tiles_high)]
@@ -545,16 +559,41 @@ class GameMap:
                         # Floating platform
                         self._draw_wall_tile(tile_x, tile_y)
                 else:
-                    # Sky tiles (gradient)
-                    sky_gradient = max(0, min(1, y / (tiles_high * 0.6)))
-                    r = int(SKY_BLUE[0] + (SKY_LIGHT[0] - SKY_BLUE[0]) * sky_gradient)
-                    g = int(SKY_BLUE[1] + (SKY_LIGHT[1] - SKY_BLUE[1]) * sky_gradient)
-                    b = int(SKY_BLUE[2] + (SKY_LIGHT[2] - SKY_BLUE[2]) * sky_gradient)
+                    # Cyberpunk sky with multi-color gradient (top to bottom)
+                    # 0.0 = top (dark purple), 1.0 = bottom (orange glow)
+                    sky_progress = y / (tiles_high * 0.7)
+                    sky_progress = max(0, min(1, sky_progress))
+
+                    # Three-stage gradient: top -> mid -> horizon -> glow
+                    if sky_progress < 0.3:
+                        # Top section: deep purple to mid purple
+                        t = sky_progress / 0.3
+                        r = int(SKY_TOP[0] + (SKY_MID[0] - SKY_TOP[0]) * t)
+                        g = int(SKY_TOP[1] + (SKY_MID[1] - SKY_TOP[1]) * t)
+                        b = int(SKY_TOP[2] + (SKY_MID[2] - SKY_TOP[2]) * t)
+                    elif sky_progress < 0.7:
+                        # Mid section: mid purple to pink horizon
+                        t = (sky_progress - 0.3) / 0.4
+                        r = int(SKY_MID[0] + (SKY_HORIZON[0] - SKY_MID[0]) * t)
+                        g = int(SKY_MID[1] + (SKY_HORIZON[1] - SKY_MID[1]) * t)
+                        b = int(SKY_MID[2] + (SKY_HORIZON[2] - SKY_MID[2]) * t)
+                    else:
+                        # Bottom section: pink to orange glow
+                        t = (sky_progress - 0.7) / 0.3
+                        r = int(SKY_HORIZON[0] + (SKY_GLOW[0] - SKY_HORIZON[0]) * t)
+                        g = int(SKY_HORIZON[1] + (SKY_GLOW[1] - SKY_HORIZON[1]) * t)
+                        b = int(SKY_HORIZON[2] + (SKY_GLOW[2] - SKY_HORIZON[2]) * t)
+
                     pygame.draw.rect(
                         self.map_surface,
                         (r, g, b),
                         (tile_x, tile_y, self.tile_size, self.tile_size),
                     )
+
+        # Add cyberpunk background decorations (stars, cityscape, clouds)
+        self._draw_platformer_background_decorations(
+            tiles_wide, tiles_high, tile_map, ground_height
+        )
 
         # Store tile map for collision detection
         self.tile_map = tile_map
@@ -571,6 +610,190 @@ class GameMap:
         print(
             f"Generated platformer level: {tiles_wide}x{tiles_high} tiles with {len(self.platform_positions)} platform segments"
         )
+
+    def _draw_platformer_background_decorations(
+        self, tiles_wide: int, tiles_high: int, tile_map: list, ground_height: int
+    ) -> None:
+        """Draw cyberpunk background decorations: stars, cityscape, clouds, data streams."""
+        # Colors for decorations
+        STAR_BRIGHT = (255, 255, 220)
+        STAR_DIM = (180, 180, 160)
+        STAR_PURPLE = (200, 150, 255)
+        BUILDING_DARK = (20, 12, 30)
+        BUILDING_MID = (35, 22, 50)
+        BUILDING_LIGHT = (50, 35, 70)
+        WINDOW_GLOW = (255, 200, 100)
+        NEON_PURPLE = (180, 100, 255)
+        NEON_CYAN = (100, 255, 255)
+        NEON_PINK = (255, 100, 180)
+        CLOUD_DARK = (40, 25, 55)
+        CLOUD_LIGHT = (60, 40, 80)
+
+        random.seed(123)  # Consistent decorations
+
+        # === LAYER 1: Stars (top 40% of sky) ===
+        sky_height = (tiles_high - ground_height) * self.tile_size
+        star_zone_height = int(sky_height * 0.5)
+
+        for _ in range(80):  # 80 stars
+            star_x = random.randint(0, self.map_width - 1)
+            star_y = random.randint(0, star_zone_height)
+
+            # Check if this position is sky (not platform)
+            tile_x = star_x // self.tile_size
+            tile_y = star_y // self.tile_size
+            if tile_y < tiles_high and tile_x < tiles_wide:
+                if tile_map[tile_y][tile_x] == 0:  # Sky tile
+                    # Vary star appearance
+                    star_type = random.randint(0, 10)
+                    if star_type < 5:
+                        # Small dim star (1px)
+                        self.map_surface.set_at((star_x, star_y), STAR_DIM)
+                    elif star_type < 8:
+                        # Medium bright star (cross pattern)
+                        self.map_surface.set_at((star_x, star_y), STAR_BRIGHT)
+                        self.map_surface.set_at((star_x - 1, star_y), STAR_DIM)
+                        self.map_surface.set_at((star_x + 1, star_y), STAR_DIM)
+                        self.map_surface.set_at((star_x, star_y - 1), STAR_DIM)
+                        self.map_surface.set_at((star_x, star_y + 1), STAR_DIM)
+                    else:
+                        # Purple tinted star
+                        self.map_surface.set_at((star_x, star_y), STAR_PURPLE)
+                        self.map_surface.set_at((star_x + 1, star_y), STAR_DIM)
+
+        # === LAYER 2: Distant Cityscape Silhouette (behind platforms) ===
+        city_base_y = int(sky_height * 0.6)  # City starts at 60% down the sky
+        building_x = 0
+
+        while building_x < self.map_width:
+            # Random building dimensions
+            building_width = random.randint(30, 80)
+            building_height = random.randint(60, 180)
+            building_top = city_base_y - building_height
+
+            # Draw building silhouette (dark)
+            pygame.draw.rect(
+                self.map_surface,
+                BUILDING_DARK,
+                (building_x, building_top, building_width, building_height),
+            )
+
+            # Add building details
+            # Roof variations
+            roof_type = random.randint(0, 3)
+            if roof_type == 0:
+                # Flat roof with antenna
+                antenna_x = building_x + building_width // 2
+                pygame.draw.line(
+                    self.map_surface,
+                    BUILDING_MID,
+                    (antenna_x, building_top),
+                    (antenna_x, building_top - 15),
+                    2,
+                )
+                # Blinking light on antenna
+                pygame.draw.circle(
+                    self.map_surface, NEON_PURPLE, (antenna_x, building_top - 15), 2
+                )
+            elif roof_type == 1:
+                # Pointed roof
+                points = [
+                    (building_x, building_top),
+                    (building_x + building_width // 2, building_top - 20),
+                    (building_x + building_width, building_top),
+                ]
+                pygame.draw.polygon(self.map_surface, BUILDING_MID, points)
+
+            # Windows (glowing)
+            window_rows = building_height // 20
+            window_cols = building_width // 15
+            for row in range(window_rows):
+                for col in range(window_cols):
+                    if random.random() < 0.6:  # 60% of windows lit
+                        win_x = building_x + 5 + col * 15
+                        win_y = building_top + 10 + row * 20
+                        # Window glow color varies
+                        win_color = random.choice(
+                            [WINDOW_GLOW, NEON_CYAN, NEON_PURPLE, NEON_PINK]
+                        )
+                        pygame.draw.rect(
+                            self.map_surface, win_color, (win_x, win_y, 8, 10)
+                        )
+
+            # Gap between buildings
+            building_x += building_width + random.randint(5, 25)
+
+        # === LAYER 3: Neon Signs (scattered on buildings) ===
+        for _ in range(8):
+            sign_x = random.randint(50, self.map_width - 100)
+            sign_y = random.randint(city_base_y - 150, city_base_y - 50)
+
+            # Check if position is in sky
+            tile_x = sign_x // self.tile_size
+            tile_y = sign_y // self.tile_size
+            if tile_y < tiles_high and tile_x < tiles_wide:
+                if tile_map[tile_y][tile_x] == 0:
+                    sign_color = random.choice([NEON_PURPLE, NEON_CYAN, NEON_PINK])
+                    sign_width = random.randint(20, 50)
+                    # Horizontal neon bar
+                    pygame.draw.rect(
+                        self.map_surface, sign_color, (sign_x, sign_y, sign_width, 4)
+                    )
+                    # Glow effect (larger, dimmer)
+                    glow_color = tuple(c // 3 for c in sign_color)
+                    pygame.draw.rect(
+                        self.map_surface,
+                        glow_color,
+                        (sign_x - 2, sign_y - 2, sign_width + 4, 8),
+                    )
+
+        # === LAYER 4: Floating Clouds/Data Streams ===
+        for _ in range(12):
+            cloud_x = random.randint(0, self.map_width - 100)
+            cloud_y = random.randint(int(sky_height * 0.2), int(sky_height * 0.7))
+
+            # Check if position is in sky
+            tile_x = cloud_x // self.tile_size
+            tile_y = cloud_y // self.tile_size
+            if tile_y < tiles_high and tile_x < tiles_wide:
+                if tile_map[tile_y][tile_x] == 0:
+                    # Draw pixelated cloud (8-bit style)
+                    cloud_width = random.randint(40, 100)
+                    cloud_height = random.randint(15, 30)
+
+                    # Cloud is made of overlapping circles/ellipses
+                    for i in range(3):
+                        cx = cloud_x + i * (cloud_width // 3)
+                        cy = cloud_y + random.randint(-5, 5)
+                        cr = random.randint(12, 20)
+                        pygame.draw.circle(self.map_surface, CLOUD_DARK, (cx, cy), cr)
+                        pygame.draw.circle(
+                            self.map_surface, CLOUD_LIGHT, (cx, cy - 3), cr - 3
+                        )
+
+        # === LAYER 5: Data Stream Lines (vertical, like Matrix) ===
+        for _ in range(15):
+            stream_x = random.randint(0, self.map_width)
+            stream_start_y = random.randint(0, int(sky_height * 0.3))
+            stream_length = random.randint(30, 100)
+
+            # Check if position is in sky
+            tile_x = stream_x // self.tile_size
+            tile_y = stream_start_y // self.tile_size
+            if tile_y < tiles_high and tile_x < tiles_wide:
+                if tile_map[tile_y][tile_x] == 0:
+                    # Draw data stream (fading vertical line)
+                    for i in range(stream_length):
+                        y = stream_start_y + i
+                        if y < sky_height:
+                            # Fade from bright to dim
+                            alpha = 1.0 - (i / stream_length)
+                            color = (
+                                int(100 * alpha),
+                                int(255 * alpha),
+                                int(200 * alpha),
+                            )
+                            self.map_surface.set_at((stream_x, y), color)
 
     def _draw_ground_top_tile(self, x: int, y: int) -> None:
         """Draw the top layer of ground (grass-like)."""
