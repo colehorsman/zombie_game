@@ -63,3 +63,4 @@ verify_dpad.py
 # Security scan reports
 reports/
 *.sarif
+venv/
