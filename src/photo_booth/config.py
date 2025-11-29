@@ -21,10 +21,13 @@ def detect_best_camera() -> int:
     try:
         import cv2
     except ImportError:
+        print("📷 CAMERA DETECTION: OpenCV not available")
         return 0
 
+    print("📷 CAMERA DETECTION: Scanning for cameras...")
     best_camera = 0
     best_fps = 0.0
+    cameras_found = []
 
     # Check first 5 camera indices
     for i in range(5):
@@ -36,6 +39,11 @@ def detect_best_camera() -> int:
                     fps = cap.get(cv2.CAP_PROP_FPS)
                     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    # Try to get camera name/backend
+                    backend = cap.getBackendName()
+                    camera_info = f"Camera {i}: {width}x{height} @ {fps} FPS (backend: {backend})"
+                    cameras_found.append(camera_info)
+                    print(f"📷 FOUND: {camera_info}")
                     logger.info(f"📷 Camera {i}: {width}x{height} @ {fps} FPS")
 
                     # Prefer higher FPS (external cameras usually have better FPS)
@@ -44,11 +52,15 @@ def detect_best_camera() -> int:
                         best_fps = fps
                         best_camera = i
                 cap.release()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"📷 Camera {i}: Error - {e}")
 
-    if best_fps > 0:
+    if cameras_found:
+        print(f"📷 CAMERA DETECTION: Found {len(cameras_found)} camera(s)")
+        print(f"📷 CAMERA DETECTION: Selected camera {best_camera} (FPS: {best_fps})")
         logger.info(f"📷 Selected camera {best_camera} (best FPS: {best_fps})")
+    else:
+        print("📷 CAMERA DETECTION: No cameras found!")
 
     return best_camera
 
@@ -65,8 +77,8 @@ class PhotoBoothConfig:
     hashtag: str = "#SonraiZombieBlaster"
     output_dir: str = ".kiro/evidence/booth_photos"
     consent_timeout: float = 5.0  # seconds
-    min_arcade_time: float = 10.0  # minimum seconds of arcade play before photo capture
-    screenshot_delay: float = 15.0  # seconds into arcade mode to capture gameplay screenshot
+    min_arcade_time: float = 5.0  # minimum seconds of arcade play before photo capture
+    screenshot_delay: float = 5.0  # seconds into arcade mode to capture gameplay screenshot
 
     @classmethod
     def from_env(cls) -> "PhotoBoothConfig":

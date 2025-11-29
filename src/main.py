@@ -314,7 +314,11 @@ def main():
         # Initialize level manager
         logger.info("Initializing level manager...")
         try:
-            level_manager = LevelManager("assets/aws_accounts.csv")
+            # Get the project root (parent of src/)
+            src_dir = os.path.dirname(os.path.abspath(__file__))
+            project_root = os.path.dirname(src_dir)
+            csv_path = os.path.join(project_root, "assets", "aws_accounts.csv")
+            level_manager = LevelManager(csv_path)
             logger.info(f"Loaded {len(level_manager.levels)} levels")
         except Exception as e:
             logger.error(f"Failed to initialize level manager: {e}")
@@ -392,6 +396,9 @@ def main():
     # Initialize renderer with game surface (not display)
     renderer = Renderer(game_surface)
 
+    # Connect renderer to game engine for photo booth capture
+    game_engine.renderer = renderer
+
     # Start the game
     game_engine.start()
 
@@ -451,6 +458,10 @@ def main():
 
         # Render background (map or grid)
         renderer.render_background(game_map)
+
+        # Render flashing lightning (platformer mode only)
+        game_state = game_engine.get_game_state()
+        renderer.render_lightning(game_map, delta_time, game_state.play_time)
 
         # Render doors (if using map mode)
         if game_map and hasattr(game_map, "doors"):
@@ -581,8 +592,11 @@ def main():
         if game_engine.showing_boss_dialogue and game_engine.boss_dialogue_content:
             renderer.render_boss_dialogue(game_engine.boss_dialogue_content)
 
-        # Render congratulations message if present
-        if game_state.status == GameStatus.PAUSED and game_state.congratulations_message:
+        # Render photo booth summary screen if active (takes over entire screen)
+        if getattr(game_state, "photo_booth_summary_active", False) and game_state.photo_booth_path:
+            renderer.render_photo_booth_summary(game_state.photo_booth_path)
+        # Render congratulations message if present (not while photo booth summary is showing)
+        elif game_state.status == GameStatus.PAUSED and game_state.congratulations_message:
             renderer.render_message_bubble(game_state.congratulations_message)
 
         # Evidence capture - frame capture and visual feedback

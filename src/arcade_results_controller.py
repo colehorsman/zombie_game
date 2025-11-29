@@ -1,9 +1,9 @@
 """Arcade results menu controller - handles arcade mode results screen state and navigation."""
 
 import logging
+from dataclasses import dataclass
 from enum import Enum, auto
 from typing import List, Optional
-from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,9 @@ class ArcadeResultsController:
             stats: Snapshot of arcade statistics including queue size
         """
         self.stats = stats
-        self.selected_index = 0
+        # Start with NO selection (-1) to prevent accidental button press
+        # User must navigate down first before they can select
+        self.selected_index = -1
 
         if stats.queue_size > 0:
             self.options = self.QUARANTINE_OPTIONS.copy()
@@ -100,7 +102,13 @@ class ArcadeResultsController:
             return
 
         old_index = self.selected_index
-        self.selected_index = (self.selected_index + direction) % len(self.options)
+
+        # If no selection yet (-1), first navigation selects first item
+        if self.selected_index == -1:
+            self.selected_index = 0
+        else:
+            self.selected_index = (self.selected_index + direction) % len(self.options)
+
         logger.debug(
             f"🎮 Arcade menu: {old_index} → {self.selected_index}: {self.options[self.selected_index]}"
         )
@@ -115,8 +123,9 @@ class ArcadeResultsController:
         if not self.is_visible or not self.options:
             return ArcadeResultsAction.NONE
 
-        # Bounds check for invalid index
+        # Require valid selection - user must navigate first (prevents accidental selection)
         if self.selected_index < 0 or self.selected_index >= len(self.options):
+            logger.debug("🎮 No option selected yet - navigate first")
             return ArcadeResultsAction.NONE
 
         selected_option = self.options[self.selected_index]
@@ -152,12 +161,11 @@ class ArcadeResultsController:
 
         stats = self.stats
 
-        # Build header
+        # Build header - simplified stats
         message = "🎮 ARCADE MODE COMPLETE! 🎮\n\n"
         message += "═══════════════════════════\n\n"
         message += f"Zombies Eliminated: {stats.total_eliminations}\n"
         message += f"Highest Combo: {stats.highest_combo}x\n"
-        message += f"Power-ups Collected: {stats.powerups_collected}\n"
         message += f"Eliminations/Second: {stats.eliminations_per_second:.2f}\n\n"
         message += "═══════════════════════════\n\n"
 
@@ -174,6 +182,10 @@ class ArcadeResultsController:
                 message += f"▶ {option}\n"
             else:
                 message += f"  {option}\n"
+
+        # Show hint if no selection yet
+        if self.selected_index == -1:
+            message += "\n⬇️ Navigate to select an option\n"
         message += "\n"
 
         # Add input instructions

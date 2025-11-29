@@ -98,6 +98,7 @@ class GameState:
     # Photo Booth fields
     photo_booth_consent_active: bool = False  # True when showing consent prompt
     photo_booth_path: Optional[str] = None  # Path to generated photo booth image
+    photo_booth_summary_active: bool = False  # True when showing photo booth summary screen
 
 
 @dataclass

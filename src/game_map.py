@@ -593,21 +593,17 @@ class GameMap:
         self, tiles_wide: int, tiles_high: int, tile_map: list, ground_height: int
     ) -> None:
         """Draw dramatic thunderstorm dusk sky with clouds and lightning."""
-        # Colors for thunderstorm at dusk
-        STAR_BRIGHT = (255, 255, 220)
-        STAR_DIM = (180, 180, 160)
-        STAR_PURPLE = (200, 150, 255)
+        # Colors for thunderstorm at dusk - BRIGHTER for visibility
+        STAR_BRIGHT = (255, 255, 255)  # Pure white stars
+        STAR_DIM = (220, 220, 200)  # Brighter dim stars
+        STAR_PURPLE = (255, 200, 255)  # Bright purple stars
+        STAR_YELLOW = (255, 255, 150)  # Yellow twinkling stars
 
-        # Storm cloud colors
-        CLOUD_DARK = (30, 25, 40)  # Dark storm clouds
-        CLOUD_MID = (50, 45, 65)  # Mid-tone clouds
-        CLOUD_LIGHT = (70, 65, 85)  # Lighter cloud edges
-        CLOUD_PURPLE = (60, 40, 80)  # Purple-tinted storm clouds
-
-        # Lightning colors
-        LIGHTNING_BRIGHT = (255, 255, 255)
-        LIGHTNING_GLOW = (200, 200, 255)
-        LIGHTNING_PURPLE = (180, 150, 255)
+        # Storm cloud colors - MORE VISIBLE
+        CLOUD_DARK = (50, 45, 70)  # Brighter dark storm clouds
+        CLOUD_MID = (80, 75, 105)  # Brighter mid-tone clouds
+        CLOUD_LIGHT = (120, 115, 145)  # Much brighter cloud edges
+        CLOUD_PURPLE = (100, 70, 130)  # Brighter purple-tinted storm clouds
 
         # Dusk horizon colors
         HORIZON_ORANGE = (180, 80, 40)
@@ -618,10 +614,11 @@ class GameMap:
 
         sky_height = (tiles_high - ground_height) * self.tile_size
 
-        # === LAYER 1: Sparse Stars (only visible through cloud gaps, top 30%) ===
-        star_zone_height = int(sky_height * 0.3)
+        # === LAYER 1: MORE VISIBLE Stars (across top 50% of sky) ===
+        star_zone_height = int(sky_height * 0.5)
 
-        for _ in range(40):  # Fewer stars (storm obscures most)
+        # Draw MORE stars with BIGGER sizes
+        for _ in range(150):  # Many more stars
             star_x = random.randint(0, self.map_width - 1)
             star_y = random.randint(0, star_zone_height)
 
@@ -630,94 +627,108 @@ class GameMap:
             if tile_y < tiles_high and tile_x < tiles_wide:
                 if tile_map[tile_y][tile_x] == 0:
                     star_type = random.randint(0, 10)
-                    if star_type < 6:
+                    if star_type < 4:
+                        # Small dim star (single pixel)
                         self.map_surface.set_at((star_x, star_y), STAR_DIM)
+                    elif star_type < 7:
+                        # Medium bright star (2x2)
+                        pygame.draw.rect(self.map_surface, STAR_BRIGHT, (star_x, star_y, 2, 2))
                     elif star_type < 9:
-                        self.map_surface.set_at((star_x, star_y), STAR_BRIGHT)
+                        # Large yellow star (3x3 with glow)
+                        pygame.draw.rect(self.map_surface, STAR_YELLOW, (star_x, star_y, 3, 3))
+                        pygame.draw.rect(self.map_surface, STAR_DIM, (star_x - 1, star_y, 1, 3))
+                        pygame.draw.rect(self.map_surface, STAR_DIM, (star_x + 3, star_y, 1, 3))
                     else:
-                        self.map_surface.set_at((star_x, star_y), STAR_PURPLE)
+                        # Purple twinkling star (cross shape)
+                        pygame.draw.rect(self.map_surface, STAR_PURPLE, (star_x, star_y - 1, 2, 4))
+                        pygame.draw.rect(self.map_surface, STAR_PURPLE, (star_x - 1, star_y, 4, 2))
 
         # === LAYER 2: Dusk Horizon Glow (bottom of sky) ===
+        # Only draw horizon glow on sky tiles, not over platforms
         horizon_start = int(sky_height * 0.7)
         for y in range(horizon_start, int(sky_height)):
+            tile_y = y // self.tile_size
+            if tile_y >= tiles_high:
+                continue
             progress = (y - horizon_start) / (sky_height - horizon_start)
             # Blend from purple to orange/pink at horizon
             r = int(HORIZON_PURPLE[0] + (HORIZON_ORANGE[0] - HORIZON_PURPLE[0]) * progress)
             g = int(HORIZON_PURPLE[1] + (HORIZON_ORANGE[1] - HORIZON_PURPLE[1]) * progress)
             b = int(HORIZON_PURPLE[2] + (HORIZON_ORANGE[2] - HORIZON_PURPLE[2]) * progress)
-            pygame.draw.line(self.map_surface, (r, g, b), (0, y), (self.map_width, y))
+            # Draw horizon glow only on sky pixels, skip platform tiles
+            for x in range(0, self.map_width, self.tile_size):
+                tile_x = x // self.tile_size
+                if tile_x < tiles_wide and tile_map[tile_y][tile_x] == 0:
+                    # Sky tile - draw horizon glow
+                    pygame.draw.line(self.map_surface, (r, g, b), (x, y), (x + self.tile_size, y))
 
-        # === LAYER 3: Large Storm Clouds (dramatic, layered) ===
+        # === LAYER 3: Large Storm Clouds (dramatic, layered) - MORE VISIBLE ===
         # Draw multiple layers of clouds for depth
 
-        # Background clouds (darker, larger)
-        for _ in range(8):
-            cloud_x = random.randint(-50, self.map_width)
-            cloud_y = random.randint(int(sky_height * 0.15), int(sky_height * 0.5))
-            cloud_width = random.randint(150, 300)
-            cloud_height = random.randint(60, 120)
+        # Background clouds (darker, larger) - BIGGER
+        for _ in range(12):  # More clouds
+            cloud_x = random.randint(-100, self.map_width)
+            cloud_y = random.randint(int(sky_height * 0.1), int(sky_height * 0.5))
+            cloud_width = random.randint(200, 400)  # Bigger
+            cloud_height = random.randint(80, 150)
 
             # Draw cloud as overlapping ellipses
-            for i in range(5):
+            for _ in range(7):  # More ellipses per cloud
                 cx = cloud_x + random.randint(0, cloud_width)
                 cy = cloud_y + random.randint(-10, cloud_height // 2)
-                rx = random.randint(40, 80)
-                ry = random.randint(25, 50)
+                rx = random.randint(50, 100)  # Bigger
+                ry = random.randint(30, 60)
                 pygame.draw.ellipse(
                     self.map_surface, CLOUD_DARK, (cx - rx, cy - ry, rx * 2, ry * 2)
                 )
 
-        # Mid-layer clouds (medium tone)
-        for _ in range(10):
-            cloud_x = random.randint(-30, self.map_width)
-            cloud_y = random.randint(int(sky_height * 0.2), int(sky_height * 0.6))
-            cloud_width = random.randint(100, 200)
+        # Mid-layer clouds (medium tone) - MORE VISIBLE
+        for _ in range(15):  # More clouds
+            cloud_x = random.randint(-50, self.map_width)
+            cloud_y = random.randint(int(sky_height * 0.15), int(sky_height * 0.55))
+            cloud_width = random.randint(120, 250)
 
-            for i in range(4):
-                cx = cloud_x + i * (cloud_width // 4) + random.randint(-10, 10)
-                cy = cloud_y + random.randint(-15, 15)
-                rx = random.randint(30, 60)
-                ry = random.randint(20, 40)
+            for i in range(5):  # More ellipses
+                cx = cloud_x + i * (cloud_width // 5) + random.randint(-15, 15)
+                cy = cloud_y + random.randint(-20, 20)
+                rx = random.randint(40, 70)
+                ry = random.randint(25, 50)
                 pygame.draw.ellipse(self.map_surface, CLOUD_MID, (cx - rx, cy - ry, rx * 2, ry * 2))
 
-        # Foreground clouds (lighter edges, smaller)
-        for _ in range(12):
-            cloud_x = random.randint(0, self.map_width - 80)
-            cloud_y = random.randint(int(sky_height * 0.25), int(sky_height * 0.65))
+        # Foreground clouds (lighter edges, smaller) - BRIGHTER
+        for _ in range(18):  # More clouds
+            cloud_x = random.randint(0, self.map_width - 100)
+            cloud_y = random.randint(int(sky_height * 0.2), int(sky_height * 0.6))
 
-            for i in range(3):
-                cx = cloud_x + i * 35 + random.randint(-5, 5)
-                cy = cloud_y + random.randint(-8, 8)
-                r = random.randint(18, 35)
+            for i in range(4):  # More circles
+                cx = cloud_x + i * 40 + random.randint(-8, 8)
+                cy = cloud_y + random.randint(-10, 10)
+                r = random.randint(25, 45)  # Bigger
                 pygame.draw.circle(self.map_surface, CLOUD_LIGHT, (cx, cy), r)
                 # Purple tint on some clouds
-                if random.random() < 0.3:
+                if random.random() < 0.4:
                     pygame.draw.circle(self.map_surface, CLOUD_PURPLE, (cx, cy - 5), r - 5)
 
-        # === LAYER 4: Lightning Bolts (dramatic, jagged) ===
-        for _ in range(6):  # 6 lightning bolts across the level
+        # === LAYER 4: Store Lightning Bolt positions for dynamic flashing ===
+        # Don't draw lightning here - store positions for renderer to flash
+        self.lightning_bolts = []
+        for _ in range(8):  # 8 lightning bolts across the level
             bolt_x = random.randint(100, self.map_width - 100)
             bolt_start_y = random.randint(int(sky_height * 0.1), int(sky_height * 0.3))
             bolt_end_y = random.randint(int(sky_height * 0.5), int(sky_height * 0.75))
 
-            # Draw lightning bolt with jagged path
+            # Generate lightning bolt path
             points = [(bolt_x, bolt_start_y)]
             current_x = bolt_x
             current_y = bolt_start_y
 
             while current_y < bolt_end_y:
-                # Jagged movement
                 current_x += random.randint(-25, 25)
                 current_y += random.randint(15, 40)
                 points.append((current_x, min(current_y, bolt_end_y)))
 
-            # Draw glow (wider, dimmer)
-            if len(points) > 1:
-                pygame.draw.lines(self.map_surface, LIGHTNING_GLOW, False, points, 5)
-                pygame.draw.lines(self.map_surface, LIGHTNING_PURPLE, False, points, 3)
-                pygame.draw.lines(self.map_surface, LIGHTNING_BRIGHT, False, points, 1)
-
-            # Add branching bolts
+            # Generate branch points
+            branch_points = []
             if len(points) > 2 and random.random() < 0.7:
                 branch_start = random.choice(points[1:-1])
                 branch_points = [branch_start]
@@ -726,8 +737,16 @@ class GameMap:
                     bx += random.randint(-20, 20)
                     by += random.randint(10, 25)
                     branch_points.append((bx, by))
-                pygame.draw.lines(self.map_surface, LIGHTNING_GLOW, False, branch_points, 3)
-                pygame.draw.lines(self.map_surface, LIGHTNING_BRIGHT, False, branch_points, 1)
+
+            self.lightning_bolts.append(
+                {
+                    "points": points,
+                    "branch_points": branch_points,
+                    "flash_timer": random.uniform(0, 5.0),  # Random start offset
+                    "flash_duration": 0.15,  # How long flash lasts
+                    "flash_interval": random.uniform(3.0, 8.0),  # Time between flashes
+                }
+            )
 
         # === LAYER 5: Rain streaks (subtle, angled) ===
         for _ in range(100):
@@ -774,38 +793,44 @@ class GameMap:
         pygame.draw.rect(self.map_surface, border_color, (x, y, self.tile_size, self.tile_size), 1)
 
     def _draw_wall_tile(self, x: int, y: int) -> None:
-        """Draw a Mario-style wall block with purple theme - BRIGHT for visibility."""
-        # Brighter colors for better visibility
-        WALL_PURPLE = (100, 70, 150)  # Brighter purple
-        WALL_HIGHLIGHT = (160, 120, 200)  # Bright highlight
-        WALL_SHADOW = (60, 40, 100)  # Visible shadow
-        BLACK = (0, 0, 0)
+        """Draw a NEON BRIGHT floating platform - VERY VISIBLE."""
+        # NEON BRIGHT colors - impossible to miss
+        PLATFORM_MAIN = (180, 120, 255)  # Bright neon purple
+        PLATFORM_TOP = (255, 200, 255)  # Almost white top highlight
+        PLATFORM_GLOW = (220, 160, 255)  # Bright glow
+        PLATFORM_SHADOW = (100, 60, 160)  # Visible shadow
+        NEON_EDGE = (255, 100, 255)  # Hot pink neon edge
 
-        # Main block
-        pygame.draw.rect(self.map_surface, WALL_PURPLE, (x, y, self.tile_size, self.tile_size))
+        # Main block - bright purple
+        pygame.draw.rect(self.map_surface, PLATFORM_MAIN, (x, y, self.tile_size, self.tile_size))
 
-        # Top and left highlights (3 pixels thick like Mario)
-        pygame.draw.line(self.map_surface, WALL_HIGHLIGHT, (x, y), (x + self.tile_size - 1, y), 3)
-        pygame.draw.line(self.map_surface, WALL_HIGHLIGHT, (x, y), (x, y + self.tile_size - 1), 3)
+        # Top highlight - almost white (4 pixels thick)
+        pygame.draw.line(self.map_surface, PLATFORM_TOP, (x, y), (x + self.tile_size - 1, y), 4)
+        pygame.draw.line(self.map_surface, PLATFORM_TOP, (x, y), (x, y + self.tile_size - 1), 4)
+
+        # Glow effect - second layer
+        pygame.draw.line(
+            self.map_surface, PLATFORM_GLOW, (x, y + 4), (x + self.tile_size - 1, y + 4), 2
+        )
 
         # Bottom and right shadows
         pygame.draw.line(
             self.map_surface,
-            WALL_SHADOW,
+            PLATFORM_SHADOW,
             (x, y + self.tile_size - 1),
             (x + self.tile_size - 1, y + self.tile_size - 1),
-            2,
+            3,
         )
         pygame.draw.line(
             self.map_surface,
-            WALL_SHADOW,
+            PLATFORM_SHADOW,
             (x + self.tile_size - 1, y),
             (x + self.tile_size - 1, y + self.tile_size - 1),
-            2,
+            3,
         )
 
-        # Black outline
-        pygame.draw.rect(self.map_surface, BLACK, (x, y, self.tile_size, self.tile_size), 1)
+        # Neon pink outline for extra visibility
+        pygame.draw.rect(self.map_surface, NEON_EDGE, (x, y, self.tile_size, self.tile_size), 2)
 
     def _add_room_labels(self) -> None:
         """Add AWS account labels to rooms."""
@@ -1779,8 +1804,9 @@ class GameMap:
                             platform_y - 16
                         )  # Place zombie on TOP of platform (16 pixels above platform surface)
 
-                        # Skip if too far left (player spawns at x=100)
-                        if x < 400:
+                        # Skip if too close to player spawn zone (player spawns at x=100)
+                        # Give player 600 pixels of safe space to land and orient
+                        if x < 600:
                             platform_index += 1
                             continue
 

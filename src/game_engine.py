@@ -54,10 +54,12 @@ try:
     from photo_booth import PhotoBoothController, PhotoBoothState
 
     PHOTO_BOOTH_AVAILABLE = True
-except ImportError:
+    print(f"📸 PHOTO BOOTH IMPORT SUCCESS: {PhotoBoothController}, {PhotoBoothState}")
+except ImportError as e:
     PHOTO_BOOTH_AVAILABLE = False
     PhotoBoothController = None
     PhotoBoothState = None
+    print(f"📸 PHOTO BOOTH IMPORT FAILED: {e}")
 
 logger = logging.getLogger(__name__)
 
@@ -261,9 +263,13 @@ class GameEngine:
 
         # Photo booth for arcade mode selfies
         self.photo_booth = None
+        self._pending_arcade_stats = None  # Stats pending while photo booth summary is shown
+        self.renderer = None  # Set by main.py after creation for photo booth capture
+        print(f"📸 PHOTO_BOOTH_AVAILABLE = {PHOTO_BOOTH_AVAILABLE}")
         if PHOTO_BOOTH_AVAILABLE:
             self.photo_booth = PhotoBoothController()
             self.photo_booth.initialize()
+            print(f"📸 Photo booth initialized, state = {self.photo_booth.state}")
             logger.info("📸 Photo booth initialized")
 
         # Game over menu
@@ -1071,7 +1077,10 @@ class GameEngine:
                     self.game_map.map_height,
                     self.game_map,
                 )
-                logger.info(f"✅ Player created successfully")
+                # Give player 2 seconds of spawn protection
+                self.player.is_invincible = True
+                self.player.invincibility_timer = 2.0
+                logger.info(f"✅ Player created with 2s spawn protection")
             except Exception as e:
                 logger.error(f"❌ CRASH during Player init: {e}", exc_info=True)
                 raise
@@ -1346,17 +1355,28 @@ class GameEngine:
                     logger.info(f"♻️  Respawned zombie in arcade mode: {zombie.identity_name}")
 
         # Photo booth timed captures during active gameplay
-        if self.photo_booth and self.photo_booth.is_consent_complete():
-            # Capture gameplay screenshot at configured delay (default 15s)
-            if self.photo_booth.should_capture_gameplay():
-                if hasattr(self, "renderer") and self.renderer and hasattr(self.renderer, "screen"):
-                    self.photo_booth.capture_gameplay(self.renderer.screen)
-                    logger.info("📸 Captured gameplay screenshot during arcade mode")
+        if self.photo_booth:
+            elapsed = self.photo_booth.get_arcade_elapsed_time()
+            if int(elapsed) % 5 == 0 and int(elapsed) > 0:  # Log every 5 seconds
+                logger.info(
+                    f"📸 Photo booth status: consent_complete={self.photo_booth.is_consent_complete()}, elapsed={elapsed:.1f}s, gameplay_captured={self.photo_booth.gameplay_captured}"
+                )
 
-            # Capture selfie shortly after gameplay screenshot
-            if self.photo_booth.should_capture_selfie():
-                self.photo_booth.capture_selfie()
-                logger.info("📸 Captured selfie during arcade mode")
+            if self.photo_booth.is_consent_complete():
+                # Capture gameplay screenshot at configured delay (default 15s)
+                if self.photo_booth.should_capture_gameplay():
+                    if self.renderer and hasattr(self.renderer, "screen"):
+                        self.photo_booth.capture_gameplay(self.renderer.screen)
+                        logger.info("📸 Captured gameplay screenshot during arcade mode")
+                    else:
+                        logger.warning(
+                            f"📸 Cannot capture gameplay: renderer={self.renderer is not None}, has_screen={hasattr(self.renderer, 'screen') if self.renderer else 'N/A'}"
+                        )
+
+                # Capture selfie shortly after gameplay screenshot
+                if self.photo_booth.should_capture_selfie():
+                    self.photo_booth.capture_selfie()
+                    logger.info("📸 Captured selfie during arcade mode")
 
         # Disable quests during arcade mode
         # (Quests are updated in _update_playing, which still runs)
@@ -1373,6 +1393,11 @@ class GameEngine:
 
             # Show photo booth consent prompt if enabled
             # Check PhotoBoothState is available (may be None if import failed)
+            logger.info(f"📸 DEBUG: photo_booth={self.photo_booth is not None}")
+            logger.info(f"📸 DEBUG: PhotoBoothState={PhotoBoothState}")
+            if self.photo_booth:
+                logger.info(f"📸 DEBUG: photo_booth.state={self.photo_booth.state}")
+
             if (
                 self.photo_booth
                 and PhotoBoothState
@@ -1381,9 +1406,11 @@ class GameEngine:
                 self.photo_booth.reset()
                 self.photo_booth.show_consent_prompt()
                 self.game_state.photo_booth_consent_active = True
-                logger.info("📸 Photo booth consent prompt shown")
+                logger.info("📸 Photo booth consent prompt shown - WAITING FOR INPUT")
                 # Don't start arcade yet - wait for consent
                 return
+            else:
+                logger.info("📸 Photo booth disabled or not available - skipping consent")
 
             # Continue with arcade start
             self._begin_arcade_session()
@@ -1404,9 +1431,12 @@ class GameEngine:
             logger.info(f"🎮 Arcade manager started. Is active: {self.arcade_manager.is_active()}")
 
             # Start photo booth arcade tracking for timed captures
-            if self.photo_booth and self.photo_booth.is_consent_complete():
+            # Always start tracking if photo booth is available - consent may complete later
+            if self.photo_booth:
                 self.photo_booth.start_arcade_tracking()
-                logger.info("📸 Photo booth arcade tracking started")
+                logger.info(
+                    f"📸 Photo booth arcade tracking started (consent_complete={self.photo_booth.is_consent_complete()})"
+                )
 
             # Make all zombies visible for arcade mode
             visible_count = 0
@@ -1485,19 +1515,53 @@ class GameEngine:
                 elapsed = self.photo_booth.get_arcade_elapsed_time()
                 logger.info(f"📸 Arcade session too short ({elapsed:.1f}s) - skipping photo booth")
 
-        # Show the results via controller
-        self.arcade_results_controller.show(stats_snapshot)
-
-        # Pause game and show results
+        # Pause game first
         self.game_state.previous_status = self.game_state.status
         self.game_state.status = GameStatus.PAUSED
-        self.game_state.congratulations_message = self._build_arcade_results_message()
+
+        # If photo booth image was generated, show summary screen first
+        if self.game_state.photo_booth_path:
+            logger.info("📸 Showing photo booth summary screen")
+            self.game_state.photo_booth_summary_active = True
+            self._photo_booth_summary_shown_time = (
+                time.time()
+            )  # Track when shown for input cooldown
+            # Don't show arcade results yet - wait for user to dismiss photo booth
+            # Store stats for later use when transitioning to results
+            self._pending_arcade_stats = stats_snapshot
+        else:
+            # No photo booth - show results directly
+            self.arcade_results_controller.show(stats_snapshot)
+            self.game_state.congratulations_message = self._build_arcade_results_message()
 
     def _build_arcade_results_message(self) -> str:
         """Build the arcade results message. Delegates to ArcadeResultsController."""
         return self.arcade_results_controller.build_message(
             has_controller=self.joystick is not None
         )
+
+    def _dismiss_photo_booth_summary(self) -> None:
+        """Dismiss photo booth summary and show arcade results menu."""
+        if not self.game_state.photo_booth_summary_active:
+            return
+
+        # Require at least 0.5 seconds before allowing dismissal (prevents instant skip from held button)
+        if hasattr(self, "_photo_booth_summary_shown_time"):
+            elapsed = time.time() - self._photo_booth_summary_shown_time
+            if elapsed < 0.5:
+                logger.info(
+                    f"📸 Photo booth dismissal blocked - only {elapsed:.2f}s elapsed (need 0.5s)"
+                )
+                return
+
+        logger.info("📸 Dismissing photo booth summary, showing arcade results")
+        self.game_state.photo_booth_summary_active = False
+
+        # Now show the arcade results with the pending stats
+        if self._pending_arcade_stats:
+            self.arcade_results_controller.show(self._pending_arcade_stats)
+            self.game_state.congratulations_message = self._build_arcade_results_message()
+            self._pending_arcade_stats = None
 
     def _navigate_arcade_results_menu(self, direction: int) -> None:
         """Navigate arcade results menu. Delegates to ArcadeResultsController."""
@@ -2305,6 +2369,13 @@ class GameEngine:
                         self._begin_arcade_session()
                         continue
 
+                # Handle photo booth summary dismissal (INSERT COIN TO CONTINUE)
+                if getattr(self.game_state, "photo_booth_summary_active", False):
+                    if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_a):
+                        logger.info("📸 User dismissed photo booth summary (keyboard)")
+                        self._dismiss_photo_booth_summary()
+                        continue
+
                 # Handle pause menu navigation (if paused with menu active)
                 if self.game_state.status == GameStatus.PAUSED:
                     # Check if we're showing arcade results menu
@@ -2514,10 +2585,11 @@ class GameEngine:
                 )
 
                 # Handle photo booth consent input (controller)
-                if (
-                    getattr(self.game_state, "photo_booth_consent_active", False)
-                    and self.photo_booth
-                ):
+                consent_active = getattr(self.game_state, "photo_booth_consent_active", False)
+                logger.info(
+                    f"📸 CONSENT CHECK: active={consent_active}, photo_booth={self.photo_booth is not None}, button={event.button}"
+                )
+                if consent_active and self.photo_booth:
                     if event.button == 0:  # A button = Yes
                         logger.info("📸 User opted IN to selfie (controller A)")
                         self.photo_booth.handle_consent_input(opted_in=True)
@@ -2529,11 +2601,19 @@ class GameEngine:
                         self._begin_arcade_session()
                         continue
 
+                # Handle photo booth summary dismissal (INSERT COIN TO CONTINUE)
+                if getattr(self.game_state, "photo_booth_summary_active", False):
+                    if event.button == 0:  # A button = dismiss
+                        logger.info("📸 User dismissed photo booth summary (controller A)")
+                        self._dismiss_photo_booth_summary()
+                        continue
+
                 # Evidence capture - works even without joystick initialized
-                # X button (2) = Screenshot
-                if event.button == 2:
+                # X button (2) or Star button (10) = Screenshot
+                if event.button == 2 or event.button == 10:
                     if screen:
                         self.evidence_capture.take_screenshot(screen)
+                        logger.info(f"📸 Screenshot triggered by button {event.button}")
                     continue
                 # Y button (3) = Toggle Recording
                 elif event.button == 3:

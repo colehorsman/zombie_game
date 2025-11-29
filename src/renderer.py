@@ -118,6 +118,80 @@ class Renderer:
             for y in range(0, self.height + grid_size, grid_size):
                 pygame.draw.line(self.screen, self.grid_color, (0, y), (self.width, y), 1)
 
+    def render_lightning(
+        self, game_map: Optional[GameMap], delta_time: float, play_time: float
+    ) -> None:
+        """
+        Render flashing lightning bolts in platformer mode.
+
+        Args:
+            game_map: Game map with lightning bolt data
+            delta_time: Time since last frame
+            play_time: Total game time for animation
+        """
+        if not game_map or not hasattr(game_map, "lightning_bolts"):
+            return
+
+        if game_map.mode != "platformer":
+            return
+
+        # Lightning colors
+        LIGHTNING_BRIGHT = (255, 255, 255)
+        LIGHTNING_GLOW = (200, 200, 255)
+        LIGHTNING_PURPLE = (180, 150, 255)
+
+        for bolt in game_map.lightning_bolts:
+            # Update flash timer
+            bolt["flash_timer"] += delta_time
+
+            # Check if it's time to flash
+            if bolt["flash_timer"] >= bolt["flash_interval"]:
+                bolt["flash_timer"] = 0.0  # Reset timer
+
+            # Only draw if within flash duration
+            if bolt["flash_timer"] < bolt["flash_duration"]:
+                points = bolt["points"]
+                branch_points = bolt["branch_points"]
+
+                if len(points) > 1:
+                    # Convert world coords to screen coords
+                    screen_points = []
+                    for px, py in points:
+                        sx, sy = game_map.world_to_screen(px, py)
+                        screen_points.append((sx, sy))
+
+                    # Check if any point is on screen
+                    on_screen = any(
+                        -100 < sx < self.width + 100 and -100 < sy < self.height + 100
+                        for sx, sy in screen_points
+                    )
+
+                    if on_screen:
+                        # Draw glow (wider, dimmer)
+                        pygame.draw.lines(self.screen, LIGHTNING_GLOW, False, screen_points, 7)
+                        pygame.draw.lines(self.screen, LIGHTNING_PURPLE, False, screen_points, 4)
+                        pygame.draw.lines(self.screen, LIGHTNING_BRIGHT, False, screen_points, 2)
+
+                        # Draw branch if exists
+                        if branch_points and len(branch_points) > 1:
+                            screen_branch = []
+                            for bx, by in branch_points:
+                                sx, sy = game_map.world_to_screen(bx, by)
+                                screen_branch.append((sx, sy))
+                            pygame.draw.lines(self.screen, LIGHTNING_GLOW, False, screen_branch, 4)
+                            pygame.draw.lines(
+                                self.screen, LIGHTNING_BRIGHT, False, screen_branch, 1
+                            )
+
+                        # Screen flash effect (brief white overlay)
+                        flash_alpha = int(30 * (1 - bolt["flash_timer"] / bolt["flash_duration"]))
+                        if flash_alpha > 0:
+                            flash_surface = pygame.Surface(
+                                (self.width, self.height), pygame.SRCALPHA
+                            )
+                            flash_surface.fill((255, 255, 255, flash_alpha))
+                            self.screen.blit(flash_surface, (0, 0))
+
     def render_player(self, player: Player, game_map: Optional[GameMap] = None) -> None:
         """
         Render the player character.
@@ -196,12 +270,10 @@ class Renderer:
                         )
                     rendered_count += 1
 
-        # Debug log on first few frames
-        if rendered_count > 0 and hasattr(self, "_first_render"):
-            logger.info(f"Rendered {rendered_count} zombies on screen")
-            delattr(self, "_first_render")
-        elif not hasattr(self, "_first_render"):
-            self._first_render = True
+        # Debug log only once at start
+        if rendered_count > 0 and not hasattr(self, "_logged_first_render"):
+            logger.info(f"Rendered {rendered_count} zombies on screen (first frame)")
+            self._logged_first_render = True
 
     def render_third_parties(self, third_parties: List, game_map: Optional[GameMap] = None) -> None:
         """
@@ -1449,11 +1521,12 @@ class Renderer:
 
         self.screen.blit(timer_surface, (timer_x, timer_y))
 
-        # Quarantined count (consistent with normal mode terminology)
+        # Quarantined count (positioned below health hearts)
+        # Hearts are at y=10 with height=24, so place this at y=40
         elim_font = self.elim_font
         elim_text = f"Quarantined: {arcade_state.eliminations_count}"
         elim_surface = elim_font.render(elim_text, True, (255, 255, 255))
-        self.screen.blit(elim_surface, (10, 10))
+        self.screen.blit(elim_surface, (10, 40))
 
         # Combo counter (if active)
         if arcade_state.combo_count > 1:
@@ -1637,6 +1710,80 @@ class Renderer:
         timeout_surface = timeout_font.render(timeout_text, True, (150, 150, 150))
         timeout_x = box_x + (box_width - timeout_surface.get_width()) // 2
         self.screen.blit(timeout_surface, (timeout_x, box_y + 280))
+
+    def render_photo_booth_summary(self, image_path: str) -> None:
+        """
+        Render the photo booth summary screen with the composite image.
+
+        Displays the generated photo booth composite full-screen with
+        "INSERT COIN TO CONTINUE" prompt.
+
+        Args:
+            image_path: Path to the generated photo booth composite image
+        """
+        # Fill background with dark purple
+        self.screen.fill((20, 10, 30))
+
+        try:
+            # Load and scale the composite image to fit screen
+            composite_surface = pygame.image.load(image_path)
+            comp_width, comp_height = composite_surface.get_size()
+
+            # Calculate scaling to fit screen while maintaining aspect ratio
+            # Leave some margin for the "INSERT COIN" text at bottom
+            available_height = self.height - 80
+            scale_w = self.width / comp_width
+            scale_h = available_height / comp_height
+            scale = min(scale_w, scale_h, 1.0)  # Don't upscale
+
+            # Scale the image
+            new_width = int(comp_width * scale)
+            new_height = int(comp_height * scale)
+            scaled_surface = pygame.transform.smoothscale(
+                composite_surface, (new_width, new_height)
+            )
+
+            # Center the image
+            img_x = (self.width - new_width) // 2
+            img_y = (available_height - new_height) // 2
+
+            # Draw a border around the image
+            border_rect = pygame.Rect(img_x - 4, img_y - 4, new_width + 8, new_height + 8)
+            pygame.draw.rect(self.screen, (138, 43, 226), border_rect, 4)
+
+            # Blit the composite image
+            self.screen.blit(scaled_surface, (img_x, img_y))
+
+        except Exception as e:
+            # If image fails to load, show error message
+            logger.error(f"Failed to load photo booth image: {e}")
+            error_font = pygame.font.SysFont(None, 36)
+            error_text = "Photo booth image unavailable"
+            error_surface = error_font.render(error_text, True, (255, 100, 100))
+            error_x = (self.width - error_surface.get_width()) // 2
+            error_y = self.height // 2 - 50
+            self.screen.blit(error_surface, (error_x, error_y))
+
+        # "INSERT COIN TO CONTINUE" text at bottom
+        insert_font = pygame.font.SysFont(None, 42)
+        insert_text = "INSERT COIN TO CONTINUE"
+        insert_surface = insert_font.render(insert_text, True, (255, 215, 0))
+        insert_x = (self.width - insert_surface.get_width()) // 2
+        insert_y = self.height - 60
+
+        # Blinking effect using time
+        import time
+
+        if int(time.time() * 2) % 2 == 0:
+            self.screen.blit(insert_surface, (insert_x, insert_y))
+
+        # Controller hint below
+        hint_font = pygame.font.SysFont(None, 24)
+        hint_text = "Press A or ENTER"
+        hint_surface = hint_font.render(hint_text, True, (150, 150, 150))
+        hint_x = (self.width - hint_surface.get_width()) // 2
+        hint_y = self.height - 25
+        self.screen.blit(hint_surface, (hint_x, hint_y))
 
     def _render_victory_screen(self, game_state: GameState) -> None:
         """
