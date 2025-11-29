@@ -1,10 +1,11 @@
 """Integration tests for arcade mode dynamic zombie spawning in game_engine."""
 
-import pytest
-from unittest.mock import Mock, patch
-import pygame
 import sys
 from pathlib import Path
+from unittest.mock import Mock, patch
+
+import pygame
+import pytest
 
 # Add src to path
 src_path = Path(__file__).parent.parent / "src"
@@ -18,11 +19,9 @@ from zombie import Zombie
 @pytest.fixture
 def mock_pygame():
     """Mock pygame to avoid GUI dependencies."""
-    with patch("pygame.init"), patch("pygame.display.set_mode"), patch(
-        "pygame.font.Font"
-    ), patch("pygame.time.Clock"), patch("pygame.joystick.init"), patch(
-        "pygame.joystick.get_count", return_value=0
-    ):
+    with patch("pygame.init"), patch("pygame.display.set_mode"), patch("pygame.font.Font"), patch(
+        "pygame.time.Clock"
+    ), patch("pygame.joystick.init"), patch("pygame.joystick.get_count", return_value=0):
         yield
 
 
@@ -147,9 +146,7 @@ class TestDynamicSpawningIntegration:
             distance = abs(zombie.position.x - engine.player.position.x)
             # Should be approximately spawn_distance (500) away, but may be clamped to level bounds
             # Allow range of 50-600 to account for edge clamping
-            assert (
-                50 <= distance <= 600
-            ), f"Zombie should spawn near player, got {distance}px"
+            assert 50 <= distance <= 600, f"Zombie should spawn near player, got {distance}px"
 
     def test_respawn_uses_ground_level(self, game_engine_with_arcade):
         """Test that respawned zombies spawn at correct ground level."""
@@ -169,9 +166,7 @@ class TestDynamicSpawningIntegration:
         # Verify zombie is at ground level (800 - zombie.height)
         if not test_zombie.is_hidden:
             expected_y = 800 - test_zombie.height
-            assert (
-                test_zombie.position.y == expected_y
-            ), "Zombie should be at ground level"
+            assert test_zombie.position.y == expected_y, "Zombie should be at ground level"
 
     def test_respawn_resets_zombie_health(self, game_engine_with_arcade):
         """Test that respawned zombies have full health."""
@@ -191,9 +186,7 @@ class TestDynamicSpawningIntegration:
 
         # Verify health was reset
         if not test_zombie.is_hidden:
-            assert (
-                test_zombie.health == test_zombie.max_health
-            ), "Zombie should have full health"
+            assert test_zombie.health == test_zombie.max_health, "Zombie should have full health"
 
     def test_multiple_zombies_respawn_in_one_update(self, game_engine_with_arcade):
         """Test that multiple zombies can respawn in a single update."""
@@ -405,9 +398,7 @@ if __name__ == "__main__":
 class TestArcadeModeZombieVisibility:
     """Tests for zombie visibility when entering arcade mode."""
 
-    def test_hidden_zombies_made_visible_on_arcade_start(
-        self, mock_pygame, mock_api_client
-    ):
+    def test_hidden_zombies_made_visible_on_arcade_start(self, mock_pygame, mock_api_client):
         """Test that hidden zombies are made visible when arcade mode starts."""
         # Create zombies
         zombies = []
@@ -445,6 +436,9 @@ class TestArcadeModeZombieVisibility:
         # Start arcade mode
         with patch("arcade_mode.spawn_random_powerups", return_value=[]):
             engine._start_arcade_mode()
+            # If photo booth consent is active, complete the consent flow
+            if getattr(engine.game_state, "photo_booth_consent_active", False):
+                engine._begin_arcade_session()
 
         # Verify all zombies are now visible
         hidden_count_after = sum(1 for z in engine.zombies if z.is_hidden)
@@ -454,13 +448,9 @@ class TestArcadeModeZombieVisibility:
 
         # Verify all zombies are visible
         for zombie in engine.zombies:
-            assert (
-                zombie.is_hidden is False
-            ), f"Zombie {zombie.identity_name} should be visible"
+            assert zombie.is_hidden is False, f"Zombie {zombie.identity_name} should be visible"
 
-    def test_arcade_start_logs_visibility_count(
-        self, mock_pygame, mock_api_client, caplog
-    ):
+    def test_arcade_start_logs_visibility_count(self, mock_pygame, mock_api_client, caplog):
         """Test that arcade mode start logs how many zombies were made visible."""
         import logging
 
@@ -496,6 +486,9 @@ class TestArcadeModeZombieVisibility:
         # Start arcade mode
         with patch("arcade_mode.spawn_random_powerups", return_value=[]):
             engine._start_arcade_mode()
+            # If photo booth consent is active, complete the consent flow
+            if getattr(engine.game_state, "photo_booth_consent_active", False):
+                engine._begin_arcade_session()
 
         # Verify log message
         log_messages = [record.message for record in caplog.records]
@@ -507,9 +500,7 @@ class TestArcadeModeZombieVisibility:
             "Made 3 zombies visible" in visibility_logs[0]
         ), f"Expected 'Made 3 zombies visible', got: {visibility_logs[0]}"
 
-    def test_arcade_start_with_no_hidden_zombies(
-        self, mock_pygame, mock_api_client, caplog
-    ):
+    def test_arcade_start_with_no_hidden_zombies(self, mock_pygame, mock_api_client, caplog):
         """Test arcade mode start when no zombies are hidden."""
         import logging
 
@@ -543,6 +534,9 @@ class TestArcadeModeZombieVisibility:
         # Start arcade mode
         with patch("arcade_mode.spawn_random_powerups", return_value=[]):
             engine._start_arcade_mode()
+            # If photo booth consent is active, complete the consent flow
+            if getattr(engine.game_state, "photo_booth_consent_active", False):
+                engine._begin_arcade_session()
 
         # Verify log shows 0 zombies made visible
         log_messages = [record.message for record in caplog.records]
@@ -589,15 +583,16 @@ class TestArcadeModeZombieVisibility:
         # Start arcade mode
         with patch("arcade_mode.spawn_random_powerups", return_value=[]):
             engine._start_arcade_mode()
+            # If photo booth consent is active, complete the consent flow
+            if getattr(engine.game_state, "photo_booth_consent_active", False):
+                engine._begin_arcade_session()
 
         # Verify all visible after arcade start
         assert all(
             not z.is_hidden for z in engine.zombies
         ), "All zombies should be visible after arcade start"
 
-    def test_arcade_visibility_fix_prevents_empty_arcade_mode(
-        self, mock_pygame, mock_api_client
-    ):
+    def test_arcade_visibility_fix_prevents_empty_arcade_mode(self, mock_pygame, mock_api_client):
         """Test that visibility fix prevents starting arcade mode with no visible zombies."""
         # Create scenario where zombies might be hidden (e.g., after quest completion)
         zombies = []
@@ -633,6 +628,9 @@ class TestArcadeModeZombieVisibility:
         # Start arcade mode
         with patch("arcade_mode.spawn_random_powerups", return_value=[]):
             engine._start_arcade_mode()
+            # If photo booth consent is active, complete the consent flow
+            if getattr(engine.game_state, "photo_booth_consent_active", False):
+                engine._begin_arcade_session()
 
         # Verify zombies are now visible (arcade mode is playable)
         visible_after = len([z for z in engine.zombies if not z.is_hidden])
