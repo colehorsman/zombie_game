@@ -2402,6 +2402,7 @@ class GameEngine:
                         if self.game_state.status == GameStatus.PAUSED:
                             self.dismiss_message()
                         elif self.game_state.status in (
+                            GameStatus.LOBBY,
                             GameStatus.PLAYING,
                             GameStatus.BOSS_BATTLE,
                         ):

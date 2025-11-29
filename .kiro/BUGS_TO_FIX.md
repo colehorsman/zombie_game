@@ -922,9 +922,12 @@ for third_party in self.third_parties[:]:
 **Related to:** BUG-009 (Start button doesn't work during boss battle)
 
 **Pattern Emerging:**
-- Start button works in Sandbox ✅
+- Start button doesn't work in Lobby ❌ (BUG-017)
+- Start button doesn't work in Sandbox ❌ (needs verification)
 - Start button doesn't work in Production ❌
 - Start button doesn't work during Boss Battle ❌
+
+**CRITICAL FINDING:** Start button appears to be completely broken everywhere!
 
 **Possible Root Causes:**
 1. Production levels have different game state
@@ -1018,10 +1021,12 @@ def render_hud(self, game_state):
 ## Investigation Needed: Start Button Issues
 
 **Affected Areas:**
+- ❌ Lobby (BUG-017) - NEW FINDING
+- ❌ Sandbox levels (needs verification)
 - ❌ Production levels (BUG-016)
 - ❌ Boss battles (BUG-009)
-- ✅ Sandbox levels (working)
-- ✅ Lobby (working)
+
+**CRITICAL:** Start button appears to be completely non-functional everywhere!
 
 **Next Steps:**
 1. Add logging to track game state when Start pressed
@@ -1048,5 +1053,75 @@ def render_hud(self, game_state):
    - Color coding by environment (sandbox=green, prod=red)?
    - Always visible or fade after intro?
 4. **Priority:** Is this P2 or should it be higher for demo?
+
+---
+
+
+### BUG-017: Start Button Doesn't Work in Lobby
+**Severity:** P0 - CRITICAL
+**Component:** Input System / Controller
+**Description:** Controller Start button does nothing in lobby
+**User Feedback:** "the start button does nothing in the lobby"
+**Impact:** Start button appears completely broken everywhere
+
+**CRITICAL PATTERN UPDATE:**
+Start button is NOT working in:
+- ❌ Lobby (BUG-017)
+- ❌ Production levels (BUG-016)
+- ❌ Boss battles (BUG-009)
+- ❓ Sandbox levels (needs verification)
+
+**This is a SYSTEMIC issue, not isolated cases!**
+
+**Root Cause Investigation:**
+The Start button code looks correct in game_engine.py (line ~2400):
+```python
+elif event.button == 7:
+    if self.game_state.status == GameStatus.PAUSED:
+        self.dismiss_message()
+    elif self.game_state.status in (
+        GameStatus.PLAYING,
+        GameStatus.BOSS_BATTLE,
+    ):
+        self._show_pause_menu()
+```
+
+**Problem:** Lobby is NOT in the condition! Start button only works in PLAYING and BOSS_BATTLE states.
+
+**Fix Needed:**
+```python
+elif event.button == 7:
+    if self.game_state.status == GameStatus.PAUSED:
+        self.dismiss_message()
+    elif self.game_state.status in (
+        GameStatus.LOBBY,        # ← ADD THIS
+        GameStatus.PLAYING,
+        GameStatus.BOSS_BATTLE,
+    ):
+        self._show_pause_menu()
+```
+
+**But wait:** Should pause menu even work in lobby? Or should Start do something else?
+
+**Design Question:**
+- Option 1: Start pauses in lobby (shows pause menu)
+- Option 2: Start does nothing in lobby (lobby is already a "pause" state)
+- Option 3: Start shows a lobby menu (different from pause menu)
+
+**Recommendation:** Start should show pause menu in lobby for consistency
+
+---
+
+## CRITICAL FIX NEEDED: Start Button Completely Broken
+
+**Status:** 🚨 SYSTEMIC FAILURE
+
+**Root Cause:** Start button handler missing LOBBY state
+
+**Impact:** Controller users cannot pause anywhere
+
+**Priority:** P0 - MUST FIX IMMEDIATELY
+
+**Fix:** Add GameStatus.LOBBY to Start button condition
 
 ---
