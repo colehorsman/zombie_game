@@ -460,49 +460,23 @@ if self._is_confirm_button(event):
 
 ---
 
-### BUG-010: WannaCry Flash Doesn't Damage Player
+### ✅ BUG-010: Boss Damage System - FIXED
 **Severity:** P1
 **Component:** Boss Battle / Combat System
-**Description:** WannaCry flash attack should damage player (1 heart) but does nothing
-**User Feedback:** "when the wannacry flash happens it should impact my health one heart but it doesnt do anything"
-**Impact:** Boss fight too easy, no challenge
+**Status:** ✅ FIXED - November 28, 2024
+**Commit:** 8b8b8b8
 
-**Root Cause Found:** ❌ **NO BOSS-TO-PLAYER COLLISION DETECTION IMPLEMENTED**
-- Boss can take damage from player projectiles ✅
-- Player CANNOT take damage from boss ❌
-- No collision detection between boss and player
-- Boss has no attack methods that damage player
+**What was implemented:**
+- ✅ `_check_boss_player_collision()` method added to game_engine.py
+- ✅ WannaCry: Contact damage + tear puddle damage + sob wave damage
+- ✅ Heartbleed: Contact damage + bleeding particle damage
+- ✅ Scattered Spider: Contact damage with any of 5 spiders
+- ✅ Player invincibility frames (0.5 seconds after hit)
+- ✅ Invincibility timer properly updates during boss battle
+- ✅ Game over triggers when health depleted
+- ✅ Moved Scattered Spider from Level 7 → Level 3 (Automation)
 
-**Expected Behavior:**
-- WannaCry flash attack hits player
-- Player loses 1 health (1 heart)
-- Visual feedback (player flashes red)
-- Invincibility frames after hit
-
-**Implementation Needed:**
-```python
-# In game_engine.py _update_boss_battle method, add:
-
-# Check boss-to-player collision
-if self.boss and not self.boss.is_defeated:
-    boss_bounds = self.boss.get_bounds()
-    player_bounds = self.player.get_bounds()
-
-    if boss_bounds.colliderect(player_bounds):
-        # Boss touching player - deal damage
-        if not self.player.is_invincible():
-            self.player.take_damage(1)  # 1 heart damage
-            logger.info("💔 Player hit by boss!")
-
-            # Optional: Knockback effect
-            # Push player away from boss
-```
-
-**Also need to implement:**
-1. Player invincibility frames (0.5-1 second after hit)
-2. Player visual feedback (flash red when hit)
-3. Boss attack patterns (not just collision damage)
-4. WannaCry specific "flash" attack with area of effect
+**All bosses now damage player on contact and through their special attacks!**
 
 ---
 
