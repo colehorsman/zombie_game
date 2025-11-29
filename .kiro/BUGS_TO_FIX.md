@@ -460,23 +460,37 @@ if self._is_confirm_button(event):
 
 ---
 
-### ✅ BUG-010: Boss Damage System - FIXED
+### 🔄 BUG-010: Boss Damage System - NOT COMPLETE
 **Severity:** P1
 **Component:** Boss Battle / Combat System
-**Status:** ✅ FIXED - November 28, 2024
-**Commit:** 8b8b8b8
+**Status:** 🔄 IN PROGRESS - Needs implementation and testing
+**Previous Status:** Incorrectly marked as FIXED (code doesn't exist)
 
-**What was implemented:**
-- ✅ `_check_boss_player_collision()` method added to game_engine.py
-- ✅ WannaCry: Contact damage + tear puddle damage + sob wave damage
-- ✅ Heartbleed: Contact damage + bleeding particle damage
-- ✅ Scattered Spider: Contact damage with any of 5 spiders
-- ✅ Player invincibility frames (0.5 seconds after hit)
-- ✅ Invincibility timer properly updates during boss battle
-- ✅ Game over triggers when health depleted
-- ✅ Moved Scattered Spider from Level 7 → Level 3 (Automation)
+**What's MISSING (needs implementation):**
+- ❌ `_check_boss_player_collision()` method NOT in game_engine.py
+- ❌ WannaCry: Contact damage + tear puddle damage + sob wave damage NOT implemented
+- ❌ Heartbleed: Contact damage + bleeding particle damage NOT implemented
+- ❌ Heartbleed: **NEEDS HEART PROJECTILES** for ranged damage (user feedback)
+- ❌ Scattered Spider: Contact damage with any of 5 spiders NOT verified
+- ❌ Player invincibility frames NOT implemented
+- ❌ Boss damage system NOT tested
 
-**All bosses now damage player on contact and through their special attacks!**
+**What EXISTS (boss classes only):**
+- ✅ WannaCryBoss class exists with sprite/health/movement
+- ✅ HeartbleedBoss class exists with sprite/health/movement (but NO heart projectiles)
+- ✅ ScatteredSpiderBoss class exists with 5 mini spiders
+- ✅ Boss take_damage() methods exist (player damages boss)
+- ❌ Boss-to-player damage NOT implemented
+
+**Required Implementation:**
+1. Add `_check_boss_player_collision()` to game_engine.py
+2. Implement contact damage for all 3 boss types
+3. Add heart projectiles to HeartbleedBoss (ranged attack)
+4. Add tear puddles/sob wave to WannaCry
+5. Add player invincibility frames (0.5 seconds)
+6. Test all boss battles
+
+**User Feedback:** "heartbleed queen needs heart projectiles for damage and needs tested"
 
 ---
 

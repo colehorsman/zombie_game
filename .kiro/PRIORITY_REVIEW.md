@@ -90,19 +90,21 @@
 
 ## ⚠️ P1 - HIGH PRIORITY (Should Fix for Demo)
 
-### ✅ 4. BUG-010: Boss Damage System - COMPLETE
-**Status:** ✅ COMPLETE
-**Completed:** November 28, 2024
-**Impact:** Boss fights now have proper challenge
-**Effort:** 2-3 hours (actual)
+### 🔄 4. BUG-010: Boss Damage System - NOT COMPLETE
+**Status:** 🔄 IN PROGRESS - Was incorrectly marked as complete
+**Impact:** Boss fights have NO challenge - bosses don't damage player
+**Effort:** 6-8 hours (needs full implementation)
 
-**What was implemented:**
-- ✅ `_check_boss_player_collision()` method in game_engine.py
-- ✅ WannaCry: Contact + tear puddles + sob wave damage
-- ✅ Heartbleed: Contact + bleeding particle damage
-- ✅ Scattered Spider: Contact with any of 5 spiders
-- ✅ Player invincibility frames (0.5 seconds)
-- ✅ Game over triggers when health depleted
+**What's MISSING (needs implementation):**
+- ❌ `_check_boss_player_collision()` method NOT in game_engine.py
+- ❌ WannaCry: Contact + tear puddles + sob wave damage NOT implemented
+- ❌ Heartbleed: Contact + bleeding particle damage NOT implemented
+- ❌ Heartbleed: **NEEDS HEART PROJECTILES** for ranged attack (user feedback)
+- ❌ Scattered Spider: Contact damage NOT verified
+- ❌ Player invincibility frames NOT implemented
+- ❌ Boss damage system NOT tested
+
+**User Feedback:** "heartbleed queen needs heart projectiles for damage and needs tested"
 
 ---
 
@@ -413,15 +415,17 @@
 **Demo is ready when:**
 1. ✅ Game has proper fail state (game over screen) - **COMPLETE** ✅
 2. ✅ All UI is visually consistent (purple theme) - **COMPLETE** ✅
-3. ✅ Combat system is complete (bosses damage player) - **COMPLETE** ✅ (BUG-010 fixed)
-   - ⬜ Third party damage still pending (BUG-014)
+3. ❌ Combat system is complete (bosses damage player) - **NOT COMPLETE** ❌
+   - ❌ BUG-010: Boss damage NOT implemented (was incorrectly marked complete)
+   - ❌ Heartbleed needs heart projectiles for ranged damage
+   - ❌ Third party damage still pending (BUG-014)
 4. ✅ Controller fully functional (all features accessible) - **COMPLETE** ✅ (9 fixes applied)
 5. ✅ No critical bugs (no crashes, no blockers) - **COMPLETE** ✅
 6. ✅ Performance is stable (60 FPS with 100+ entities) - **COMPLETE** ✅
 7. ⬜ Content has variety (unique challenges per level) - **PENDING** (BUG-015)
 
-**Current Status:** 6/7 criteria met (up from 5/7)
-**Estimated Time to Ready:** 1 day (8-12 hours of work)
+**Current Status:** 5/7 criteria met (CORRECTED from 6/7)
+**Estimated Time to Ready:** 1.5-2 days (12-16 hours of work - BUG-010 adds 6-8 hours)
 
 ---
 
