@@ -816,6 +816,75 @@
 
 ---
 
+## 🎮 Gameplay Bugs & Features (Testing Session Findings)
+
+**Testing Date:** November 28, 2024
+**Total Issues Found:** 22 bugs + 4 features
+**Fixed This Session:** 8 items
+
+### ✅ FIXED (8 items)
+| ID | Description | Impact |
+|----|-------------|--------|
+| BUG-001 | Controller pause button exits to lobby | ✅ Fixed |
+| BUG-002 | Konami code doesn't work with controller | ✅ Fixed |
+| BUG-008 | Controller A button doesn't dismiss messages | ✅ Fixed |
+| BUG-009/016/017 | Start button completely broken (systemic) | ✅ Fixed |
+| BUG-012 | Arcade mode crash on damage | ✅ Fixed |
+| BUG-020 | Game over screen not triggering | ✅ Fixed |
+| BUG-022 | Player spawns inside wall | ✅ Fixed |
+| ENHANCEMENT-003 | Purple theme visual consistency | ✅ Complete (UX-003, UX-004) |
+
+### 🔥 P0 - CRITICAL (Must Fix for Demo)
+| ID | Description | Effort | Status |
+|----|-------------|--------|--------|
+| FEATURE-001 | Game Over Screen | 2-3h | 🔄 In Progress (debugging trigger) |
+| BUG-003 | Pause menu text rendering issues | 1-2h | Pending |
+
+### ⚠️ P1 - HIGH PRIORITY (Should Fix for Demo)
+| ID | Description | Effort | Status |
+|----|-------------|--------|--------|
+| BUG-010 | Boss doesn't damage player | 2-3h | Pending |
+| BUG-014 | Third parties don't damage player | 1-2h | Pending |
+| BUG-015 | AgentCore challenge same in all levels | 2-3h | Pending |
+| BUG-018 | JIT purple shield position wrong | 1h | Pending |
+| BUG-021 | Hacker timer overlays HUD text | 1h | Pending |
+| BUG-006 | Health regenerates in lobby | 30m | Pending |
+| FEATURE-002 | Controller unlock combo (L+R+Start) | 1-2h | Pending |
+| FEATURE-003 | AWS Control Tower spawn point | 2-3h | Pending |
+
+### 📝 P2 - MEDIUM PRIORITY (Nice to Have)
+| ID | Description | Effort | Status |
+|----|-------------|--------|--------|
+| ENHANCEMENT-002 | Standardize A=ENTER throughout | 2h | Pending |
+| ENHANCEMENT-004 | Display level name in HUD | 1h | Pending |
+| FEATURE-004 | Unquarantine identities on game over | 2-3h | Pending |
+
+### Combat System Gap Analysis
+**Critical Finding:** Combat system is incomplete - enemies cannot damage player!
+
+| Entity | Can Damage Player | Status |
+|--------|-------------------|--------|
+| Zombies | ✅ Yes | Working |
+| Boss (WannaCry) | ❌ No | BUG-010 |
+| Third Parties | ❌ No | BUG-014 |
+| Protected Entities | N/A (should not damage) | Correct |
+
+**Required for Demo:**
+- [ ] Boss-to-player collision detection
+- [ ] Third party-to-player collision detection
+- [ ] Player invincibility frames (0.5-1 sec after hit)
+- [ ] Visual feedback when hit (flash red)
+
+### Effort Summary
+| Priority | Items | Hours |
+|----------|-------|-------|
+| P0 Critical | 2 | 3-5h |
+| P1 High | 8 | 11-17h |
+| P2 Medium | 3 | 5-6h |
+| **Total Remaining** | **13** | **19-28h** |
+
+---
+
 ## 🏆 Conclusion
 
 **Overall Assessment: 8.2/10** - Strong foundation with excellent integrations, security, developer experience, and operational readiness
