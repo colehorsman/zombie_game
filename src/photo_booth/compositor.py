@@ -84,7 +84,8 @@ class PhotoBoothCompositor:
 
             canvas.paste(selfie_panel, (self.FRAME_BORDER, content_top))
             canvas.paste(
-                gameplay_panel, (self.FRAME_BORDER + panel_width + self.PHOTO_GAP, content_top)
+                gameplay_panel,
+                (self.FRAME_BORDER + panel_width + self.PHOTO_GAP, content_top),
             )
         else:
             # Single panel - gameplay fills center
@@ -135,7 +136,11 @@ class PhotoBoothCompositor:
         return filepath
 
     def _create_selfie_panel(
-        self, selfie: Image.Image, panel_width: int, panel_height: int, skip_retro: bool = False
+        self,
+        selfie: Image.Image,
+        panel_width: int,
+        panel_height: int,
+        skip_retro: bool = False,
     ) -> Image.Image:
         """Create the pixelated selfie panel."""
         # Apply arcade selfie effect unless already processed
@@ -207,11 +212,15 @@ class PhotoBoothCompositor:
         draw = ImageDraw.Draw(panel)
         # Outer border
         draw.rectangle(
-            [(0, 0), (panel.width - 1, panel.height - 1)], outline=self.ACCENT_COLOR, width=3
+            [(0, 0), (panel.width - 1, panel.height - 1)],
+            outline=self.ACCENT_COLOR,
+            width=3,
         )
         # Inner highlight
         draw.rectangle(
-            [(4, 4), (panel.width - 5, panel.height - 5)], outline=(80, 40, 100), width=1
+            [(4, 4), (panel.width - 5, panel.height - 5)],
+            outline=(80, 40, 100),
+            width=1,
         )
 
     def _draw_score_header(self, canvas: Image.Image, zombie_count: int) -> None:
@@ -267,7 +276,10 @@ class PhotoBoothCompositor:
         sub_width = sub_bbox[2] - sub_bbox[0]
         x = (self.OUTPUT_WIDTH - sub_width) // 2
         draw.text(
-            (x, self.FRAME_BORDER + 70), subtitle, fill=self.TEXT_COLOR, font=self.pixel_font_medium
+            (x, self.FRAME_BORDER + 70),
+            subtitle,
+            fill=self.TEXT_COLOR,
+            font=self.pixel_font_medium,
         )
 
     def _draw_zombie_icon(self, canvas: Image.Image, x: int, y: int, size: int) -> None:
@@ -319,7 +331,8 @@ class PhotoBoothCompositor:
         draw.rectangle([(x, body_y + s), (body_x, body_y + s + arm_h)], fill=dark_green)
         # Right arm (extended)
         draw.rectangle(
-            [(body_x + body_w, body_y + s), (x + size, body_y + s + arm_h)], fill=dark_green
+            [(body_x + body_w, body_y + s), (x + size, body_y + s + arm_h)],
+            fill=dark_green,
         )
 
         # Legs
@@ -330,7 +343,10 @@ class PhotoBoothCompositor:
         draw.rectangle([(body_x + s, leg_y), (body_x + s + leg_w, leg_y + leg_h)], fill=dark_green)
         # Right leg
         draw.rectangle(
-            [(body_x + body_w - s - leg_w, leg_y), (body_x + body_w - s, leg_y + leg_h)],
+            [
+                (body_x + body_w - s - leg_w, leg_y),
+                (body_x + body_w - s, leg_y + leg_h),
+            ],
             fill=dark_green,
         )
 
@@ -360,13 +376,21 @@ class PhotoBoothCompositor:
         event_bbox = draw.textbbox((0, 0), event_text, font=self.pixel_font_small)
         event_width = event_bbox[2] - event_bbox[0]
         x = (self.OUTPUT_WIDTH - event_width) // 2
-        draw.text((x, footer_y + 15), event_text, fill=(200, 200, 200), font=self.pixel_font_small)
+        draw.text(
+            (x, footer_y + 15),
+            event_text,
+            fill=(200, 200, 200),
+            font=self.pixel_font_small,
+        )
 
         hashtag_bbox = draw.textbbox((0, 0), hashtag_text, font=self.pixel_font_small)
         hashtag_width = hashtag_bbox[2] - hashtag_bbox[0]
         x = (self.OUTPUT_WIDTH - hashtag_width) // 2
         draw.text(
-            (x, footer_y + 45), hashtag_text, fill=self.ACCENT_COLOR, font=self.pixel_font_small
+            (x, footer_y + 45),
+            hashtag_text,
+            fill=self.ACCENT_COLOR,
+            font=self.pixel_font_small,
         )
 
         # Right side: QR code

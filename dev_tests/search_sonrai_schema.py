@@ -9,8 +9,8 @@ Usage:
     python3 dev_tests/search_sonrai_schema.py --field daysSinceLogin
 """
 
-import json
 import argparse
+import json
 from pathlib import Path
 
 

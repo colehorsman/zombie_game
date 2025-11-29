@@ -27,7 +27,7 @@ else:
             print(f"  ✅ SELECTED - Game will use this one")
         else:
             print(f"  ⏭️  Available but not selected")
-    
+
     print(f"\n🎮 The game will use: {selected.get_name()}")
     print(f"   (Controller 0)")
 

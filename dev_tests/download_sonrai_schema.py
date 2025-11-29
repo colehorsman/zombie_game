@@ -6,11 +6,12 @@ This script queries the Sonrai API for its complete schema definition and saves 
 to docs/sonrai-api/schema.json for reference when building new queries.
 """
 
+import json
 import os
 import sys
-import json
-import requests
 from pathlib import Path
+
+import requests
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -140,7 +141,7 @@ def download_schema():
             SONRAI_API_URL,
             json={"query": INTROSPECTION_QUERY},
             headers=headers,
-            timeout=60
+            timeout=60,
         )
         response.raise_for_status()
         schema_data = response.json()

@@ -355,7 +355,10 @@ class TestPhotoBoothController:
 
         controller.handle_consent_input(opted_in=True)
         # Will be False if camera not available, True if available
-        assert controller.state in (PhotoBoothState.CONSENT_GIVEN, PhotoBoothState.CONSENT_DECLINED)
+        assert controller.state in (
+            PhotoBoothState.CONSENT_GIVEN,
+            PhotoBoothState.CONSENT_DECLINED,
+        )
 
     def test_consent_flow_opt_out(self):
         """Test consent flow when user opts out."""

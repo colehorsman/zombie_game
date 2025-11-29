@@ -214,7 +214,10 @@ class PhotoBoothController:
 
     def is_consent_complete(self) -> bool:
         """Check if consent flow is complete."""
-        return self._state in (PhotoBoothState.CONSENT_GIVEN, PhotoBoothState.CONSENT_DECLINED)
+        return self._state in (
+            PhotoBoothState.CONSENT_GIVEN,
+            PhotoBoothState.CONSENT_DECLINED,
+        )
 
     def capture_selfie(self) -> bool:
         """

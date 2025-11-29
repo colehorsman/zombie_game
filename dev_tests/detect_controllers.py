@@ -23,7 +23,7 @@ else:
     for i in range(controller_count):
         joystick = pygame.joystick.Joystick(i)
         joystick.init()
-        
+
         print(f"Controller {i}:")
         print(f"  Name: {joystick.get_name()}")
         print(f"  Axes: {joystick.get_numaxes()}")
@@ -44,21 +44,21 @@ try:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            
+
             elif event.type == pygame.JOYBUTTONDOWN:
                 joy = pygame.joystick.Joystick(event.joy)
                 print(f"✅ Button {event.button} pressed on '{joy.get_name()}'")
-            
+
             elif event.type == pygame.JOYAXISMOTION:
                 if abs(event.value) > 0.5:  # Ignore small movements
                     joy = pygame.joystick.Joystick(event.joy)
                     print(f"✅ Axis {event.axis} moved to {event.value:.2f} on '{joy.get_name()}'")
-            
+
             elif event.type == pygame.JOYHATMOTION:
                 if event.value != (0, 0):
                     joy = pygame.joystick.Joystick(event.joy)
                     print(f"✅ D-Pad moved to {event.value} on '{joy.get_name()}'")
-        
+
         clock.tick(60)
 
 except KeyboardInterrupt:

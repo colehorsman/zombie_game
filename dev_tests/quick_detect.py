@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Quick controller detection - just shows what's connected."""
 
-import pygame
 import sys
+
+import pygame
 
 pygame.init()
 pygame.joystick.init()
@@ -25,7 +26,7 @@ if controller_count == 0:
 for i in range(controller_count):
     joystick = pygame.joystick.Joystick(i)
     joystick.init()
-    
+
     print(f"Controller {i}:")
     print(f"  ✅ Name: {joystick.get_name()}")
     print(f"  📊 Axes: {joystick.get_numaxes()}")

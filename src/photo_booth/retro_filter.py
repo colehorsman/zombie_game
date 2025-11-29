@@ -40,39 +40,39 @@ class RetroFilter:
         (255, 224, 189),  # Light skin
         (255, 205, 148),  # Medium light skin
         (234, 192, 134),  # Medium skin
-        (255, 173, 96),   # Tan
-        (165, 126, 82),   # Medium dark skin
-        (90, 56, 37),     # Dark skin
-        (60, 46, 40),     # Very dark skin
+        (255, 173, 96),  # Tan
+        (165, 126, 82),  # Medium dark skin
+        (90, 56, 37),  # Dark skin
+        (60, 46, 40),  # Very dark skin
         # Hair colors
-        (0, 0, 0),        # Black
-        (44, 34, 30),     # Dark brown
-        (89, 60, 31),     # Brown
-        (166, 124, 54),   # Light brown
+        (0, 0, 0),  # Black
+        (44, 34, 30),  # Dark brown
+        (89, 60, 31),  # Brown
+        (166, 124, 54),  # Light brown
         (220, 208, 186),  # Blonde
         (255, 245, 225),  # Platinum
-        (141, 74, 67),    # Auburn
-        (181, 82, 57),    # Red
+        (141, 74, 67),  # Auburn
+        (181, 82, 57),  # Red
         (128, 128, 128),  # Gray
         # Eyes
-        (66, 133, 244),   # Blue
-        (76, 153, 0),     # Green
-        (139, 90, 43),    # Brown
-        (64, 64, 64),     # Dark
+        (66, 133, 244),  # Blue
+        (76, 153, 0),  # Green
+        (139, 90, 43),  # Brown
+        (64, 64, 64),  # Dark
         # Clothing/background common colors
         (255, 255, 255),  # White
-        (0, 0, 0),        # Black
-        (128, 0, 128),    # Purple (Sonrai)
-        (75, 0, 130),     # Indigo
-        (138, 43, 226),   # Blue Violet
-        (255, 165, 0),    # Orange (AWS)
-        (255, 0, 0),      # Red
-        (0, 128, 0),      # Green
-        (0, 0, 255),      # Blue
-        (255, 255, 0),    # Yellow
+        (0, 0, 0),  # Black
+        (128, 0, 128),  # Purple (Sonrai)
+        (75, 0, 130),  # Indigo
+        (138, 43, 226),  # Blue Violet
+        (255, 165, 0),  # Orange (AWS)
+        (255, 0, 0),  # Red
+        (0, 128, 0),  # Green
+        (0, 0, 255),  # Blue
+        (255, 255, 0),  # Yellow
         (255, 192, 203),  # Pink
-        (0, 255, 255),    # Cyan
-        (255, 0, 255),    # Magenta
+        (0, 255, 255),  # Cyan
+        (255, 0, 255),  # Magenta
         # Grays
         (32, 32, 32),
         (64, 64, 64),
@@ -266,7 +266,7 @@ class RetroFilter:
         draw = ImageDraw.Draw(vignette)
 
         center_x, center_y = width // 2, height // 2
-        max_dist = math.sqrt(center_x ** 2 + center_y ** 2)
+        max_dist = math.sqrt(center_x**2 + center_y**2)
 
         for y in range(height):
             for x in range(width):
@@ -280,7 +280,9 @@ class RetroFilter:
         return Image.alpha_composite(image, vignette)
 
     @staticmethod
-    def enhance_colors(image: Image.Image, saturation: float = 1.3, contrast: float = 1.1) -> Image.Image:
+    def enhance_colors(
+        image: Image.Image, saturation: float = 1.3, contrast: float = 1.1
+    ) -> Image.Image:
         """
         Enhance colors for more vibrant retro look.
 

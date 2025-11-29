@@ -68,7 +68,7 @@ jobs:
 
     - name: Check code formatting with Black
       run: |
-        black --check src/ tests/ || (echo "Code needs formatting. Run: black src/ tests/" && exit 1)
+        black --check src/ tests/ dev_tests/ || (echo "Code needs formatting. Run: black src/ tests/ dev_tests/" && exit 1)
 
     - name: Run Pylint
       continue-on-error: true

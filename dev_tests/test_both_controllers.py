@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Test both controllers to make sure they work."""
 
-import pygame
 import sys
+
+import pygame
 
 pygame.init()
 pygame.joystick.init()
@@ -39,22 +40,28 @@ try:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            
+
             elif event.type == pygame.JOYBUTTONDOWN:
                 controller = controllers[event.joy]
-                print(f"✅ Controller {event.joy} ({controller.get_name()}): Button {event.button} pressed")
-            
+                print(
+                    f"✅ Controller {event.joy} ({controller.get_name()}): Button {event.button} pressed"
+                )
+
             elif event.type == pygame.JOYAXISMOTION:
                 if abs(event.value) > 0.5:
                     controller = controllers[event.joy]
                     direction = "+" if event.value > 0 else "-"
-                    print(f"✅ Controller {event.joy} ({controller.get_name()}): Axis {event.axis} {direction}{abs(event.value):.2f}")
-            
+                    print(
+                        f"✅ Controller {event.joy} ({controller.get_name()}): Axis {event.axis} {direction}{abs(event.value):.2f}"
+                    )
+
             elif event.type == pygame.JOYHATMOTION:
                 if event.value != (0, 0):
                     controller = controllers[event.joy]
-                    print(f"✅ Controller {event.joy} ({controller.get_name()}): D-Pad {event.value}")
-        
+                    print(
+                        f"✅ Controller {event.joy} ({controller.get_name()}): D-Pad {event.value}"
+                    )
+
         clock.tick(60)
 
 except KeyboardInterrupt:
