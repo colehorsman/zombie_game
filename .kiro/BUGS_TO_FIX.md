@@ -1202,3 +1202,60 @@ elif event.button == 7:
 **Likely Location:** `src/renderer.py` HUD rendering
 
 ---
+
+
+### BUG-022: Player Spawns Inside Wall
+**Severity:** P0 - CRITICAL
+**Component:** Spawn System / Lobby
+**Description:** Player spawns inside wall, can't move or enter rooms
+**User Feedback:** "i got spawned in a wall. so i cant go in the room and i gant get out of the room"
+**Impact:** Game unplayable, must restart
+
+**Root Cause:** Random/center spawn point can be inside walls
+
+**Fix Needed:**
+- Define consistent, safe spawn point
+- Ensure spawn point is in open area
+- Test spawn point doesn't collide with walls
+
+---
+
+### FEATURE-003: AWS Control Tower Spawn Point
+**Severity:** P1
+**Component:** Lobby / Storytelling
+**Description:** Add AWS Control Tower as spawn point with story context
+**User Feedback:** "we need a consistent spawining point at the beginning of the game that makes sense to tell the story of the aws accounts and the org. Oh maybe we have it start in the top leftish of the lobby map and id love to add a control tower right there like aws control tower similar to a mario castle! purple brick like the game of course"
+**Impact:** Better storytelling, consistent spawn, AWS branding
+
+**Design:**
+- **Location:** Top-left of lobby map
+- **Visual:** Purple brick castle (like Mario castle)
+- **Theme:** AWS Control Tower
+- **Purpose:** Central hub where player starts
+- **Story:** Control Tower manages all AWS accounts (doors to accounts)
+
+**Implementation:**
+1. Design purple brick Control Tower sprite
+2. Place in top-left of lobby map
+3. Set as consistent spawn point
+4. Add visual indicator (flag, sign, glow)
+5. Optional: Add intro text explaining Control Tower
+
+**Benefits:**
+- Consistent, safe spawn point
+- Tells AWS organization story
+- Visual landmark for navigation
+- Reinforces AWS branding
+- Cool visual centerpiece
+
+**UX Agent Input Needed:**
+- Control Tower design (size, style)
+- Intro text/tutorial
+- Visual indicators
+
+**Sonrai Agent Input Needed:**
+- AWS Control Tower messaging
+- How to explain org structure
+- Branding consistency
+
+---
