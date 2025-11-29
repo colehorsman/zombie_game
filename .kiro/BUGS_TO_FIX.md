@@ -1125,3 +1125,48 @@ elif event.button == 7:
 **Fix:** Add GameStatus.LOBBY to Start button condition
 
 ---
+
+
+### BUG-018: JIT Purple Shield Position Wrong
+**Severity:** P1
+**Component:** Visual / Shield Rendering
+**Description:** Purple shield doesn't appear near body when JIT protection applied
+**User Feedback:** "the purple shield applied when i applied jit does not show up near the body the position of the shield should be similar to the sonrai character"
+**Impact:** Visual feedback unclear, hard to see which entities are protected
+
+**Expected:** Shield centered on entity body (like Sonrai character)
+**Actual:** Shield appears in wrong position or not visible
+
+**Fix Needed:** Adjust shield rendering position to match entity center
+
+---
+
+### BUG-019: JIT Message Box Ugly
+**Severity:** P1
+**Component:** UI / Quest System
+**Description:** JIT Access Quest message uses ugly white box
+**User Feedback:** "the jit message box is ugly"
+**Impact:** Inconsistent with pause menu styling
+
+**Part of:** ENHANCEMENT-003 (Standardize all messages to purple theme)
+
+---
+
+### SUMMARY: All Messages Ugly Except Pause Menu
+**User Feedback:** "all of the messaging is ugly except the pause menu"
+
+**Messages Needing Purple Theme:**
+1. ❌ Locked level message (BUG-013)
+2. ❌ WannaCry boss message (BUG-007)
+3. ❌ Hacker challenge message (BUG-011)
+4. ❌ JIT quest message (BUG-019)
+5. ❌ Quest dialogs
+6. ❌ Cheat code messages
+7. ❌ Victory messages
+8. ❌ Arcade results
+9. ❌ Game over message (not implemented)
+10. ✅ Pause menu (GOOD - use as template)
+
+**Action:** ENHANCEMENT-003 should be elevated to P0 - this is a major UX issue affecting entire game
+
+---
