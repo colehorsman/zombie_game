@@ -1844,11 +1844,6 @@ class GameEngine:
         """
         logger.info(f"💔 Player damaged by {source_zombie.identity_name}!")
 
-        # Check for death
-        if self.player.is_dead:
-            self._on_player_death()
-            return
-
         # ARCADE MODE: Subtract from elimination count instead of respawning
         if self.arcade_manager.is_active():
             state = self.arcade_manager.get_state()
@@ -1886,31 +1881,9 @@ class GameEngine:
         else:
             logger.info("No quarantined zombies to respawn")
 
-    def _on_player_death(self) -> None:
-        """Handle player death - restart level with all zombies respawned."""
-        logger.error("💀 PLAYER DIED! Restarting level...")
-
-        # Show death message
-        self.game_state.resource_message = "💀 SECURITY FAILURE - All identities reactivated!"
-        self.game_state.resource_message_timer = 3.0
-
-        # Respawn ALL quarantined zombies
-        respawn_count = 0
-        for zombie in self.zombies:
-            if zombie.is_hidden:
-                zombie.is_hidden = False
-                zombie.health = zombie.max_health
-                respawn_count += 1
-
-        # Clear quarantine tracking
-        self.quarantined_identities.clear()
-        self.game_state.zombies_remaining = len([z for z in self.zombies if not z.is_hidden])
-
-        # Reset player
-        self.player.reset_health()
-        self.player.position = Vector2(self.landing_zone.x, self.player.ground_y)
-
-        logger.info(f"💀 Respawned {respawn_count} zombies. Level restarting.")
+    # NOTE: _on_player_death() removed - replaced by _show_game_over_screen()
+    # Old implementation would auto-restart level and reset health
+    # New implementation shows game over menu with Retry/Return to Lobby options
 
     def _show_pause_menu(self) -> None:
         """Show Zelda-style pause menu with options. Delegates to PauseMenuController."""
