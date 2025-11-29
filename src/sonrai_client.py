@@ -131,7 +131,9 @@ class SonraiAPIClient:
 
             except requests.exceptions.Timeout as e:
                 last_exception = e
-                logger.warning(f"API request timeout (attempt {attempt + 1}/{max_retries}): {e}")
+                logger.warning(
+                    f"API request timeout (attempt {attempt + 1}/{max_retries}): {e}"
+                )
                 if attempt < max_retries - 1:
                     delay = API_RETRY_DELAY * (2**attempt)  # Exponential backoff
                     logger.info(f"Retrying in {delay}s...")
@@ -139,7 +141,9 @@ class SonraiAPIClient:
 
             except requests.exceptions.RequestException as e:
                 last_exception = e
-                logger.warning(f"API request failed (attempt {attempt + 1}/{max_retries}): {e}")
+                logger.warning(
+                    f"API request failed (attempt {attempt + 1}/{max_retries}): {e}"
+                )
                 if attempt < max_retries - 1:
                     delay = API_RETRY_DELAY * (2**attempt)
                     logger.info(f"Retrying in {delay}s...")
@@ -289,7 +293,9 @@ class SonraiAPIClient:
                         continue
 
                     status_obj = item.get("status", {})
-                    status = status_obj.get("state", "Unknown") if status_obj else "Unknown"
+                    status = (
+                        status_obj.get("state", "Unknown") if status_obj else "Unknown"
+                    )
 
                     # For now, add to a generic "all" key since we don't have per-account mapping
                     # The caller can distribute these across accounts as needed
@@ -305,7 +311,9 @@ class SonraiAPIClient:
                         }
                     )
 
-            total_parties = sum(len(parties) for parties in third_parties_by_account.values())
+            total_parties = sum(
+                len(parties) for parties in third_parties_by_account.values()
+            )
             logger.info(f"Processed {total_parties} 3rd party entries")
             return third_parties_by_account
 
@@ -339,7 +347,9 @@ class SonraiAPIClient:
             # Fetch ALL account scopes ONCE using CloudHierarchyList (REAL organizational scopes with OU paths)
             logger.info("Fetching real account scopes from CloudHierarchyList...")
             account_scopes = self._fetch_all_account_scopes()
-            logger.info(f"Retrieved {len(account_scopes)} account scopes from CloudHierarchyList")
+            logger.info(
+                f"Retrieved {len(account_scopes)} account scopes from CloudHierarchyList"
+            )
 
             # Query for unused identities with individual identity details
             query = """
@@ -396,7 +406,12 @@ class SonraiAPIClient:
             identities = []
 
             # Parse GraphQL response
-            if data and "data" in data and data["data"] and "UnusedIdentities" in data["data"]:
+            if (
+                data
+                and "data" in data
+                and data["data"]
+                and "UnusedIdentities" in data["data"]
+            ):
                 items = data["data"]["UnusedIdentities"].get("items", [])
 
                 # Each item represents a group of unused identities by account
@@ -429,7 +444,9 @@ class SonraiAPIClient:
 
                         # Extract resource type from SRN (second to last part)
                         srn_parts = srn.split("/")
-                        resource_type = srn_parts[-2] if len(srn_parts) > 1 else "Unknown"
+                        resource_type = (
+                            srn_parts[-2] if len(srn_parts) > 1 else "Unknown"
+                        )
 
                         # Create identity object with REAL account scope from CloudHierarchyList
                         identity = UnusedIdentity(
@@ -454,7 +471,9 @@ class SonraiAPIClient:
                 logger.info(f"Limiting from {len(identities)} to {limit} identities")
                 return identities[:limit]
             else:
-                logger.info(f"Returning all {len(identities)} identities (under limit of {limit})")
+                logger.info(
+                    f"Returning all {len(identities)} identities (under limit of {limit})"
+                )
                 return identities
 
         except Exception as e:
@@ -509,25 +528,33 @@ class SonraiAPIClient:
                     data = response.json()
 
                     if "errors" in data:
-                        logger.error(f"GraphQL errors in exemptions query: {data['errors']}")
+                        logger.error(
+                            f"GraphQL errors in exemptions query: {data['errors']}"
+                        )
                         return []
 
                     exemptions_data = (
-                        data.get("data", {}).get("AppliedExemptedIdentities", {}).get("items", [])
+                        data.get("data", {})
+                        .get("AppliedExemptedIdentities", {})
+                        .get("items", [])
                     )
                     logger.info(
                         f"Fetched {len(exemptions_data)} exempted identities for account {account}"
                     )
                     return exemptions_data
                 else:
-                    logger.error(f"Failed to fetch exemptions: HTTP {response.status_code}")
+                    logger.error(
+                        f"Failed to fetch exemptions: HTTP {response.status_code}"
+                    )
                     if attempt < max_retries - 1:
                         time.sleep(retry_delay * (attempt + 1))
                         continue
                     return []
 
             except requests.exceptions.Timeout:
-                logger.warning(f"Timeout fetching exemptions (attempt {attempt + 1}/{max_retries})")
+                logger.warning(
+                    f"Timeout fetching exemptions (attempt {attempt + 1}/{max_retries})"
+                )
                 if attempt < max_retries - 1:
                     time.sleep(retry_delay * (attempt + 1))
                     continue
@@ -592,7 +619,12 @@ class SonraiAPIClient:
             data = response.json()
 
             account_scopes = {}
-            if data and "data" in data and data["data"] and "CloudHierarchyList" in data["data"]:
+            if (
+                data
+                and "data" in data
+                and data["data"]
+                and "CloudHierarchyList" in data["data"]
+            ):
                 items = data["data"]["CloudHierarchyList"].get("items", [])
                 for item in items:
                     resource_id = item.get("resourceId")
@@ -639,7 +671,9 @@ class SonraiAPIClient:
 
         # Extract name and account from SRN if not provided
         if not identity_name:
-            identity_name = identity_id.split("/")[-1] if "/" in identity_id else identity_id
+            identity_name = (
+                identity_id.split("/")[-1] if "/" in identity_id else identity_id
+            )
 
         if not account:
             # Try to extract account from SRN format: srn:aws:iam::ACCOUNT/...
@@ -660,11 +694,11 @@ class SonraiAPIClient:
 
         # Scope MUST be provided - never use fake scopes as they trigger alerts
         if not scope:
-            error_msg = (
-                f"Cannot quarantine without real scope - no scope provided for {identity_id}"
-            )
+            error_msg = f"Cannot quarantine without real scope - no scope provided for {identity_id}"
             logger.error(error_msg)
-            return QuarantineResult(success=False, identity_id=identity_id, error_message=error_msg)
+            return QuarantineResult(
+                success=False, identity_id=identity_id, error_message=error_msg
+            )
 
         if not root_scope:
             # Extract root scope from full scope if available
@@ -751,7 +785,9 @@ class SonraiAPIClient:
                 else:
                     # Final attempt failed
                     error_msg = str(e)
-                    logger.error(f"Failed to quarantine identity {identity_id}: {error_msg}")
+                    logger.error(
+                        f"Failed to quarantine identity {identity_id}: {error_msg}"
+                    )
                     return QuarantineResult(
                         success=False, identity_id=identity_id, error_message=error_msg
                     )
@@ -939,7 +975,12 @@ class SonraiAPIClient:
 
             # Extract protected service control keys
             protected_services = set()
-            if data and "data" in data and data["data"] and "ProtectedServices" in data["data"]:
+            if (
+                data
+                and "data" in data
+                and data["data"]
+                and "ProtectedServices" in data["data"]
+            ):
                 items = data["data"]["ProtectedServices"].get("items", [])
                 for item in items:
                     control_key = item.get("controlKey")
@@ -961,7 +1002,9 @@ class SonraiAPIClient:
 
             # Return services that are NOT protected
             unprotected = list(ALL_SERVICES - protected_services)
-            logger.info(f"📋 Unprotected services in account {account_id}: {unprotected}")
+            logger.info(
+                f"📋 Unprotected services in account {account_id}: {unprotected}"
+            )
             return unprotected
 
         except Exception as e:
@@ -1016,7 +1059,12 @@ class SonraiAPIClient:
             data = response.json()
 
             permission_sets = []
-            if data and "data" in data and data["data"] and "PermissionSets" in data["data"]:
+            if (
+                data
+                and "data" in data
+                and data["data"]
+                and "PermissionSets" in data["data"]
+            ):
                 items = data["data"]["PermissionSets"].get("items", [])
 
                 # Filter for ADMIN or PRIVILEGED labels
@@ -1101,7 +1149,12 @@ class SonraiAPIClient:
             data = response.json()
 
             enrolled_permission_sets = []
-            if data and "data" in data and data["data"] and "JitConfiguration" in data["data"]:
+            if (
+                data
+                and "data" in data
+                and data["data"]
+                and "JitConfiguration" in data["data"]
+            ):
                 items = data["data"]["JitConfiguration"].get("items", [])
                 for item in items:
                     permission_sets = item.get("permissionSets", [])
@@ -1146,7 +1199,9 @@ class SonraiAPIClient:
             if not scope:
                 error_msg = f"No scope found for account {account_id}"
                 logger.error(error_msg)
-                return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+                return QuarantineResult(
+                    success=False, identity_id="", error_message=error_msg
+                )
 
             logger.info(f"Using scope: {scope}")
 
@@ -1165,7 +1220,9 @@ class SonraiAPIClient:
                 "input": {
                     "scope": scope,
                     "isDenyFirst": True,
-                    "enrolledPermissionSets": [{"id": permission_set_id, "isFullAccess": False}],
+                    "enrolledPermissionSets": [
+                        {"id": permission_set_id, "isFullAccess": False}
+                    ],
                 }
             }
 
@@ -1185,7 +1242,12 @@ class SonraiAPIClient:
             data = response.json()
 
             # Log only success status, not full response (security)
-            if data and "data" in data and data["data"] and "SetJitConfiguration" in data["data"]:
+            if (
+                data
+                and "data" in data
+                and data["data"]
+                and "SetJitConfiguration" in data["data"]
+            ):
                 result = data["data"]["SetJitConfiguration"]
                 success = result.get("success", False)
                 logger.info(f"SetJitConfiguration response: success={success}")
@@ -1196,10 +1258,17 @@ class SonraiAPIClient:
             if "errors" in data:
                 error_msg = data["errors"][0].get("message", "Unknown GraphQL error")
                 logger.error(f"SetJitConfiguration GraphQL error: {error_msg}")
-                return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+                return QuarantineResult(
+                    success=False, identity_id="", error_message=error_msg
+                )
 
             # Extract result
-            if data and "data" in data and data["data"] and "SetJitConfiguration" in data["data"]:
+            if (
+                data
+                and "data" in data
+                and data["data"]
+                and "SetJitConfiguration" in data["data"]
+            ):
                 result = data["data"]["SetJitConfiguration"]
                 success = result.get("success", False)
                 added_ids = result.get("addedJitConfigurationIds", [])
@@ -1228,11 +1297,15 @@ class SonraiAPIClient:
         except requests.exceptions.RequestException as e:
             error_msg = f"Network error applying JIT protection: {str(e)}"
             logger.error(error_msg)
-            return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+            return QuarantineResult(
+                success=False, identity_id="", error_message=error_msg
+            )
         except Exception as e:
             error_msg = f"Unexpected error applying JIT protection: {str(e)}"
             logger.error(error_msg)
-            return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+            return QuarantineResult(
+                success=False, identity_id="", error_message=error_msg
+            )
 
     def protect_service(
         self, service_type: str, account_id: str, service_name: str = None
@@ -1268,7 +1341,9 @@ class SonraiAPIClient:
             if not control_key:
                 error_msg = f"Unknown service type: {service_type}"
                 logger.error(error_msg)
-                return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+                return QuarantineResult(
+                    success=False, identity_id="", error_message=error_msg
+                )
 
             # 2. Fetch REAL scope from CloudHierarchyList (CRITICAL!)
             logger.info(f"Fetching real scope for account {account_id}...")
@@ -1278,7 +1353,9 @@ class SonraiAPIClient:
             if not scope:
                 error_msg = f"No scope found for account {account_id}"
                 logger.error(error_msg)
-                return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+                return QuarantineResult(
+                    success=False, identity_id="", error_message=error_msg
+                )
 
             logger.info(f"Using scope: {scope}")
 
@@ -1301,7 +1378,9 @@ class SonraiAPIClient:
                 }
             }
 
-            logger.info(f"Calling ProtectService API for {service_type} in account {account_id}...")
+            logger.info(
+                f"Calling ProtectService API for {service_type} in account {account_id}..."
+            )
             logger.info(f"📤 SENDING TO API:")
             logger.info(f"  controlKey: {control_key}")
             logger.info(f"  scope: {scope}")
@@ -1320,11 +1399,18 @@ class SonraiAPIClient:
 
             # Log only success status, not full response (security)
             logger.info(f"📥 RECEIVED FROM API:")
-            if data and "data" in data and data["data"] and "ProtectService" in data["data"]:
+            if (
+                data
+                and "data" in data
+                and data["data"]
+                and "ProtectService" in data["data"]
+            ):
                 result = data["data"]["ProtectService"]
                 success = result.get("success", False)
                 service_name = result.get("serviceName", "unknown")
-                logger.info(f"  ProtectService: success={success}, service={service_name}")
+                logger.info(
+                    f"  ProtectService: success={success}, service={service_name}"
+                )
             else:
                 logger.info("  ProtectService response received")
 
@@ -1333,13 +1419,22 @@ class SonraiAPIClient:
                 error_msg = data["errors"][0].get("message", "Unknown GraphQL error")
                 logger.error(f"ProtectService GraphQL error: {error_msg}")
                 # Don't log full error object (security)
-                return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+                return QuarantineResult(
+                    success=False, identity_id="", error_message=error_msg
+                )
 
             # Extract result
-            if data and "data" in data and data["data"] and "ProtectService" in data["data"]:
+            if (
+                data
+                and "data" in data
+                and data["data"]
+                and "ProtectService" in data["data"]
+            ):
                 result = data["data"]["ProtectService"]
                 success = result.get("success", False)
-                service_name_result = result.get("serviceName", service_name or service_type)
+                service_name_result = result.get(
+                    "serviceName", service_name or service_type
+                )
 
                 if success:
                     logger.info(
@@ -1351,7 +1446,9 @@ class SonraiAPIClient:
                         error_message=None,
                     )
                 else:
-                    logger.warning(f"ProtectService returned success=false for {service_type}")
+                    logger.warning(
+                        f"ProtectService returned success=false for {service_type}"
+                    )
                     return QuarantineResult(
                         success=False,
                         identity_id="",
@@ -1366,11 +1463,15 @@ class SonraiAPIClient:
         except requests.exceptions.RequestException as e:
             error_msg = f"Network error protecting service: {str(e)}"
             logger.error(error_msg)
-            return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+            return QuarantineResult(
+                success=False, identity_id="", error_message=error_msg
+            )
         except Exception as e:
             error_msg = f"Unexpected error protecting service: {str(e)}"
             logger.error(error_msg)
-            return QuarantineResult(success=False, identity_id="", error_message=error_msg)
+            return QuarantineResult(
+                success=False, identity_id="", error_message=error_msg
+            )
 
     def batch_quarantine_identities(self, zombies: List) -> "QuarantineReport":
         """
@@ -1386,7 +1487,9 @@ class SonraiAPIClient:
         """
         from models import QuarantineReport
 
-        report = QuarantineReport(total_queued=len(zombies), successful=0, failed=0, errors=[])
+        report = QuarantineReport(
+            total_queued=len(zombies), successful=0, failed=0, errors=[]
+        )
 
         if not zombies:
             logger.info("📭 No zombies to quarantine")
@@ -1419,8 +1522,12 @@ class SonraiAPIClient:
                     logger.debug(f"  ✅ {zombie.identity_name}")
                 else:
                     report.failed += 1
-                    report.errors.append(f"{zombie.identity_name}: {result.error_message}")
-                    logger.warning(f"  ❌ {zombie.identity_name}: {result.error_message}")
+                    report.errors.append(
+                        f"{zombie.identity_name}: {result.error_message}"
+                    )
+                    logger.warning(
+                        f"  ❌ {zombie.identity_name}: {result.error_message}"
+                    )
 
             # Rate limiting: 1-second delay between batches
             if batch_idx < batch_count - 1:

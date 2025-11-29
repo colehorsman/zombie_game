@@ -111,7 +111,9 @@ class CheatCodeController:
         # State
         self.unlock_enabled: bool = False
 
-    def process_key(self, key: int, current_time: Optional[float] = None) -> CheatCodeResult:
+    def process_key(
+        self, key: int, current_time: Optional[float] = None
+    ) -> CheatCodeResult:
         """
         Process a key press and check for cheat code activation.
 
