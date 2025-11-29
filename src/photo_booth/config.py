@@ -20,6 +20,8 @@ class PhotoBoothConfig:
     hashtag: str = "#SonraiZombieBlaster"
     output_dir: str = ".kiro/evidence/booth_photos"
     consent_timeout: float = 5.0  # seconds
+    min_arcade_time: float = 10.0  # minimum seconds of arcade play before photo capture
+    screenshot_delay: float = 15.0  # seconds into arcade mode to capture gameplay screenshot
 
     @classmethod
     def from_env(cls) -> "PhotoBoothConfig":
@@ -33,4 +35,6 @@ class PhotoBoothConfig:
             hashtag=os.getenv("PHOTO_BOOTH_HASHTAG", "#SonraiZombieBlaster"),
             output_dir=os.getenv("PHOTO_BOOTH_OUTPUT_DIR", ".kiro/evidence/booth_photos"),
             consent_timeout=float(os.getenv("PHOTO_BOOTH_CONSENT_TIMEOUT", "5.0")),
+            min_arcade_time=float(os.getenv("PHOTO_BOOTH_MIN_ARCADE_TIME", "10.0")),
+            screenshot_delay=float(os.getenv("PHOTO_BOOTH_SCREENSHOT_DELAY", "15.0")),
         )

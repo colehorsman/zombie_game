@@ -1341,6 +1341,19 @@ class GameEngine:
                     )
                     logger.info(f"♻️  Respawned zombie in arcade mode: {zombie.identity_name}")
 
+        # Photo booth timed captures during active gameplay
+        if self.photo_booth and self.photo_booth.is_consent_complete():
+            # Capture gameplay screenshot at configured delay (default 15s)
+            if self.photo_booth.should_capture_gameplay():
+                if hasattr(self, "renderer") and self.renderer and hasattr(self.renderer, "screen"):
+                    self.photo_booth.capture_gameplay(self.renderer.screen)
+                    logger.info("📸 Captured gameplay screenshot during arcade mode")
+
+            # Capture selfie shortly after gameplay screenshot
+            if self.photo_booth.should_capture_selfie():
+                self.photo_booth.capture_selfie()
+                logger.info("📸 Captured selfie during arcade mode")
+
         # Disable quests during arcade mode
         # (Quests are updated in _update_playing, which still runs)
 
@@ -1373,6 +1386,11 @@ class GameEngine:
         # Start arcade manager
         self.arcade_manager.start_session()
         logger.info(f"🎮 Arcade manager started. Is active: {self.arcade_manager.is_active()}")
+
+        # Start photo booth arcade tracking for timed captures
+        if self.photo_booth and self.photo_booth.is_consent_complete():
+            self.photo_booth.start_arcade_tracking()
+            logger.info("📸 Photo booth arcade tracking started")
 
         # Make all zombies visible for arcade mode
         visible_count = 0
@@ -1427,25 +1445,22 @@ class GameEngine:
             queue_size=queue_size,
         )
 
-        # Capture photo booth image if enabled
+        # Generate photo booth composite if enabled and minimum time passed
         if self.photo_booth and self.photo_booth.is_consent_complete():
-            logger.info("📸 Capturing photo booth image...")
-            # Capture gameplay screenshot from renderer's screen
-            if (
-                hasattr(self, "renderer")
-                and self.renderer
-                and hasattr(self.renderer, "screen")
-            ):
-                self.photo_booth.capture_gameplay(self.renderer.screen)
-            # Capture selfie if opted in
-            if self.photo_booth.selfie_opted_in:
-                self.photo_booth.capture_selfie()
-            # Generate composite
-            photo_path = self.photo_booth.generate_composite(stats.total_eliminations)
-            if photo_path:
-                logger.info(f"📸 Photo booth image saved: {photo_path}")
-                # Store path for display on results screen
-                self.game_state.photo_booth_path = photo_path
+            if self.photo_booth.has_minimum_arcade_time():
+                # Only generate if we have a gameplay screenshot
+                if self.photo_booth.gameplay_captured:
+                    logger.info("📸 Generating photo booth composite...")
+                    photo_path = self.photo_booth.generate_composite(stats.total_eliminations)
+                    if photo_path:
+                        logger.info(f"📸 Photo booth image saved: {photo_path}")
+                        # Store path for display on results screen
+                        self.game_state.photo_booth_path = photo_path
+                else:
+                    logger.info("📸 No gameplay screenshot captured - skipping photo booth")
+            else:
+                elapsed = self.photo_booth.get_arcade_elapsed_time()
+                logger.info(f"📸 Arcade session too short ({elapsed:.1f}s) - skipping photo booth")
 
         # Show the results via controller
         self.arcade_results_controller.show(stats_snapshot)

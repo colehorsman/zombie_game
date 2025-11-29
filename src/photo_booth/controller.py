@@ -77,6 +77,9 @@ class PhotoBoothController:
 
         # Timing
         self._consent_prompt_start: float = 0.0
+        self._arcade_start_time: float = 0.0
+        self._gameplay_captured: bool = False
+        self._selfie_captured: bool = False
 
         # Compositor
         self._compositor = PhotoBoothCompositor()
@@ -241,6 +244,7 @@ class PhotoBoothController:
             # Convert BGR (OpenCV) to RGB (PIL)
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             self._selfie_image = Image.fromarray(frame_rgb)
+            self._selfie_captured = True
 
             self._logger.info(f"Selfie captured: {self._selfie_image.size}")
             return True
@@ -266,6 +270,7 @@ class PhotoBoothController:
             size = screen.get_size()
 
             self._gameplay_image = Image.frombytes("RGB", size, raw_str)
+            self._gameplay_captured = True
 
             self._logger.info(f"Gameplay captured: {self._gameplay_image.size}")
             return True
@@ -319,8 +324,54 @@ class PhotoBoothController:
         self._gameplay_image = None
         self._composite_path = None
         self._consent_prompt_start = 0.0
+        self._arcade_start_time = 0.0
+        self._gameplay_captured = False
+        self._selfie_captured = False
 
         if self.config.enabled:
             self._state = PhotoBoothState.INACTIVE
         else:
             self._state = PhotoBoothState.DISABLED
+
+    def start_arcade_tracking(self) -> None:
+        """Start tracking arcade session time for delayed captures."""
+        self._arcade_start_time = time.time()
+        self._gameplay_captured = False
+        self._selfie_captured = False
+        self._logger.info("📸 Started arcade time tracking for photo booth")
+
+    def get_arcade_elapsed_time(self) -> float:
+        """Get elapsed time since arcade session started."""
+        if self._arcade_start_time == 0.0:
+            return 0.0
+        return time.time() - self._arcade_start_time
+
+    def should_capture_gameplay(self) -> bool:
+        """Check if it's time to capture gameplay screenshot."""
+        if self._gameplay_captured:
+            return False
+        elapsed = self.get_arcade_elapsed_time()
+        return elapsed >= self.config.screenshot_delay
+
+    def should_capture_selfie(self) -> bool:
+        """Check if it's time to capture selfie."""
+        if self._selfie_captured or not self._selfie_opted_in:
+            return False
+        elapsed = self.get_arcade_elapsed_time()
+        # Capture selfie slightly after gameplay screenshot
+        return elapsed >= self.config.screenshot_delay + 1.0
+
+    def has_minimum_arcade_time(self) -> bool:
+        """Check if minimum arcade time has passed for photo generation."""
+        elapsed = self.get_arcade_elapsed_time()
+        return elapsed >= self.config.min_arcade_time
+
+    @property
+    def gameplay_captured(self) -> bool:
+        """Whether gameplay screenshot has been captured."""
+        return self._gameplay_captured
+
+    @property
+    def selfie_captured(self) -> bool:
+        """Whether selfie has been captured."""
+        return self._selfie_captured

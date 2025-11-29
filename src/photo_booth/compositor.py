@@ -38,6 +38,7 @@ class PhotoBoothCompositor:
     def __init__(self):
         self.frame_overlay = self._load_frame_overlay()
         self.sonrai_logo = self._load_sonrai_logo()
+        self.qr_code = self._load_qr_code()
         self.pixel_font_large = self._load_font(48)
         self.pixel_font_medium = self._load_font(32)
         self.pixel_font_small = self._load_font(20)
@@ -48,6 +49,7 @@ class PhotoBoothCompositor:
         gameplay: Image.Image,
         zombie_count: int,
         config: PhotoBoothConfig,
+        skip_selfie_retro: bool = False,
     ) -> Image.Image:
         """
         Generate complete photo booth composite.
@@ -57,6 +59,7 @@ class PhotoBoothCompositor:
             gameplay: Gameplay screenshot
             zombie_count: Number of zombies eliminated
             config: Photo booth configuration
+            skip_selfie_retro: If True, skip applying retro filter to selfie (already processed)
 
         Returns:
             Complete composite image (1920x1080)
@@ -74,7 +77,9 @@ class PhotoBoothCompositor:
             # Two-panel layout
             panel_width = (self.OUTPUT_WIDTH - self.FRAME_BORDER * 2 - self.PHOTO_GAP) // 2
 
-            selfie_panel = self._create_selfie_panel(selfie, panel_width, content_height)
+            selfie_panel = self._create_selfie_panel(
+                selfie, panel_width, content_height, skip_selfie_retro
+            )
             gameplay_panel = self._create_gameplay_panel(gameplay, panel_width, content_height)
 
             canvas.paste(selfie_panel, (self.FRAME_BORDER, content_top))
@@ -130,11 +135,14 @@ class PhotoBoothCompositor:
         return filepath
 
     def _create_selfie_panel(
-        self, selfie: Image.Image, panel_width: int, panel_height: int
+        self, selfie: Image.Image, panel_width: int, panel_height: int, skip_retro: bool = False
     ) -> Image.Image:
         """Create the pixelated selfie panel."""
-        # Apply retro filter
-        retro_selfie = RetroFilter.apply_full_retro_effect(selfie, pixel_size=6)
+        # Apply arcade selfie effect unless already processed
+        if skip_retro:
+            retro_selfie = selfie
+        else:
+            retro_selfie = RetroFilter.apply_arcade_selfie_effect(selfie)
 
         # Create panel background
         panel = Image.new("RGB", (panel_width, panel_height), self.PANEL_BG)
@@ -207,23 +215,52 @@ class PhotoBoothCompositor:
         )
 
     def _draw_score_header(self, canvas: Image.Image, zombie_count: int) -> None:
-        """Draw the score header with stars and zombie count."""
+        """Draw the score header with zombie icons and zombie count."""
         draw = ImageDraw.Draw(canvas)
 
-        # Score text
-        score_text = f"★ ★ ★  {zombie_count} ZOMBIES ELIMINATED  ★ ★ ★"
+        # Score text (without stars - we'll add zombie icons)
+        score_text = f"{zombie_count} ZOMBIES ELIMINATED"
         subtitle = "60 SECOND CHALLENGE"
 
-        # Draw score (gold color)
+        # Calculate text dimensions
         score_bbox = draw.textbbox((0, 0), score_text, font=self.pixel_font_large)
         score_width = score_bbox[2] - score_bbox[0]
-        x = (self.OUTPUT_WIDTH - score_width) // 2
+        score_height = score_bbox[3] - score_bbox[1]
+
+        # Zombie icon size (match text height)
+        icon_size = 40
+        icon_spacing = 15
+        num_icons = 3  # 3 zombies on each side
+
+        # Total width including icons
+        icons_width = (num_icons * icon_size + (num_icons - 1) * 5) * 2  # Both sides
+        total_width = icons_width + score_width + icon_spacing * 2
+
+        # Starting X position to center everything
+        start_x = (self.OUTPUT_WIDTH - total_width) // 2
+        text_y = self.FRAME_BORDER + 15
+        icon_y = text_y + (score_height - icon_size) // 2 + 5
+
+        # Draw left zombie icons
+        x = start_x
+        for i in range(num_icons):
+            self._draw_zombie_icon(canvas, x, icon_y, icon_size)
+            x += icon_size + 5
+
+        # Draw score text (gold color)
+        text_x = x + icon_spacing
         draw.text(
-            (x, self.FRAME_BORDER + 15),
+            (text_x, text_y),
             score_text,
             fill=self.SCORE_COLOR,
             font=self.pixel_font_large,
         )
+
+        # Draw right zombie icons
+        x = text_x + score_width + icon_spacing
+        for i in range(num_icons):
+            self._draw_zombie_icon(canvas, x, icon_y, icon_size)
+            x += icon_size + 5
 
         # Draw subtitle (white)
         sub_bbox = draw.textbbox((0, 0), subtitle, font=self.pixel_font_medium)
@@ -231,6 +268,70 @@ class PhotoBoothCompositor:
         x = (self.OUTPUT_WIDTH - sub_width) // 2
         draw.text(
             (x, self.FRAME_BORDER + 70), subtitle, fill=self.TEXT_COLOR, font=self.pixel_font_medium
+        )
+
+    def _draw_zombie_icon(self, canvas: Image.Image, x: int, y: int, size: int) -> None:
+        """Draw a pixel art zombie icon."""
+        draw = ImageDraw.Draw(canvas)
+
+        # Scale factor for the icon
+        s = size // 10  # Base unit
+
+        # Zombie colors
+        body_color = (0, 180, 0)  # Green body
+        head_color = (0, 200, 0)  # Lighter green head
+        eye_color = (255, 0, 0)  # Red eyes
+        dark_green = (0, 140, 0)  # Darker green for details
+
+        # Head (top portion)
+        head_x = x + s * 2
+        head_y = y
+        head_w = s * 6
+        head_h = s * 4
+        draw.rectangle([(head_x, head_y), (head_x + head_w, head_y + head_h)], fill=head_color)
+
+        # Eyes (red, menacing)
+        eye_size = s * 2
+        # Left eye
+        draw.rectangle(
+            [(head_x + s, head_y + s), (head_x + s + eye_size, head_y + s + eye_size)],
+            fill=eye_color,
+        )
+        # Right eye
+        draw.rectangle(
+            [
+                (head_x + head_w - s - eye_size, head_y + s),
+                (head_x + head_w - s, head_y + s + eye_size),
+            ],
+            fill=eye_color,
+        )
+
+        # Body (middle portion)
+        body_x = x + s * 2
+        body_y = y + s * 4
+        body_w = s * 6
+        body_h = s * 4
+        draw.rectangle([(body_x, body_y), (body_x + body_w, body_y + body_h)], fill=body_color)
+
+        # Arms (reaching out - zombie style)
+        arm_h = s * 2
+        # Left arm (extended)
+        draw.rectangle([(x, body_y + s), (body_x, body_y + s + arm_h)], fill=dark_green)
+        # Right arm (extended)
+        draw.rectangle(
+            [(body_x + body_w, body_y + s), (x + size, body_y + s + arm_h)], fill=dark_green
+        )
+
+        # Legs
+        leg_y = body_y + body_h
+        leg_w = s * 2
+        leg_h = s * 2
+        # Left leg
+        draw.rectangle([(body_x + s, leg_y), (body_x + s + leg_w, leg_y + leg_h)], fill=dark_green)
+        # Right leg
+        draw.rectangle(
+            [(body_x + body_w - s - leg_w, leg_y), (body_x + body_w - s, leg_y + leg_h)],
+            fill=dark_green,
         )
 
     def _draw_footer(self, canvas: Image.Image, config: PhotoBoothConfig) -> None:
@@ -268,16 +369,30 @@ class PhotoBoothCompositor:
             (x, footer_y + 45), hashtag_text, fill=self.ACCENT_COLOR, font=self.pixel_font_small
         )
 
-        # Right side: QR code placeholder
+        # Right side: QR code
         qr_size = self.FOOTER_HEIGHT - 30
         qr_x = self.OUTPUT_WIDTH - self.FRAME_BORDER - qr_size - 10
-        draw.rectangle(
-            [(qr_x, footer_y + 5), (qr_x + qr_size, footer_y + 5 + qr_size)], fill=(255, 255, 255)
-        )
-        # QR placeholder text
-        draw.text(
-            (qr_x + 15, footer_y + qr_size // 2), "QR", fill=(0, 0, 0), font=self.pixel_font_small
-        )
+
+        if self.qr_code:
+            # Use actual QR code image
+            qr_resized = self.qr_code.resize((qr_size, qr_size), Image.LANCZOS)
+            # Handle transparency if present
+            if qr_resized.mode == "RGBA":
+                canvas.paste(qr_resized, (qr_x, footer_y + 5), qr_resized)
+            else:
+                canvas.paste(qr_resized, (qr_x, footer_y + 5))
+        else:
+            # Fallback: white placeholder with text
+            draw.rectangle(
+                [(qr_x, footer_y + 5), (qr_x + qr_size, footer_y + 5 + qr_size)],
+                fill=(255, 255, 255),
+            )
+            draw.text(
+                (qr_x + 15, footer_y + qr_size // 2),
+                "QR",
+                fill=(0, 0, 0),
+                font=self.pixel_font_small,
+            )
 
     def _draw_arcade_border(self, canvas: Image.Image) -> None:
         """Draw decorative arcade cabinet border."""
@@ -345,6 +460,15 @@ class PhotoBoothCompositor:
         # Fallback to regular logo
         try:
             return Image.open("assets/sonrai_logo.png").convert("RGBA")
+        except FileNotFoundError:
+            return None
+        except Exception:
+            return None
+
+    def _load_qr_code(self) -> Optional[Image.Image]:
+        """Load the QR code image."""
+        try:
+            return Image.open("assets/qr.png").convert("RGBA")
         except FileNotFoundError:
             return None
         except Exception:
