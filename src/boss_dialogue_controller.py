@@ -1,8 +1,8 @@
 """Boss dialogue controller - manages boss introduction dialogue display."""
 
 import logging
-from typing import Optional
 from dataclasses import dataclass
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +117,7 @@ class BossDialogueController:
         lines.append("═" * 40)
         lines.append(self.content.mechanic)
         lines.append("")
-        lines.append("Press ENTER to begin the battle!")
+        lines.append("Press ENTER/A to begin the battle!")
 
         return "\n".join(lines)
 

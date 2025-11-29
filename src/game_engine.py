@@ -2356,6 +2356,10 @@ class GameEngine:
 
             # Controller button events
             elif event.type == pygame.JOYBUTTONDOWN:
+                # Log ALL button presses for debugging (even if joystick is None)
+                logger.info(
+                    f"🎮 JOYBUTTONDOWN event: button={event.button}, joystick={self.joystick is not None}"
+                )
                 if self.joystick:
                     # Log button press for debugging
                     logger.info(f"🎮 Controller button pressed: {event.button}")
@@ -2435,7 +2439,13 @@ class GameEngine:
 
                     # A button (0) - Universal message dismissal (like ENTER) OR Fire
                     if event.button == 0:
-                        # PRIORITY: Universal message dismissal (works like ENTER key)
+                        # PRIORITY 1: Boss dialogue dismissal
+                        if self.boss_dialogue_controller.is_showing:
+                            self.boss_dialogue_controller.dismiss()
+                            self._spawn_cyber_boss()
+                            continue
+
+                        # PRIORITY 2: Universal message dismissal (works like ENTER key)
                         if self.game_state.congratulations_message:
                             self.dismiss_message()
                             continue  # Don't process other A button actions
@@ -2488,8 +2498,14 @@ class GameEngine:
                             GameStatus.BOSS_BATTLE,
                         ):
                             self.player.jump()
-                    # Start button (7) - Pause menu / Dismiss messages
-                    elif event.button == 7:
+                    # Start/Select button (6, 7, or 9 depending on controller) - Pause menu / Dismiss messages
+                    # Button 6 = Select on some controllers, Start on others
+                    # Button 7 = Start on 8BitDo SN30 Pro
+                    # Button 9 = Start on some Xbox-style controllers
+                    elif event.button in (6, 7, 9):
+                        logger.info(
+                            f"🎮 Start/Pause button pressed (button {event.button}), game state: {self.game_state.status}"
+                        )
                         if self.game_state.status == GameStatus.PAUSED:
                             self.dismiss_message()
                         elif self.game_state.status in (
@@ -2498,12 +2514,8 @@ class GameEngine:
                             GameStatus.BOSS_BATTLE,
                         ):
                             # Toggle pause menu
+                            logger.info("🎮 Showing pause menu...")
                             self._show_pause_menu()
-                    # Select button (6) - Disabled to prevent accidental lobby exit
-                    # Users should use pause menu (Start → Return to Lobby)
-                    elif event.button == 6:
-                        logger.info("ℹ️ Select button - use Start for pause menu")
-                        pass  # Disabled
 
                     # Star/Home button (10) - Disabled to prevent accidental lobby exit
                     # Users should use pause menu (Start → Return to Lobby)
