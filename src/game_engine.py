@@ -244,6 +244,10 @@ class GameEngine:
 
         # Arcade results menu - now managed by ArcadeResultsController
         self.arcade_results_controller = ArcadeResultsController()
+        
+        # Game over menu
+        self.game_over_menu_active = False
+        self.game_over_selected_index = 0
 
         # Controller button labels for 8BitDo SN30 Pro
         # Note: PauseMenuController has its own copy, but keeping this for backwards compatibility
@@ -1480,6 +1484,11 @@ class GameEngine:
         # Update player invincibility frames
         self.player.update_invincibility(delta_time)
 
+        # Check for game over (player health depleted)
+        if self.player.current_health <= 0:
+            self._show_game_over_screen()
+            return  # Stop updating game logic
+
         # PLATFORMER: Check for solid collision with zombies (can't walk through them)
         player_bounds = self.player.get_bounds()
 
@@ -1968,6 +1977,80 @@ class GameEngine:
             self._save_game()
             self.running = False
 
+    def _show_game_over_screen(self) -> None:
+        """Show game over screen when player health reaches 0."""
+        logger.info("💀 GAME OVER - Player health depleted!")
+        
+        # Pause game
+        self.game_state.previous_status = self.game_state.status
+        self.game_state.status = GameStatus.PAUSED
+        
+        # Build game over message
+        message = (
+            "💀 SECURITY BREACH!\n\n"
+            "All zombies have been released!\n"
+            "All 3rd parties are now allowed!\n"
+            "Services are unprotected!\n\n"
+            f"Zombies Eliminated: {self.game_state.zombies_eliminated}\n\n"
+            "▶ Retry Level\n"
+            "  Return to Lobby"
+        )
+        
+        self.game_state.congratulations_message = message
+        self.game_over_menu_active = True
+        
+    def _navigate_game_over_menu(self, direction: int) -> None:
+        """Navigate game over menu options."""
+        if not hasattr(self, 'game_over_selected_index'):
+            self.game_over_selected_index = 0
+        
+        # Two options: Retry (0) or Return to Lobby (1)
+        self.game_over_selected_index = (self.game_over_selected_index + direction) % 2
+        
+        # Rebuild message with new selection
+        retry_text = "▶ Retry Level" if self.game_over_selected_index == 0 else "  Retry Level"
+        lobby_text = "▶ Return to Lobby" if self.game_over_selected_index == 1 else "  Return to Lobby"
+        
+        message = (
+            "💀 SECURITY BREACH!\n\n"
+            "All zombies have been released!\n"
+            "All 3rd parties are now allowed!\n"
+            "Services are unprotected!\n\n"
+            f"Zombies Eliminated: {self.game_state.zombies_eliminated}\n\n"
+            f"{retry_text}\n"
+            f"{lobby_text}"
+        )
+        
+        self.game_state.congratulations_message = message
+        
+    def _execute_game_over_option(self) -> None:
+        """Execute selected game over menu option."""
+        if not hasattr(self, 'game_over_selected_index'):
+            self.game_over_selected_index = 0
+        
+        if self.game_over_selected_index == 0:
+            # Retry Level
+            logger.info("🔄 Retrying level...")
+            self.game_over_menu_active = False
+            self.game_state.congratulations_message = None
+            
+            # Reset player health
+            self.player.current_health = self.player.max_health
+            
+            # Reset player position to start
+            self.player.position.x = 100
+            self.player.position.y = 400
+            
+            # Resume game
+            self.game_state.status = self.game_state.previous_status
+            
+        elif self.game_over_selected_index == 1:
+            # Return to Lobby
+            logger.info("🏠 Returning to lobby...")
+            self.game_over_menu_active = False
+            self.game_state.congratulations_message = None
+            self._return_to_lobby()
+
     def dismiss_message(self) -> None:
         """Dismiss the congratulations message and resume gameplay."""
         if self.game_state.status == GameStatus.PAUSED and self.game_state.congratulations_message:
@@ -2140,21 +2223,32 @@ class GameEngine:
                     # Check if we're showing the actual pause menu (not a different message)
                     elif (
                         self.game_state.congratulations_message
+                        and "SECURITY BREACH" in self.game_state.congratulations_message
+                    ):
+                        # Game Over Menu Navigation
+                        if event.key == pygame.K_UP:
+                            self._navigate_game_over_menu(-1)
+                            continue
+                        elif event.key == pygame.K_DOWN:
+                            self._navigate_game_over_menu(1)
+                            continue
+                        elif event.key == pygame.K_RETURN:
+                            self._execute_game_over_option()
+                            continue
+                    elif (
+                        self.game_state.congratulations_message
                         and "PAUSED" in self.game_state.congratulations_message
                     ):
-                        # UP arrow - move selection up
+                        # Pause Menu Navigation
                         if event.key == pygame.K_UP:
                             self._navigate_pause_menu(-1)
                             continue
-                        # DOWN arrow - move selection down
                         elif event.key == pygame.K_DOWN:
                             self._navigate_pause_menu(1)
                             continue
-                        # ENTER - execute selected option
                         elif event.key == pygame.K_RETURN:
                             self._execute_pause_menu_option()
                             continue
-                        # ESC - cancel and return to game
                         elif event.key == pygame.K_ESCAPE:
                             self.dismiss_message()
                             continue
@@ -2319,6 +2413,23 @@ class GameEngine:
                             # A button (0) or B button (1) - confirm selection
                             elif event.button in (0, 1):
                                 self._execute_arcade_results_option()
+                                continue
+                        # Check if we're showing game over menu
+                        elif (
+                            self.game_state.congratulations_message
+                            and "SECURITY BREACH" in self.game_state.congratulations_message
+                        ):
+                            # D-pad UP (11) - navigate up
+                            if event.button == 11:
+                                self._navigate_game_over_menu(-1)
+                                continue
+                            # D-pad DOWN (12) - navigate down
+                            elif event.button == 12:
+                                self._navigate_game_over_menu(1)
+                                continue
+                            # A button (0) - confirm selection
+                            elif event.button == 0:
+                                self._execute_game_over_option()
                                 continue
                         # Check if we're showing the actual pause menu
                         elif (
