@@ -239,6 +239,72 @@ class CheatCodeController:
 
         return CheatCodeResult(action=CheatCodeAction.NONE)
 
+    def check_controller_unlock_combo(self, joystick, debug: bool = False) -> bool:
+        """
+        Check if the controller unlock combo is being held.
+
+        The unlock combo is: L1 + R1 + Start
+        All three buttons must be held simultaneously.
+
+        Args:
+            joystick: pygame.joystick.Joystick object
+            debug: If True, log button states for debugging
+
+        Returns:
+            True if unlock combo is being held, False otherwise
+        """
+        if joystick is None:
+            return False
+
+        try:
+            num_buttons = joystick.get_numbuttons()
+
+            # Log all pressed buttons for debugging
+            if debug:
+                pressed = []
+                for i in range(num_buttons):
+                    if joystick.get_button(i):
+                        pressed.append(i)
+                if pressed:
+                    logger.info(f"🎮 Buttons currently pressed: {pressed}")
+
+            # Try multiple button combinations for different controllers
+            # User's controller: L1=9, R1=10, Start=6
+            # 8BitDo SN30 Pro: L1=4, R1=5, Start=7
+            # Xbox-style: L1=4, R1=5, Start=7 or 9
+
+            # Need at least 11 buttons for user's controller combo
+            if num_buttons < 7:
+                return False
+
+            # Check multiple possible Start button mappings
+            start_pressed = False
+            for start_btn in [6, 7, 9]:  # Common Start button mappings
+                if start_btn < num_buttons and joystick.get_button(start_btn):
+                    start_pressed = True
+                    break
+
+            # Check L1/R1 - try both common mappings
+            # Mapping 1: L1=4, R1=5 (8BitDo, Xbox)
+            l1_v1 = joystick.get_button(4) if num_buttons > 4 else False
+            r1_v1 = joystick.get_button(5) if num_buttons > 5 else False
+
+            # Mapping 2: L1=9, R1=10 (User's controller)
+            l1_v2 = joystick.get_button(9) if num_buttons > 9 else False
+            r1_v2 = joystick.get_button(10) if num_buttons > 10 else False
+
+            # Check if either L1+R1 combo is pressed along with Start
+            combo1 = l1_v1 and r1_v1 and start_pressed
+            combo2 = l1_v2 and r1_v2 and start_pressed
+
+            if combo1 or combo2:
+                return True
+
+            return False
+
+        except pygame.error:
+            return False
+
     def reset(self) -> None:
         """Reset all cheat code buffers."""
         self.cheat_buffer = []

@@ -249,6 +249,9 @@ class GameEngine:
         self.game_over_menu_active = False
         self.game_over_selected_index = 0
 
+        # Controller unlock combo state (L + R + Start)
+        self.controller_unlock_combo_triggered = False
+
         # Controller button labels for 8BitDo SN30 Pro
         # Note: PauseMenuController has its own copy, but keeping this for backwards compatibility
         self.controller_labels = {
@@ -2532,6 +2535,21 @@ class GameEngine:
             keyboard_right = pygame.K_RIGHT in self.keys_pressed or pygame.K_d in self.keys_pressed
             keyboard_up = pygame.K_UP in self.keys_pressed or pygame.K_w in self.keys_pressed
             keyboard_down = pygame.K_DOWN in self.keys_pressed or pygame.K_s in self.keys_pressed
+
+            # Check controller unlock combo (L1 + R1 + Start)
+            if self.joystick and not self.controller_unlock_combo_triggered:
+                if self.cheat_code_controller.check_controller_unlock_combo(self.joystick):
+                    self.controller_unlock_combo_triggered = True
+                    self.cheat_code_controller.enable_unlock()
+                    logger.info("🔓 CONTROLLER UNLOCK COMBO ACTIVATED! (L + R + Start)")
+                    self.game_state.congratulations_message = (
+                        "🔓 CHEAT ACTIVATED\n\n"
+                        "All Levels Unlocked!\n\n"
+                        "(L + R + Start)\n\n"
+                        "Press A to continue"
+                    )
+                    self.game_state.previous_status = self.game_state.status
+                    self.game_state.status = GameStatus.PAUSED
 
             # Check controller D-pad/analog stick
             controller_left = False
