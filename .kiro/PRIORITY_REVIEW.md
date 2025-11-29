@@ -90,21 +90,20 @@
 
 ## ⚠️ P1 - HIGH PRIORITY (Should Fix for Demo)
 
-### 🔄 4. BUG-010: Boss Damage System - NOT COMPLETE
-**Status:** 🔄 IN PROGRESS - Was incorrectly marked as complete
-**Impact:** Boss fights have NO challenge - bosses don't damage player
-**Effort:** 6-8 hours (needs full implementation)
+### 🔄 4. BUG-010: Boss Damage System - PARTIALLY COMPLETE
+**Status:** 🔄 IN PROGRESS - WannaCry tested ✅, others need testing
+**Impact:** Boss fights partially working - need to verify all bosses
+**Effort:** 2-4 hours (testing + potential heart projectiles)
 
-**What's MISSING (needs implementation):**
-- ❌ `_check_boss_player_collision()` method NOT in game_engine.py
-- ❌ WannaCry: Contact + tear puddles + sob wave damage NOT implemented
-- ❌ Heartbleed: Contact + bleeding particle damage NOT implemented
-- ❌ Heartbleed: **NEEDS HEART PROJECTILES** for ranged attack (user feedback)
-- ❌ Scattered Spider: Contact damage NOT verified
-- ❌ Player invincibility frames NOT implemented
-- ❌ Boss damage system NOT tested
+**Testing Status:**
+- ✅ **WannaCry (Level 1):** TESTED AND WORKING - damages player correctly
+- 🔄 **Heartbleed (Level 2):** NEEDS TESTING - may need heart projectiles
+- ⬜ **Scattered Spider (Level 3):** NOT SEEN/TESTED YET
 
-**User Feedback:** "heartbleed queen needs heart projectiles for damage and needs tested"
+**Next Steps:**
+1. Test Heartbleed boss in Level 2 (Stage)
+2. Test Scattered Spider boss in Level 3 (Automation)
+3. Add heart projectiles to Heartbleed if needed after testing
 
 ---
 
@@ -415,17 +414,18 @@
 **Demo is ready when:**
 1. ✅ Game has proper fail state (game over screen) - **COMPLETE** ✅
 2. ✅ All UI is visually consistent (purple theme) - **COMPLETE** ✅
-3. ❌ Combat system is complete (bosses damage player) - **NOT COMPLETE** ❌
-   - ❌ BUG-010: Boss damage NOT implemented (was incorrectly marked complete)
-   - ❌ Heartbleed needs heart projectiles for ranged damage
-   - ❌ Third party damage still pending (BUG-014)
+3. 🔄 Combat system is complete (bosses damage player) - **PARTIALLY COMPLETE** 🔄
+   - ✅ WannaCry: TESTED AND WORKING
+   - 🔄 Heartbleed: NEEDS TESTING (may need heart projectiles)
+   - ⬜ Scattered Spider: NOT TESTED YET
+   - ⬜ Third party damage still pending (BUG-014)
 4. ✅ Controller fully functional (all features accessible) - **COMPLETE** ✅ (9 fixes applied)
 5. ✅ No critical bugs (no crashes, no blockers) - **COMPLETE** ✅
 6. ✅ Performance is stable (60 FPS with 100+ entities) - **COMPLETE** ✅
 7. ⬜ Content has variety (unique challenges per level) - **PENDING** (BUG-015)
 
-**Current Status:** 5/7 criteria met (CORRECTED from 6/7)
-**Estimated Time to Ready:** 1.5-2 days (12-16 hours of work - BUG-010 adds 6-8 hours)
+**Current Status:** 5.5/7 criteria met (WannaCry working, 2 bosses need testing)
+**Estimated Time to Ready:** 1 day (8-10 hours - testing + potential fixes)
 
 ---
 

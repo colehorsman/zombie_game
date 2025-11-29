@@ -460,37 +460,34 @@ if self._is_confirm_button(event):
 
 ---
 
-### 🔄 BUG-010: Boss Damage System - NOT COMPLETE
+### 🔄 BUG-010: Boss Damage System - PARTIALLY COMPLETE
 **Severity:** P1
 **Component:** Boss Battle / Combat System
-**Status:** 🔄 IN PROGRESS - Needs implementation and testing
-**Previous Status:** Incorrectly marked as FIXED (code doesn't exist)
+**Status:** 🔄 IN PROGRESS - WannaCry tested ✅, Heartbleed & Scattered Spider need testing
 
-**What's MISSING (needs implementation):**
-- ❌ `_check_boss_player_collision()` method NOT in game_engine.py
-- ❌ WannaCry: Contact damage + tear puddle damage + sob wave damage NOT implemented
-- ❌ Heartbleed: Contact damage + bleeding particle damage NOT implemented
-- ❌ Heartbleed: **NEEDS HEART PROJECTILES** for ranged damage (user feedback)
-- ❌ Scattered Spider: Contact damage with any of 5 spiders NOT verified
-- ❌ Player invincibility frames NOT implemented
-- ❌ Boss damage system NOT tested
+**Testing Status:**
+- ✅ **WannaCry (Level 1 Sandbox):** TESTED AND WORKING
+- 🔄 **Heartbleed (Level 2 Stage):** NEEDS TESTING + may need heart projectiles
+- ⬜ **Scattered Spider (Level 3 Automation):** NOT SEEN/TESTED YET
 
-**What EXISTS (boss classes only):**
-- ✅ WannaCryBoss class exists with sprite/health/movement
-- ✅ HeartbleedBoss class exists with sprite/health/movement (but NO heart projectiles)
-- ✅ ScatteredSpiderBoss class exists with 5 mini spiders
+**What's Working:**
+- ✅ WannaCry boss damages player (tested and confirmed)
+- ✅ Boss classes exist with sprite/health/movement
 - ✅ Boss take_damage() methods exist (player damages boss)
-- ❌ Boss-to-player damage NOT implemented
 
-**Required Implementation:**
-1. Add `_check_boss_player_collision()` to game_engine.py
-2. Implement contact damage for all 3 boss types
-3. Add heart projectiles to HeartbleedBoss (ranged attack)
-4. Add tear puddles/sob wave to WannaCry
-5. Add player invincibility frames (0.5 seconds)
-6. Test all boss battles
+**What Needs Testing/Implementation:**
+- 🔄 Heartbleed: Test if contact damage works
+- 🔄 Heartbleed: **May need HEART PROJECTILES** for ranged damage (user feedback)
+- ⬜ Scattered Spider: Test contact damage with 5 mini spiders
+- 🔄 Player invincibility frames - verify working
 
-**User Feedback:** "heartbleed queen needs heart projectiles for damage and needs tested"
+**Next Steps:**
+1. Test Heartbleed boss in Level 2 (Stage)
+2. Test Scattered Spider boss in Level 3 (Automation)
+3. Add heart projectiles to Heartbleed if needed
+4. Verify player invincibility frames
+
+**User Feedback:** "wannacry is tested and completed, heartbleed next, scattered spider after that"
 
 ---
 

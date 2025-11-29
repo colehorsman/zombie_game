@@ -228,19 +228,20 @@
 
 ### QA/Testing Recommendations
 
-#### 🔄 BUG-010: Boss Damage System (NOT COMPLETE)
+#### 🔄 BUG-010: Boss Damage System (PARTIALLY COMPLETE)
 - **Priority**: 🟠 P1
-- **Effort**: M (6-8 hours)
-- **Status**: 🔄 IN PROGRESS - Was incorrectly marked as complete
-- **Description**: Bosses don't damage player - combat system incomplete
-- **Missing Implementation**:
-  - [ ] Add `_check_boss_player_collision()` to game_engine.py
-  - [ ] WannaCry: Contact + tear puddles + sob wave damage
-  - [ ] Heartbleed: Contact + **HEART PROJECTILES** (ranged attack needed)
-  - [ ] Scattered Spider: Contact damage with any of 5 spiders
-  - [ ] Player invincibility frames (0.5 seconds)
-  - [ ] Test all boss battles
-- **User Feedback**: "heartbleed queen needs heart projectiles for damage and needs tested"
+- **Effort**: S (2-4 hours) - testing + potential heart projectiles
+- **Status**: 🔄 IN PROGRESS - WannaCry tested ✅, others need testing
+- **Description**: Verify all bosses damage player correctly
+- **Testing Status**:
+  - [x] WannaCry (Level 1 Sandbox): TESTED AND WORKING ✅
+  - [ ] Heartbleed (Level 2 Stage): NEEDS TESTING - may need heart projectiles
+  - [ ] Scattered Spider (Level 3 Automation): NOT SEEN/TESTED YET
+- **Next Steps**:
+  - [ ] Test Heartbleed boss in Level 2
+  - [ ] Test Scattered Spider boss in Level 3
+  - [ ] Add heart projectiles to Heartbleed if needed
+- **User Feedback**: "wannacry is tested and completed, heartbleed next, scattered spider after"
 - **ARB Reference**: QA/Testing Agent Review, BUGS_TO_FIX.md
 
 #### QA-001: Reorganize Test Structure
