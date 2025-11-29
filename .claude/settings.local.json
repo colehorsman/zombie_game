@@ -22,7 +22,11 @@
       "Bash(gh run list:*)",
       "Bash(gh run view:*)",
       "Bash(pip install:*)",
-      "Bash(black:*)"
+      "Bash(black:*)",
+      "Bash(isort:*)",
+      "Bash(git reset:*)",
+      "Bash(tree:*)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []
