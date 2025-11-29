@@ -1173,39 +1173,40 @@ elif event.button == 7:
 
 
 ### ✅ BUG-020: Game Over Screen Not Triggering
-**Status:** ✅ WORKING AS DESIGNED
+**Status:** ✅ FIXED
 **Severity:** P0 - CRITICAL
 **Component:** Game Over System
-**Description:** Health depletes to 0 but game over screen doesn't appear
-**User Feedback:** "depleting health doesnt send a message"
-**Impact:** Game over feature not working
+**Description:** Health depletes to 0 but health resets to 10 instead of showing game over screen
+**User Feedback:** "i depleted my health bar and nothing happened but my health started over"
+**Impact:** Game over feature not working - health auto-resets
 
-**Resolution:** ✅ FEATURE IS WORKING CORRECTLY
+**Root Cause:**
+`_on_player_damaged()` was calling old `_on_player_death()` method which:
+- Reset health to max (10 HP / 5 hearts)
+- Auto-restarted level
+- Prevented game over screen from showing
 
-The game over screen IS implemented and working. The confusion is due to invincibility frames:
+**Fix Applied:**
+- Removed death check from `_on_player_damaged()` method
+- Removed old `_on_player_death()` method entirely
+- Now health check in `_update_playing()` properly triggers `_show_game_over_screen()`
+
+**Result:**
+When player health reaches 0 (all 5 hearts depleted):
+- Game over screen appears with "💀 SECURITY BREACH!" message
+- Shows zombies eliminated count
+- Options: **Retry Level** or **Return to Lobby**
+- No auto-restart, player chooses what to do
 
 **How It Works:**
-1. Player takes 1 damage when touching zombie
-2. Player becomes invincible for 1.5 seconds (flashing effect)
-3. After 1.5 seconds, can take damage again
-4. With 10 max health, need ~15 seconds of zombie contact to die
-5. When health reaches 0, game over screen appears with:
-   - "💀 SECURITY BREACH!" message
-   - Zombies eliminated count
-   - Options: Retry Level or Return to Lobby
+- Player starts with 5 hearts (10 HP, 2 HP per heart)
+- Takes 1 damage per zombie touch
+- 1.5 second invincibility after each hit (flashing effect)
+- After 10 hits (all hearts depleted), game over screen appears
 
-**Code Locations:**
-- Health check: `game_engine.py` line 1492-1496
-- Game over screen: `game_engine.py` line 1985-2060
-- Input handling: `game_engine.py` line 2230-2245 (keyboard), 2430-2441 (controller)
-
-**Testing:**
-- Player must stay in contact with zombies for full 15 seconds
-- Health bar will deplete gradually (1 heart every 1.5 seconds)
-- Flashing effect shows invincibility frames
-- Game over screen appears when health = 0
-
-**Status:** ✅ WORKING - No fix needed, user education needed
+**Commits:** 46de25a
+**Branch:** feature/game-over-screen-FEATURE-001
+**Fixed:** November 28, 2024
 
 ---
 
