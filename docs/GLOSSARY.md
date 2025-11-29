@@ -149,7 +149,7 @@ Damage an entity can take before being eliminated. Zombies: 3 HP, Third-parties:
 Amount of HP removed when an entity is hit. Currently 1 damage per projectile hit.
 
 **Damage Multiplier**
-Score bonus that increases every 10 eliminations. Affects points earned per kill.
+Score bonus that increases every 10 eliminations. Affects points earned per elimination.
 
 **Quarantine**
 The action of eliminating a zombie, which triggers a real Sonrai API call to quarantine that AWS identity. See `src/sonrai_client.py`.

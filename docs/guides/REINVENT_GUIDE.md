@@ -108,7 +108,7 @@
 1. Show lobby with real AWS account names
 2. Enter "Production" account
 3. Point to zombie: "contractor-john - 180 days unused"
-4. Shoot zombie
+4. Zap zombie
 5. Show API call: "ChangeQuarantineStatus → SUCCESS"
 6. Result: "Identity quarantined in your Sonrai tenant"
 7. Boom - they get it in 30 seconds
