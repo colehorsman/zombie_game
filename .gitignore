@@ -64,3 +64,9 @@ verify_dpad.py
 reports/
 *.sarif
 venv/
+
+# Photo booth generated images (user-specific)
+.kiro/evidence/booth_photos/
+
+# Evidence recordings (can be regenerated)
+.kiro/evidence/recordings/*.gif
