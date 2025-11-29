@@ -115,16 +115,16 @@ class GameEngine:
                     zombie.is_hidden = False
                 logger.info(f"🏛️  Distributed {len(self.zombies)} zombies across lobby rooms")
 
-            # LOBBY: Spawn player in center hallway, away from all doors
-            # Use center of map as safe spawn point - this is in the hallway area
-            # between rooms, not near any door entrances
+            # LOBBY: Spawn player in top-left area (safe, open space)
+            # Future: This will be the AWS Control Tower location
+            # Avoid center which can be inside walls
             self.landing_zone = Vector2(
-                self.game_map.map_width // 2,  # Center horizontally
-                self.game_map.map_height // 2,  # Center vertically
+                200,  # Top-left area, safe from walls
+                200,  # Safe open space
             )
             player_start_pos = self.landing_zone
             logger.info(
-                f"🏛️  Spawning player at LOBBY center hallway ({player_start_pos.x}, {player_start_pos.y})"
+                f"🏛️  Spawning player at LOBBY safe zone (top-left) ({player_start_pos.x}, {player_start_pos.y})"
             )
             self.player = Player(
                 player_start_pos,
