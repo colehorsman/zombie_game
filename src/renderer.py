@@ -58,6 +58,19 @@ class Renderer:
         self.ui_text_color = (255, 255, 255)
         self.error_color = (255, 100, 100)
 
+        # Load Sonrai logo for menus
+        self.sonrai_logo = None
+        try:
+            logo = pygame.image.load("assets/sonrai_logo.png")
+            # Scale to fit nicely in menus (80px wide)
+            aspect_ratio = logo.get_height() / logo.get_width()
+            logo_width = 80
+            logo_height = int(logo_width * aspect_ratio)
+            self.sonrai_logo = pygame.transform.scale(logo, (logo_width, logo_height))
+            logger.info("Sonrai logo loaded successfully")
+        except Exception as e:
+            logger.warning(f"Could not load Sonrai logo: {e}")
+
     def clear_screen(self) -> None:
         """Clear the screen to background color."""
         self.screen.fill(self.bg_color)
@@ -103,7 +116,9 @@ class Renderer:
 
             # Draw horizontal lines
             for y in range(0, self.height + grid_size, grid_size):
-                pygame.draw.line(self.screen, self.grid_color, (0, y), (self.width, y), 1)
+                pygame.draw.line(
+                    self.screen, self.grid_color, (0, y), (self.width, y), 1
+                )
 
     def render_player(self, player: Player, game_map: Optional[GameMap] = None) -> None:
         """
@@ -115,13 +130,19 @@ class Renderer:
         """
         if game_map:
             # Convert world coordinates to screen coordinates
-            screen_x, screen_y = game_map.world_to_screen(player.position.x, player.position.y)
+            screen_x, screen_y = game_map.world_to_screen(
+                player.position.x, player.position.y
+            )
             self.screen.blit(player.sprite, (screen_x, screen_y))
         else:
             # Use screen coordinates directly
-            self.screen.blit(player.sprite, (int(player.position.x), int(player.position.y)))
+            self.screen.blit(
+                player.sprite, (int(player.position.x), int(player.position.y))
+            )
 
-    def render_zombies(self, zombies: List[Zombie], game_map: Optional[GameMap] = None) -> None:
+    def render_zombies(
+        self, zombies: List[Zombie], game_map: Optional[GameMap] = None
+    ) -> None:
         """
         Render all zombie entities.
 
@@ -147,7 +168,9 @@ class Renderer:
                     # Apply flash effect if active
                     self.screen.blit(zombie.sprite, (screen_x, screen_y))
                     if zombie.is_flashing:
-                        self._apply_flash_effect(screen_x, screen_y, zombie.width, zombie.height)
+                        self._apply_flash_effect(
+                            screen_x, screen_y, zombie.width, zombie.height
+                        )
 
                     rendered_count += 1
             else:
@@ -173,7 +196,9 @@ class Renderer:
         elif not hasattr(self, "_first_render"):
             self._first_render = True
 
-    def render_third_parties(self, third_parties: List, game_map: Optional[GameMap] = None) -> None:
+    def render_third_parties(
+        self, third_parties: List, game_map: Optional[GameMap] = None
+    ) -> None:
         """
         Render all 3rd party entities.
 
@@ -230,7 +255,9 @@ class Renderer:
             game_map: Game map for coordinate conversion
         """
         for door in doors:
-            if game_map.is_on_screen(door.position.x, door.position.y, door.width, door.height):
+            if game_map.is_on_screen(
+                door.position.x, door.position.y, door.width, door.height
+            ):
                 door.render(self.screen, game_map.camera_x, game_map.camera_y)
 
                 # Render completion indicator if door leads to completed level
@@ -249,7 +276,9 @@ class Renderer:
                     except:
                         pass  # Font rendering failed, skip
 
-    def render_collectibles(self, collectibles: List[Collectible], game_map: GameMap) -> None:
+    def render_collectibles(
+        self, collectibles: List[Collectible], game_map: GameMap
+    ) -> None:
         """
         Render all question block collectibles.
 
@@ -325,12 +354,16 @@ class Renderer:
                 room_h = int(rh * game_map.tile_size * scale)
 
                 # Draw room outline (purple)
-                pygame.draw.rect(self.screen, (100, 60, 140), (room_x, room_y, room_w, room_h), 1)
+                pygame.draw.rect(
+                    self.screen, (100, 60, 140), (room_x, room_y, room_w, room_h), 1
+                )
 
         # Draw player position (purple circle)
         player_minimap_x = minimap_x + 10 + int(player_position.x * scale)
         player_minimap_y = minimap_y + 10 + int(player_position.y * scale)
-        pygame.draw.circle(self.screen, (180, 100, 255), (player_minimap_x, player_minimap_y), 3)
+        pygame.draw.circle(
+            self.screen, (180, 100, 255), (player_minimap_x, player_minimap_y), 3
+        )
 
         # Draw revealed zombies (small red dots)
         for zombie in zombies:
@@ -400,16 +433,22 @@ class Renderer:
                     # Fallback: show part of the name
                     label_text = zombie.identity_name[:8]
 
-                label_surface = self.label_font.render(label_text, True, (255, 255, 255))
+                label_surface = self.label_font.render(
+                    label_text, True, (255, 255, 255)
+                )
 
                 # Position above the zombie
-                label_x = int(screen_x + zombie.width // 2 - label_surface.get_width() // 2)
+                label_x = int(
+                    screen_x + zombie.width // 2 - label_surface.get_width() // 2
+                )
                 label_y = int(screen_y - 20)
 
                 # Draw black outline for readability
                 outline_offsets = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
                 for dx, dy in outline_offsets:
-                    outline_surface = self.label_font.render(label_text, True, (0, 0, 0))
+                    outline_surface = self.label_font.render(
+                        label_text, True, (0, 0, 0)
+                    )
                     self.screen.blit(outline_surface, (label_x + dx, label_y + dy))
 
                 # Draw the label
@@ -457,13 +496,17 @@ class Renderer:
                 )
 
                 # Position above the 3rd party
-                label_x = int(screen_x + third_party.width // 2 - label_surface.get_width() // 2)
+                label_x = int(
+                    screen_x + third_party.width // 2 - label_surface.get_width() // 2
+                )
                 label_y = int(screen_y - 20)
 
                 # Draw black outline for readability
                 outline_offsets = [(-1, -1), (-1, 1), (1, -1), (1, 1)]
                 for dx, dy in outline_offsets:
-                    outline_surface = self.label_font.render(label_text, True, (0, 0, 0))
+                    outline_surface = self.label_font.render(
+                        label_text, True, (0, 0, 0)
+                    )
                     self.screen.blit(outline_surface, (label_x + dx, label_y + dy))
 
                 # Draw the label
@@ -525,7 +568,9 @@ class Renderer:
                 entity.position.x, entity.position.y, entity.width, entity.height
             )
             if is_visible:
-                screen_x, screen_y = game_map.world_to_screen(entity.position.x, entity.position.y)
+                screen_x, screen_y = game_map.world_to_screen(
+                    entity.position.x, entity.position.y
+                )
         else:
             # Classic mode: check screen bounds
             is_visible = -100 < entity.position.x < self.width + 100
@@ -545,15 +590,21 @@ class Renderer:
         health_percent = entity.health / entity.max_health
 
         # Draw background (gray)
-        pygame.draw.rect(self.screen, (128, 128, 128), (bar_x, bar_y, bar_width, bar_height))
+        pygame.draw.rect(
+            self.screen, (128, 128, 128), (bar_x, bar_y, bar_width, bar_height)
+        )
 
         # Draw health (red)
         health_width = int(bar_width * health_percent)
         if health_width > 0:
-            pygame.draw.rect(self.screen, (220, 20, 20), (bar_x, bar_y, health_width, bar_height))
+            pygame.draw.rect(
+                self.screen, (220, 20, 20), (bar_x, bar_y, health_width, bar_height)
+            )
 
         # Draw border (black, retro pixel style)
-        pygame.draw.rect(self.screen, (0, 0, 0), (bar_x, bar_y, bar_width, bar_height), 1)
+        pygame.draw.rect(
+            self.screen, (0, 0, 0), (bar_x, bar_y, bar_width, bar_height), 1
+        )
 
     def render_boss(self, boss: Boss, game_map: Optional[GameMap] = None) -> None:
         """
@@ -572,37 +623,54 @@ class Renderer:
             if game_map.is_on_screen(
                 boss.position.x, boss.position.y - 200, boss.width, boss.height + 300
             ):
-                screen_x, screen_y = game_map.world_to_screen(boss.position.x, boss.position.y)
+                screen_x, screen_y = game_map.world_to_screen(
+                    boss.position.x, boss.position.y
+                )
 
                 # Render cloud if boss is on cloud (during entrance)
                 if boss.on_cloud and hasattr(boss, "cloud_sprite"):
                     cloud_screen_y = screen_y + boss.height + int(boss.cloud_y_offset)
-                    cloud_screen_x = screen_x - (boss.cloud_sprite.get_width() - boss.width) // 2
-                    self.screen.blit(boss.cloud_sprite, (cloud_screen_x, cloud_screen_y))
+                    cloud_screen_x = (
+                        screen_x - (boss.cloud_sprite.get_width() - boss.width) // 2
+                    )
+                    self.screen.blit(
+                        boss.cloud_sprite, (cloud_screen_x, cloud_screen_y)
+                    )
 
                 # Render sprite
                 self.screen.blit(boss.sprite, (screen_x, screen_y))
 
                 # Apply flash effect if active
                 if boss.is_flashing:
-                    self._apply_flash_effect(screen_x, screen_y, boss.width, boss.height)
+                    self._apply_flash_effect(
+                        screen_x, screen_y, boss.width, boss.height
+                    )
         else:
             # Classic mode: render if on screen
             if -100 < boss.position.x < self.width + 100:
                 # Render cloud if boss is on cloud
                 if boss.on_cloud and hasattr(boss, "cloud_sprite"):
-                    cloud_y = int(boss.position.y) + boss.height + int(boss.cloud_y_offset)
+                    cloud_y = (
+                        int(boss.position.y) + boss.height + int(boss.cloud_y_offset)
+                    )
                     cloud_x = (
-                        int(boss.position.x) - (boss.cloud_sprite.get_width() - boss.width) // 2
+                        int(boss.position.x)
+                        - (boss.cloud_sprite.get_width() - boss.width) // 2
                     )
                     self.screen.blit(boss.cloud_sprite, (cloud_x, cloud_y))
 
                 if boss.is_flashing:
                     flash_sprite = boss.sprite.copy()
-                    flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
-                    self.screen.blit(flash_sprite, (int(boss.position.x), int(boss.position.y)))
+                    flash_sprite.fill(
+                        (255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD
+                    )
+                    self.screen.blit(
+                        flash_sprite, (int(boss.position.x), int(boss.position.y))
+                    )
                 else:
-                    self.screen.blit(boss.sprite, (int(boss.position.x), int(boss.position.y)))
+                    self.screen.blit(
+                        boss.sprite, (int(boss.position.x), int(boss.position.y))
+                    )
 
     def render_boss_health_bar(self, boss, game_map: Optional[GameMap] = None) -> None:
         """
@@ -643,7 +711,9 @@ class Renderer:
         bar_y = 20
 
         # Background (dark gray)
-        pygame.draw.rect(self.screen, (64, 64, 64), (bar_x, bar_y, bar_width, bar_height))
+        pygame.draw.rect(
+            self.screen, (64, 64, 64), (bar_x, bar_y, bar_width, bar_height)
+        )
 
         # Health fill (red gradient)
         health_percent = current_health / max_health if max_health > 0 else 0
@@ -656,7 +726,9 @@ class Renderer:
                 pygame.draw.rect(self.screen, color, (bar_x + i, bar_y, 1, bar_height))
 
         # Gold border
-        pygame.draw.rect(self.screen, (255, 215, 0), (bar_x, bar_y, bar_width, bar_height), 2)
+        pygame.draw.rect(
+            self.screen, (255, 215, 0), (bar_x, bar_y, bar_width, bar_height), 2
+        )
 
         # Boss name above health bar
         name_font = self.name_font
@@ -705,7 +777,9 @@ class Renderer:
 
                     # Apply flash effect if active
                     if spider.is_flashing:
-                        self._apply_flash_effect(screen_x, screen_y, spider.width, spider.height)
+                        self._apply_flash_effect(
+                            screen_x, screen_y, spider.width, spider.height
+                        )
             else:
                 # Classic mode
                 if -100 < spider.position.x < self.width + 100:
@@ -743,9 +817,13 @@ class Renderer:
 
         # Determine screen position
         if game_map:
-            if not game_map.is_on_screen(boss.position.x, boss.position.y, boss.width, boss.height):
+            if not game_map.is_on_screen(
+                boss.position.x, boss.position.y, boss.width, boss.height
+            ):
                 return
-            screen_x, screen_y = game_map.world_to_screen(boss.position.x, boss.position.y)
+            screen_x, screen_y = game_map.world_to_screen(
+                boss.position.x, boss.position.y
+            )
         else:
             screen_x, screen_y = int(boss.position.x), int(boss.position.y)
 
@@ -769,7 +847,9 @@ class Renderer:
             if boss.is_flashing:
                 # White flash when damaged
                 flash_sprite = queen_sprite.copy()
-                flash_sprite.fill((255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD)
+                flash_sprite.fill(
+                    (255, 255, 255, 128), special_flags=pygame.BLEND_RGBA_ADD
+                )
                 self.screen.blit(flash_sprite, (screen_x, screen_y))
             else:
                 self.screen.blit(queen_sprite, (screen_x, screen_y))
@@ -796,7 +876,9 @@ class Renderer:
             # Top circle
             pygame.draw.circle(particle_surface, particle_color, (3, 2), 2)
             # Bottom point
-            pygame.draw.polygon(particle_surface, particle_color, [(1, 3), (5, 3), (3, 7)])
+            pygame.draw.polygon(
+                particle_surface, particle_color, [(1, 3), (5, 3), (3, 7)]
+            )
 
             self.screen.blit(particle_surface, (particle_x - 3, particle_y - 4))
 
@@ -819,7 +901,9 @@ class Renderer:
 
         # Scale the sprite
         flipped_width = max(1, int(boss.width * scale_x))
-        flipped_sprite = pygame.transform.scale(boss.sprite, (flipped_width, boss.height))
+        flipped_sprite = pygame.transform.scale(
+            boss.sprite, (flipped_width, boss.height)
+        )
 
         # Draw centered
         flip_x = screen_x + (boss.width - flipped_width) // 2
@@ -859,9 +943,13 @@ class Renderer:
 
         # Determine screen position
         if game_map:
-            if not game_map.is_on_screen(boss.position.x, boss.position.y, boss.width, boss.height):
+            if not game_map.is_on_screen(
+                boss.position.x, boss.position.y, boss.width, boss.height
+            ):
                 return
-            screen_x, screen_y = game_map.world_to_screen(boss.position.x, boss.position.y)
+            screen_x, screen_y = game_map.world_to_screen(
+                boss.position.x, boss.position.y
+            )
         else:
             screen_x, screen_y = int(boss.position.x), int(boss.position.y)
 
@@ -917,7 +1005,9 @@ class Renderer:
         for tear in boss.tear_particles:
             # Calculate screen position
             if game_map:
-                tear_screen_x, tear_screen_y = game_map.world_to_screen(tear["x"], tear["y"])
+                tear_screen_x, tear_screen_y = game_map.world_to_screen(
+                    tear["x"], tear["y"]
+                )
             else:
                 tear_screen_x = int(tear["x"])
                 tear_screen_y = int(tear["y"])
@@ -960,11 +1050,15 @@ class Renderer:
             puddle_width = puddle["radius"] * 2
             puddle_height = int(puddle["radius"] * 0.6)  # Squashed oval (perspective)
 
-            puddle_surface = pygame.Surface((puddle_width, puddle_height), pygame.SRCALPHA)
+            puddle_surface = pygame.Surface(
+                (puddle_width, puddle_height), pygame.SRCALPHA
+            )
 
             # Puddle base (dark blue)
             puddle_color = (30, 144, 255, puddle["alpha"])
-            pygame.draw.ellipse(puddle_surface, puddle_color, (0, 0, puddle_width, puddle_height))
+            pygame.draw.ellipse(
+                puddle_surface, puddle_color, (0, 0, puddle_width, puddle_height)
+            )
 
             # Puddle highlight (light blue, makes it look wet)
             highlight_color = (135, 206, 235, int(puddle["alpha"] * 0.6))
@@ -996,7 +1090,9 @@ class Renderer:
 
         # Calculate center position
         if game_map:
-            wave_center_x, wave_center_y = game_map.world_to_screen(wave["x"], wave["y"])
+            wave_center_x, wave_center_y = game_map.world_to_screen(
+                wave["x"], wave["y"]
+            )
         else:
             wave_center_x = int(wave["x"])
             wave_center_y = int(wave["y"])
@@ -1033,7 +1129,9 @@ class Renderer:
             droplet_color = (135, 206, 235, wave["alpha"])
             pygame.draw.circle(self.screen, droplet_color, (particle_x, particle_y), 3)
 
-    def _render_sob_charge(self, boss: "WannaCryBoss", screen_x: int, screen_y: int) -> None:
+    def _render_sob_charge(
+        self, boss: "WannaCryBoss", screen_x: int, screen_y: int
+    ) -> None:
         """Render charging indicator for sob wave."""
         # Pulsing indicator above Wade's head
         charge_progress = 1.0 - (boss.sob_charge_timer / 1.0)  # 0.0 to 1.0
@@ -1160,7 +1258,9 @@ class Renderer:
             y_pos += 25
 
         # "HOW IT COULD HAVE BEEN PREVENTED:" section
-        prevention_header = header_font.render("HOW IT COULD HAVE BEEN PREVENTED:", True, (0, 0, 0))
+        prevention_header = header_font.render(
+            "HOW IT COULD HAVE BEEN PREVENTED:", True, (0, 0, 0)
+        )
         dialogue_surface.blit(prevention_header, (30, y_pos))
         y_pos += 35
 
@@ -1195,7 +1295,9 @@ class Renderer:
 
         # Footer: "Press ENTER/A to begin battle..."
         footer_y = box_height - 40
-        footer_text = body_font.render("Press ENTER/A to begin battle...", True, (0, 0, 0))
+        footer_text = body_font.render(
+            "Press ENTER/A to begin battle...", True, (0, 0, 0)
+        )
         footer_x = (box_width - footer_text.get_width()) // 2
         dialogue_surface.blit(footer_text, (footer_x, footer_y))
 
@@ -1310,20 +1412,22 @@ class Renderer:
 
         # Normal mode UI
         # Zombies quarantined count (shift down to make room for health)
-        zombies_text = (
-            f"Zombies: Quarantined {game_state.zombies_quarantined}/{game_state.total_zombies}"
-        )
+        zombies_text = f"Zombies: Quarantined {game_state.zombies_quarantined}/{game_state.total_zombies}"
         zombies_surface = self.ui_font.render(zombies_text, True, self.ui_text_color)
         self.screen.blit(zombies_surface, (10, 50))
 
         # 3rd parties blocked count (shifted down for health display)
         third_parties_text = f"3rd Parties: Blocked {game_state.third_parties_blocked}/{game_state.total_third_parties}"
-        third_parties_surface = self.ui_font.render(third_parties_text, True, self.ui_text_color)
+        third_parties_surface = self.ui_font.render(
+            third_parties_text, True, self.ui_text_color
+        )
         self.screen.blit(third_parties_surface, (10, 85))
 
         # Error message if present
         if game_state.error_message:
-            error_surface = self.ui_font.render(game_state.error_message, True, self.error_color)
+            error_surface = self.ui_font.render(
+                game_state.error_message, True, self.error_color
+            )
             error_x = self.width // 2 - error_surface.get_width() // 2
             self.screen.blit(error_surface, (error_x, self.height - 50))
 
@@ -1485,7 +1589,9 @@ class Renderer:
         if outline_only:
             # Draw outline only
             pygame.draw.circle(self.screen, color, (x + radius, center_y), radius, 2)
-            pygame.draw.circle(self.screen, color, (x + size - radius, center_y), radius, 2)
+            pygame.draw.circle(
+                self.screen, color, (x + size - radius, center_y), radius, 2
+            )
             # Triangle outline (bottom point)
             points = [
                 (x, center_y),
@@ -1496,7 +1602,9 @@ class Renderer:
         else:
             # Filled heart
             pygame.draw.circle(self.screen, color, (x + radius, center_y), radius)
-            pygame.draw.circle(self.screen, color, (x + size - radius, center_y), radius)
+            pygame.draw.circle(
+                self.screen, color, (x + size - radius, center_y), radius
+            )
             # Triangle (bottom point)
             points = [
                 (x, center_y),
@@ -1508,7 +1616,9 @@ class Renderer:
             if half:
                 # Cover right half with dark overlay for half-heart effect
                 half_rect = pygame.Rect(x + size // 2, y, size // 2 + 2, size)
-                overlay = pygame.Surface((half_rect.width, half_rect.height), pygame.SRCALPHA)
+                overlay = pygame.Surface(
+                    (half_rect.width, half_rect.height), pygame.SRCALPHA
+                )
                 overlay.fill((0, 0, 0, 180))
                 self.screen.blit(overlay, half_rect)
 
@@ -1558,7 +1668,9 @@ class Renderer:
         message = self._replace_emojis_with_ascii(message)
 
         # Check if this is a menu (contains menu options with ▶)
-        is_menu = "▶" in message or ("Return to Game" in message and "Quit Game" in message)
+        is_menu = "▶" in message or (
+            "Return to Game" in message and "Quit Game" in message
+        )
 
         if is_menu:
             self._render_purple_menu(message)
@@ -1576,39 +1688,62 @@ class Renderer:
         Returns:
             Message with ASCII replacements
         """
+        # Remove emojis that don't render in pygame fonts
+        # Just strip them out cleanly rather than replacing with text
+        emojis_to_remove = [
+            "⏸️",
+            "⏸",
+            "🎮",
+            "💀",
+            "🔓",
+            "⚠️",
+            "⚠",
+            "✅",
+            "❌",
+            "🏆",
+            "⭐",
+            "🎯",
+            "🔥",
+            "💔",
+            "🕷️",
+            "🕷",
+            "⏱",
+            "⏱️",
+            "🧟",
+            "🛡️",
+            "🛡",
+            "👾",
+            "🚀",
+            "💥",
+            "🎉",
+            "📊",
+            "🔒",
+            "🔑",
+            "❤️",
+            "❤",
+            "💜",
+            "🟣",
+            "🎲",
+            "🏁",
+            "👤",
+            "🔫",
+            "💫",
+            "✨",
+            "🌟",
+            "⚡",
+            "🎪",
+            "🎭",
+            "🎬",
+            "📢",
+            "🔔",
+        ]
+
+        for emoji in emojis_to_remove:
+            message = message.replace(emoji, "")
+
+        # Replace special characters with ASCII equivalents
+        # NOTE: Do NOT replace double spaces - they're used for menu item indentation!
         replacements = {
-            "⏸️": "[PAUSED]",
-            "⏸": "[PAUSED]",
-            "🎮": "[GAME]",
-            "💀": "[!]",
-            "🔓": "[UNLOCKED]",
-            "⚠️": "[!]",
-            "⚠": "[!]",
-            "✅": "[OK]",
-            "❌": "[X]",
-            "🏆": "[TROPHY]",
-            "⭐": "[*]",
-            "🎯": "[TARGET]",
-            "🔥": "[!]",
-            "💔": "[DAMAGE]",
-            "🕷️": "[BOSS]",
-            "🕷": "[BOSS]",
-            "⏱": "[TIME]",
-            "⏱️": "[TIME]",
-            "🧟": "[ZOMBIE]",
-            "🛡️": "[SHIELD]",
-            "🛡": "[SHIELD]",
-            "👾": "[ENEMY]",
-            "🚀": "[GO]",
-            "💥": "[!]",
-            "🎉": "[!]",
-            "📊": "[STATS]",
-            "🔒": "[LOCKED]",
-            "🔑": "[KEY]",
-            "❤️": "[HEART]",
-            "❤": "[HEART]",
-            "💜": "[*]",
-            "🟣": "[*]",
             "═": "=",
             "║": "|",
             "╔": "+",
@@ -1617,6 +1752,10 @@ class Renderer:
             "╝": "+",
             "─": "-",
             "│": "|",
+            "↑": "UP",
+            "↓": "DOWN",
+            "←": "LEFT",
+            "→": "RIGHT",
         }
 
         for emoji, ascii_alt in replacements.items():
@@ -1641,40 +1780,59 @@ class Renderer:
         # Parse menu lines
         lines = message.split("\n")
 
-        # Filter out empty lines and separators
+        # Separate into categories
         menu_lines = []
         title_lines = []
         footer_lines = []
 
-        in_menu = False
         for line in lines:
             stripped = line.strip()
-            if not stripped or stripped == "═══════════════════════════":
+            if not stripped:
                 continue
 
-            # Check if this is a menu option (has ▶ or starts with space)
-            if "▶" in line or (in_menu and (line.startswith("  ") or line.startswith("▶"))):
+            # Menu items: start with ▶ (selected) or exactly 2 spaces (unselected)
+            if line.startswith("▶") or (
+                line.startswith("  ") and not line.startswith("   ") and "=" not in line
+            ):
                 menu_lines.append(line)
-                in_menu = True
-            elif (
-                "↑" in line
-                or "↓" in line
-                or "ENTER" in line
-                or "SPACE" in line
-                or "=" in line.lower()
+            # Footer: contains "=" (key bindings) or control hints
+            elif "= " in line or any(
+                hint in line
+                for hint in [
+                    "D-Pad",
+                    "Confirm",
+                    "Cancel",
+                    "Quick Lobby",
+                    "ENTER",
+                    "ESC",
+                ]
             ):
                 footer_lines.append(stripped)
-            elif not in_menu:
+            # Title: everything else before menu items
+            elif not menu_lines:
                 title_lines.append(stripped)
+
+        # DEBUG: Print what we parsed
+        print(f"DEBUG MENU: title_lines={title_lines}")
+        print(f"DEBUG MENU: menu_lines={menu_lines}")
+        print(f"DEBUG MENU: footer_lines={footer_lines}")
 
         # Menu dimensions
         menu_width = 400
         line_height = 40
         padding = 30
+
+        # Calculate logo height if available
+        logo_height = 0
+        if self.sonrai_logo:
+            logo_height = self.sonrai_logo.get_height() + 15
+
         title_height = len(title_lines) * 35 + 20 if title_lines else 0
         menu_height = len(menu_lines) * line_height
         footer_height = len(footer_lines) * 25 + 10 if footer_lines else 0
-        total_height = title_height + menu_height + footer_height + padding * 2
+        total_height = (
+            logo_height + title_height + menu_height + footer_height + padding * 2
+        )
 
         # Center on screen
         menu_x = (self.width - menu_width) // 2
@@ -1693,11 +1851,21 @@ class Renderer:
         pygame.draw.rect(self.screen, PURPLE_LIGHT, menu_rect, 4)
 
         # Inner glow effect
-        inner_rect = pygame.Rect(menu_x + 4, menu_y + 4, menu_width - 8, total_height - 8)
+        inner_rect = pygame.Rect(
+            menu_x + 4, menu_y + 4, menu_width - 8, total_height - 8
+        )
         pygame.draw.rect(self.screen, PURPLE_GLOW, inner_rect, 2)
 
-        # Render title
+        # Start rendering content
         current_y = menu_y + padding
+
+        # Render Sonrai logo at top (centered)
+        if self.sonrai_logo:
+            logo_x = menu_x + (menu_width - self.sonrai_logo.get_width()) // 2
+            self.screen.blit(self.sonrai_logo, (logo_x, current_y))
+            current_y += self.sonrai_logo.get_height() + 15
+
+        # Render title
         if title_lines:
             for title_line in title_lines:
                 title_surface = self.name_font.render(title_line, True, GOLD)
@@ -1742,16 +1910,53 @@ class Renderer:
         if footer_lines:
             current_y += 10
             for footer_line in footer_lines:
-                footer_surface = self.small_font.render(footer_line, True, (180, 180, 180))
+                footer_surface = self.small_font.render(
+                    footer_line, True, (180, 180, 180)
+                )
                 footer_x = menu_x + (menu_width - footer_surface.get_width()) // 2
                 self.screen.blit(footer_surface, (footer_x, current_y))
                 current_y += 25
+
+    def _wrap_text(
+        self, text: str, font: pygame.font.Font, max_width: int
+    ) -> List[str]:
+        """
+        Word-wrap text to fit within a maximum width.
+
+        Args:
+            text: Text to wrap
+            font: Font to use for measuring
+            max_width: Maximum width in pixels
+
+        Returns:
+            List of wrapped lines
+        """
+        words = text.split()
+        lines = []
+        current_line = []
+
+        for word in words:
+            test_line = " ".join(current_line + [word])
+            test_surface = font.render(test_line, True, (255, 255, 255))
+
+            if test_surface.get_width() <= max_width:
+                current_line.append(word)
+            else:
+                if current_line:
+                    lines.append(" ".join(current_line))
+                current_line = [word]
+
+        if current_line:
+            lines.append(" ".join(current_line))
+
+        return lines if lines else [text]
 
     def _render_purple_message(self, message: str) -> None:
         """
         Render a purple-themed message box (non-menu messages).
 
         Uses the same visual style as the pause menu for consistency.
+        Text is word-wrapped to fit within the box.
 
         Args:
             message: Message text to display
@@ -1763,6 +1968,11 @@ class Renderer:
         WHITE = (255, 255, 255)
         GOLD = (255, 215, 0)
         GRAY = (180, 180, 180)
+
+        # Fixed box width for consistency
+        menu_width = 450
+        padding = 30
+        text_area_width = menu_width - (padding * 2)
 
         # Parse message into lines (respect newlines)
         raw_lines = message.split("\n")
@@ -1798,21 +2008,42 @@ class Renderer:
         if not title_lines and body_lines:
             title_lines = [body_lines.pop(0)]
 
+        # Word-wrap all lines to fit within box
+        wrapped_title = []
+        for line in title_lines:
+            wrapped_title.extend(self._wrap_text(line, self.name_font, text_area_width))
+
+        wrapped_body = []
+        for line in body_lines:
+            wrapped_body.extend(self._wrap_text(line, self.label_font, text_area_width))
+
+        wrapped_footer = []
+        for line in footer_lines:
+            wrapped_footer.extend(
+                self._wrap_text(line, self.small_font, text_area_width)
+            )
+
         # Calculate dimensions
-        padding = 25
-        line_height = 28
-        title_height = len(title_lines) * 32 + 15 if title_lines else 0
-        body_height = len(body_lines) * line_height + 10 if body_lines else 0
-        footer_height = len(footer_lines) * 22 + 10 if footer_lines else 30  # Default footer
+        line_height = 26
+        title_line_height = 30
+        footer_line_height = 20
 
-        # Calculate width based on content
-        max_text_width = 300
-        for line in title_lines + body_lines + footer_lines:
-            test_surface = self.combo_font.render(line, True, WHITE)
-            max_text_width = max(max_text_width, test_surface.get_width() + 60)
+        # Calculate logo height if available
+        logo_height = 0
+        if self.sonrai_logo:
+            logo_height = self.sonrai_logo.get_height() + 15
 
-        menu_width = min(max_text_width, self.width - 100)
-        total_height = title_height + body_height + footer_height + padding * 2
+        title_height = (
+            len(wrapped_title) * title_line_height + 10 if wrapped_title else 0
+        )
+        body_height = len(wrapped_body) * line_height + 10 if wrapped_body else 0
+        footer_height = (
+            len(wrapped_footer) * footer_line_height + 10 if wrapped_footer else 30
+        )
+
+        total_height = (
+            logo_height + title_height + body_height + footer_height + padding * 2
+        )
 
         # Center on screen
         menu_x = (self.width - menu_width) // 2
@@ -1831,37 +2062,47 @@ class Renderer:
         pygame.draw.rect(self.screen, PURPLE_LIGHT, menu_rect, 4)
 
         # Inner glow effect
-        inner_rect = pygame.Rect(menu_x + 4, menu_y + 4, menu_width - 8, total_height - 8)
+        inner_rect = pygame.Rect(
+            menu_x + 4, menu_y + 4, menu_width - 8, total_height - 8
+        )
         pygame.draw.rect(self.screen, PURPLE_GLOW, inner_rect, 2)
 
-        # Render title (gold, centered)
+        # Start rendering content
         current_y = menu_y + padding
-        for title_line in title_lines:
+
+        # Render Sonrai logo at top (centered)
+        if self.sonrai_logo:
+            logo_x = menu_x + (menu_width - self.sonrai_logo.get_width()) // 2
+            self.screen.blit(self.sonrai_logo, (logo_x, current_y))
+            current_y += self.sonrai_logo.get_height() + 15
+
+        # Render title (gold, centered)
+        for title_line in wrapped_title:
             title_surface = self.name_font.render(title_line, True, GOLD)
             title_x = menu_x + (menu_width - title_surface.get_width()) // 2
             self.screen.blit(title_surface, (title_x, current_y))
-            current_y += 32
+            current_y += title_line_height
 
-        if title_lines:
-            current_y += 10
+        if wrapped_title:
+            current_y += 8
 
         # Render body (white, centered)
-        for body_line in body_lines:
+        for body_line in wrapped_body:
             body_surface = self.label_font.render(body_line, True, WHITE)
             body_x = menu_x + (menu_width - body_surface.get_width()) // 2
             self.screen.blit(body_surface, (body_x, current_y))
             current_y += line_height
 
-        if body_lines:
+        if wrapped_body:
             current_y += 5
 
         # Render footer (gray, smaller, centered)
-        if footer_lines:
-            for footer_line in footer_lines:
+        if wrapped_footer:
+            for footer_line in wrapped_footer:
                 footer_surface = self.small_font.render(footer_line, True, GRAY)
                 footer_x = menu_x + (menu_width - footer_surface.get_width()) // 2
                 self.screen.blit(footer_surface, (footer_x, current_y))
-                current_y += 22
+                current_y += footer_line_height
         else:
             # Default footer
             default_footer = "Press ENTER/A to continue"
@@ -1914,7 +2155,9 @@ class Renderer:
         # Black border (thick for retro look)
         pygame.draw.rect(self.screen, (0, 0, 0), bubble_rect, 0)
         # White interior
-        inner_rect = pygame.Rect(bubble_x + 4, bubble_y + 4, bubble_width - 8, bubble_height - 8)
+        inner_rect = pygame.Rect(
+            bubble_x + 4, bubble_y + 4, bubble_width - 8, bubble_height - 8
+        )
         pygame.draw.rect(self.screen, (255, 255, 255), inner_rect, 0)
 
         # Render text lines
@@ -1953,7 +2196,9 @@ class Renderer:
             pulse_time: Time value for pulsing animation
         """
         for service_node in service_nodes:
-            if game_map.is_on_screen(service_node.position.x, service_node.position.y, 48, 48):
+            if game_map.is_on_screen(
+                service_node.position.x, service_node.position.y, 48, 48
+            ):
                 screen_x = int(service_node.position.x - game_map.camera_x)
                 screen_y = int(service_node.position.y - game_map.camera_y)
 
@@ -1967,11 +2212,15 @@ class Renderer:
 
                     # Scale sprite for pulsing effect
                     scaled_size = int(48 * pulse_scale)
-                    scaled_sprite = pygame.transform.scale(sprite, (scaled_size, scaled_size))
+                    scaled_sprite = pygame.transform.scale(
+                        sprite, (scaled_size, scaled_size)
+                    )
 
                     # Center the scaled sprite
                     offset = (scaled_size - 48) // 2
-                    self.screen.blit(scaled_sprite, (screen_x - offset, screen_y - offset))
+                    self.screen.blit(
+                        scaled_sprite, (screen_x - offset, screen_y - offset)
+                    )
                 else:
                     # No animation for protected services
                     self.screen.blit(sprite, (screen_x, screen_y))
@@ -2019,7 +2268,9 @@ class Renderer:
             return
 
         # Check if hacker is on screen
-        if game_map.is_on_screen(hacker.position.x, hacker.position.y, hacker.width, hacker.height):
+        if game_map.is_on_screen(
+            hacker.position.x, hacker.position.y, hacker.width, hacker.height
+        ):
             camera_offset = Vector2(game_map.camera_x, game_map.camera_y)
             hacker.render(self.screen, camera_offset)
 
@@ -2036,7 +2287,9 @@ class Renderer:
 
         # Render hint at bottom center of screen
         hint_font = self.name_font
-        hint_surface = hint_font.render(hint_message, True, (255, 200, 100))  # Light orange
+        hint_surface = hint_font.render(
+            hint_message, True, (255, 200, 100)
+        )  # Light orange
 
         hint_x = (self.width - hint_surface.get_width()) // 2
         hint_y = self.height - 80
@@ -2068,7 +2321,9 @@ class Renderer:
             return
 
         # Get screen position
-        screen_x, screen_y = game_map.world_to_screen(auditor.position.x, auditor.position.y)
+        screen_x, screen_y = game_map.world_to_screen(
+            auditor.position.x, auditor.position.y
+        )
 
         # Character dimensions (human proportions)
         body_width = 24
@@ -2087,13 +2342,19 @@ class Renderer:
         left_leg_x = center_x - leg_width - 2
         right_leg_x = center_x + 2
         leg_y = base_y - leg_height
-        pygame.draw.rect(self.screen, (20, 20, 20), (left_leg_x, leg_y, leg_width, leg_height))
-        pygame.draw.rect(self.screen, (20, 20, 20), (right_leg_x, leg_y, leg_width, leg_height))
+        pygame.draw.rect(
+            self.screen, (20, 20, 20), (left_leg_x, leg_y, leg_width, leg_height)
+        )
+        pygame.draw.rect(
+            self.screen, (20, 20, 20), (right_leg_x, leg_y, leg_width, leg_height)
+        )
 
         # Draw body (black suit jacket)
         body_x = center_x - body_width // 2
         body_y = base_y - leg_height - body_height
-        pygame.draw.rect(self.screen, (30, 30, 30), (body_x, body_y, body_width, body_height))
+        pygame.draw.rect(
+            self.screen, (30, 30, 30), (body_x, body_y, body_width, body_height)
+        )
 
         # Draw white shirt collar
         collar_height = 6
@@ -2108,14 +2369,20 @@ class Renderer:
         tie_height = 16
         tie_x = center_x - tie_width // 2
         tie_y = body_y + collar_height
-        pygame.draw.rect(self.screen, (10, 10, 10), (tie_x, tie_y, tie_width, tie_height))
+        pygame.draw.rect(
+            self.screen, (10, 10, 10), (tie_x, tie_y, tie_width, tie_height)
+        )
 
         # Draw arms (black suit sleeves)
         left_arm_x = body_x - arm_width
         right_arm_x = body_x + body_width
         arm_y = body_y + 4
-        pygame.draw.rect(self.screen, (30, 30, 30), (left_arm_x, arm_y, arm_width, arm_height))
-        pygame.draw.rect(self.screen, (30, 30, 30), (right_arm_x, arm_y, arm_width, arm_height))
+        pygame.draw.rect(
+            self.screen, (30, 30, 30), (left_arm_x, arm_y, arm_width, arm_height)
+        )
+        pygame.draw.rect(
+            self.screen, (30, 30, 30), (right_arm_x, arm_y, arm_width, arm_height)
+        )
 
         # Draw hands (pale skin)
         hand_size = 6
@@ -2135,7 +2402,9 @@ class Renderer:
         # Draw head (pale skin)
         head_x = center_x
         head_y = body_y - head_size // 2
-        pygame.draw.circle(self.screen, (220, 180, 140), (head_x, head_y), head_size // 2)
+        pygame.draw.circle(
+            self.screen, (220, 180, 140), (head_x, head_y), head_size // 2
+        )
 
         # Draw sunglasses (black rectangles)
         glasses_width = 10
@@ -2236,8 +2505,12 @@ class Renderer:
             pygame.draw.rect(self.screen, BLACK, (base_x + 12, base_y + 4, 16, 4))
 
             # Eyes
-            pygame.draw.rect(self.screen, BLACK, (base_x + 15, base_y + 10, 2, 2))  # Left eye
-            pygame.draw.rect(self.screen, BLACK, (base_x + 23, base_y + 10, 2, 2))  # Right eye
+            pygame.draw.rect(
+                self.screen, BLACK, (base_x + 15, base_y + 10, 2, 2)
+            )  # Left eye
+            pygame.draw.rect(
+                self.screen, BLACK, (base_x + 23, base_y + 10, 2, 2)
+            )  # Right eye
 
             # Smile
             pygame.draw.line(
@@ -2257,9 +2530,15 @@ class Renderer:
             pygame.draw.rect(self.screen, WHITE, (base_x + 14, base_y + 16, 12, 3))
 
             # Legs (same as zombie - 8 pixels tall at bottom)
-            leg_color = (40, 40, 60) if admin_role.has_jit else (60, 50, 30)  # Dark pants
-            pygame.draw.rect(self.screen, leg_color, (base_x + 12, base_y + 32, 6, 8))  # Left leg
-            pygame.draw.rect(self.screen, leg_color, (base_x + 22, base_y + 32, 6, 8))  # Right leg
+            leg_color = (
+                (40, 40, 60) if admin_role.has_jit else (60, 50, 30)
+            )  # Dark pants
+            pygame.draw.rect(
+                self.screen, leg_color, (base_x + 12, base_y + 32, 6, 8)
+            )  # Left leg
+            pygame.draw.rect(
+                self.screen, leg_color, (base_x + 22, base_y + 32, 6, 8)
+            )  # Right leg
             pygame.draw.rect(self.screen, BLACK, (base_x + 12, base_y + 32, 6, 8), 1)
             pygame.draw.rect(self.screen, BLACK, (base_x + 22, base_y + 32, 6, 8), 1)
 
@@ -2281,7 +2560,9 @@ class Renderer:
             pygame.draw.polygon(self.screen, BLACK, crown_points, 1)
 
             # Add jewels on crown (small colored dots)
-            pygame.draw.circle(self.screen, (255, 0, 0), (crown_center_x, crown_y), 1)  # Red jewel
+            pygame.draw.circle(
+                self.screen, (255, 0, 0), (crown_center_x, crown_y), 1
+            )  # Red jewel
 
             # Draw purple shield if JIT protected
             if admin_role.has_jit:
