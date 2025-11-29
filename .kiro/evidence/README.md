@@ -269,28 +269,49 @@ Requirements → Design → Tasks → Implementation → Testing → Documentati
 ```
 .kiro/evidence/
 ├── README.md (this file)
-├── screenshots/
+├── screenshots/           # In-game screenshots (F12 or X button)
+│   ├── ZB_YYYYMMDD_HHMMSS.png  # Auto-captured gameplay
 │   ├── spec-folder-structure.png
 │   ├── sprint-status.png
-│   ├── test-results.png
-│   ├── performance-proof.png
-│   ├── agent-hook.png
-│   ├── github-mcp.png
-│   ├── documentation-hub.png
-│   └── kiro-submission.png
-├── gifs/
+│   └── ...
+├── recordings/            # In-game recordings (F9 or Y button)
+│   ├── ZB_YYYYMMDD_HHMMSS.gif  # Auto-captured gameplay clips
+│   └── ...
+├── gifs/                  # External GIF captures
 │   ├── arcade-gameplay.gif
 │   ├── test-execution.gif
-│   ├── hook-trigger.gif
-│   └── performance-comparison.gif
+│   └── ...
 ├── diagrams/
 │   ├── kiro-workflow.png
 │   ├── testing-pyramid.png
-│   ├── sprint-burndown.png
-│   └── architecture.png
+│   └── ...
 └── video/
     └── kiro-demo.mp4 (5-minute demo)
 ```
+
+---
+
+## 🎮 In-Game Capture (NEW!)
+
+The game has built-in screenshot and recording capabilities:
+
+### Screenshot (F12 / X Button)
+- Press **F12** (keyboard) or **X button** (controller)
+- Instant capture with white flash feedback
+- Saved to: `.kiro/evidence/screenshots/ZB_YYYYMMDD_HHMMSS.png`
+
+### Recording (F9 / Y Button)
+- Press **F9** (keyboard) or **Y button** (controller) to start
+- Red "REC" indicator with timer in top-right corner
+- Press again to stop and save
+- Max duration: 60 seconds (auto-stops)
+- Saved to: `.kiro/evidence/recordings/ZB_YYYYMMDD_HHMMSS.gif`
+
+### Naming Convention
+- `ZB_` = Zombie Blaster prefix
+- `YYYYMMDD` = Date (e.g., 20241128)
+- `HHMMSS` = Time (e.g., 234512)
+- Example: `ZB_20241128_234512.png`
 
 ---
 

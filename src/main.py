@@ -584,6 +584,13 @@ def main():
         if game_state.status == GameStatus.PAUSED and game_state.congratulations_message:
             renderer.render_message_bubble(game_state.congratulations_message)
 
+        # Evidence capture - frame capture and visual feedback
+        current_time = pygame.time.get_ticks() / 1000.0
+        game_engine.evidence_capture.capture_frame(game_surface, current_time)
+        game_engine.evidence_capture.update_flash(delta_time)
+        game_engine.evidence_capture.render_recording_indicator(game_surface, current_time)
+        game_engine.evidence_capture.render_flash(game_surface)
+
         # Scale and display game surface with aspect ratio preservation
         if is_fullscreen or display.get_size() != game_surface.get_size():
             # Calculate scaled dimensions with letterboxing/pillarboxing

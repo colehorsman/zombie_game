@@ -3,7 +3,7 @@
 > An 8-bit video game that transforms cloud security remediation into engaging gameplay through real-time Sonrai API integration.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-579%20passing-green.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-610%20passing-green.svg)](tests/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 <!-- TODO: Add gameplay GIF here - show zombie elimination + "Identity Quarantined!" popup -->
@@ -83,7 +83,7 @@ This game teaches [Sonrai Cloud Permissions Firewall](https://sonraisecurity.com
 - **Real API Integration** - Every action triggers actual Sonrai GraphQL mutations
 - **Side Quests** - Service Protection (hacker race) + JIT Access (auditor challenge)
 - **Performance** - 60 FPS with 500+ entities through spatial grid optimization
-- **Comprehensive Testing** - 579 automated tests
+- **Comprehensive Testing** - 610 automated tests
 
 ---
 
@@ -211,7 +211,7 @@ Every game action triggers actual Sonrai GraphQL mutations:
 ### Kiro's 11-Agent Architecture Review Board
 - **🎯 Product Management** - Sprint planning, backlog prioritization, roadmap
 - **🏗️ Architecture** - System design, patterns, refactoring (15 FPS → 60 FPS optimization)
-- **🧪 Quality Assurance** - 579 automated tests, comprehensive test coverage
+- **🧪 Quality Assurance** - 610 automated tests, comprehensive test coverage
 - **🔒 Security** - SAST scanning, secrets management, vulnerability prevention
 - **⚙️ Operations/SRE** - Deployment, monitoring, reliability
 - **👥 Developer Experience** - Onboarding, tooling, CONTRIBUTING.md
@@ -263,7 +263,7 @@ This project is open source and available for:
 |--------|--------|
 | Core Game | ✅ 100% Complete |
 | Quests | ✅ 2/2 Implemented |
-| Tests | 🟢 579 Passing |
+| Tests | 🟢 610 Passing |
 | Documentation | 🟢 31 Docs |
 | Performance | ✅ 60 FPS @ 500+ entities |
 

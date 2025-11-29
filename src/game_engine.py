@@ -47,6 +47,7 @@ from service_protection_quest import (
 )
 from sonrai_client import SonraiAPIClient
 from zombie import Zombie
+from evidence_capture import EvidenceCapture
 
 logger = logging.getLogger(__name__)
 
@@ -193,6 +194,9 @@ class GameEngine:
         self.save_manager = SaveManager()
         self.quarantined_identities = set()  # Track identity IDs that have been quarantined
         self.blocked_third_parties = set()  # Track third-party names that have been blocked
+
+        # Evidence capture (screenshots & recordings)
+        self.evidence_capture = EvidenceCapture()
         self.last_autosave_time = 0.0  # Track last autosave for periodic saves
         self.autosave_interval = 30.0  # Autosave every 30 seconds
 
@@ -2329,6 +2333,19 @@ class GameEngine:
                         projectile = self.player.fire_projectile()
                         self.projectiles.append(projectile)
 
+                # F12 - Screenshot
+                if event.key == pygame.K_F12:
+                    self.evidence_capture.take_screenshot(self.screen)
+                    continue
+
+                # F9 - Toggle Recording
+                elif event.key == pygame.K_F9:
+                    current_time = time.time()
+                    result = self.evidence_capture.toggle_recording(current_time)
+                    if result:
+                        logger.info(f"🎬 Recording saved: {result}")
+                    continue
+
                 # ESC key - Pause/Resume or Quit
                 if event.key == pygame.K_ESCAPE:
                     if self.game_state.status == GameStatus.PAUSED:
@@ -2376,6 +2393,20 @@ class GameEngine:
                 logger.info(
                     f"🎮 JOYBUTTONDOWN event: button={event.button}, joystick={self.joystick is not None}"
                 )
+
+                # Evidence capture - works even without joystick initialized
+                # X button (2) = Screenshot
+                if event.button == 2:
+                    self.evidence_capture.take_screenshot(self.screen)
+                    continue
+                # Y button (3) = Toggle Recording
+                elif event.button == 3:
+                    current_time = time.time()
+                    result = self.evidence_capture.toggle_recording(current_time)
+                    if result:
+                        logger.info(f"🎬 Recording saved: {result}")
+                    continue
+
                 if self.joystick:
                     # Log button press for debugging
                     logger.info(f"🎮 Controller button pressed: {event.button}")

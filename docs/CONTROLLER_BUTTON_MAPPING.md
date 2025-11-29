@@ -13,8 +13,8 @@ Based on testing, this appears to be a standard Bluetooth controller with the fo
 |--------|--------|------------------|
 | A | 0 | Zap / Confirm / Dismiss messages |
 | B | 1 | Jump / Cancel / Dismiss messages |
-| X | 2 | (unused) |
-| Y | 3 | (unused) |
+| X | 2 | 📸 Screenshot (saves to .kiro/evidence/screenshots/) |
+| Y | 3 | 🎬 Start/Stop Recording (saves to .kiro/evidence/recordings/) |
 | L1 (Left Shoulder) | 9 | Part of unlock combo |
 | R1 (Right Shoulder) | 10 | Part of unlock combo |
 | L2 (Left Trigger) | ? | (unused) |
@@ -37,8 +37,8 @@ Based on testing, this appears to be a standard Bluetooth controller with the fo
 |--------|--------|------------------|
 | A (East) | 0 | Fire / Confirm / Dismiss messages |
 | B (South) | 1 | Jump / Cancel / Dismiss messages |
-| X (North) | 2 | (unused) |
-| Y (West) | 3 | (unused) |
+| X (North) | 2 | 📸 Screenshot |
+| Y (West) | 3 | 🎬 Start/Stop Recording |
 | L1 (Left Shoulder) | 4 | Part of unlock combo |
 | R1 (Right Shoulder) | 5 | Part of unlock combo |
 | L2 (Left Trigger) | 6 | (unused) |
@@ -61,8 +61,8 @@ Based on testing, this appears to be a standard Bluetooth controller with the fo
 |--------|--------|------------------|
 | A | 0 | Zap / Confirm / Dismiss messages |
 | B | 1 | Jump / Cancel / Dismiss messages |
-| X | 2 | (unused) |
-| Y | 3 | (unused) |
+| X | 2 | 📸 Screenshot |
+| Y | 3 | 🎬 Start/Stop Recording |
 | LB (Left Bumper) | 4 | Part of unlock combo |
 | RB (Right Bumper) | 5 | Part of unlock combo |
 | Back/View | 6 | Pause menu |
@@ -98,6 +98,16 @@ Based on testing, this appears to be a standard Bluetooth controller with the fo
 - **B Button**: Cancel / Go back
 - **Start**: Open pause menu
 - **Keyboard**: Arrow keys to navigate, Enter to confirm, ESC to pause
+
+### Evidence Capture (Screenshots & Recording)
+
+| Action | Controller | Keyboard | Output |
+|--------|------------|----------|--------|
+| Screenshot | X (button 2) | F12 | `.kiro/evidence/screenshots/ZB_YYYYMMDD_HHMMSS.png` |
+| Start/Stop Recording | Y (button 3) | F9 | `.kiro/evidence/recordings/ZB_YYYYMMDD_HHMMSS.gif` |
+
+**Screenshot:** Instant capture with white flash feedback
+**Recording:** Red "REC" indicator with timer, max 60 seconds, auto-saves as GIF
 
 ### Cheat Codes
 
