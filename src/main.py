@@ -8,14 +8,13 @@ from typing import List
 import pygame
 from dotenv import load_dotenv
 
-from models import Vector2, GameStatus
+from game_engine import GameEngine
+from level_manager import LevelManager
+from models import GameStatus, Vector2
+from renderer import Renderer
+from save_manager import SaveManager
 from sonrai_client import SonraiAPIClient
 from zombie import Zombie
-from game_engine import GameEngine
-from renderer import Renderer
-from level_manager import LevelManager
-from save_manager import SaveManager
-
 
 # Configure logging
 logging.basicConfig(
@@ -42,8 +41,7 @@ def load_configuration() -> dict:
         "api_token": os.getenv("SONRAI_API_TOKEN"),
         "game_width": int(os.getenv("GAME_WIDTH", "1280")),  # Base rendering resolution
         "game_height": int(os.getenv("GAME_HEIGHT", "720")),
-        "fullscreen": os.getenv("FULLSCREEN", "false").lower()
-        == "true",  # Fullscreen mode
+        "fullscreen": os.getenv("FULLSCREEN", "false").lower() == "true",  # Fullscreen mode
         "target_fps": int(os.getenv("TARGET_FPS", "60")),
         "max_zombies": int(
             os.getenv("MAX_ZOMBIES", "1000")
@@ -136,9 +134,7 @@ def initialize_pygame(
             display = pygame.display.set_mode(
                 (display_info.current_w, display_info.current_h), pygame.FULLSCREEN
             )
-            logger.info(
-                f"Fullscreen mode: {display_info.current_w}x{display_info.current_h}"
-            )
+            logger.info(f"Fullscreen mode: {display_info.current_w}x{display_info.current_h}")
         else:
             # Windowed mode - make it resizable for macOS menu options
             display = pygame.display.set_mode((width, height), pygame.RESIZABLE)
@@ -182,9 +178,7 @@ def fetch_zombies(
         if quarantined_identities is None:
             quarantined_identities = set()
 
-        logger.info(
-            f"Fetching unused identities from Sonrai API for account {aws_account}..."
-        )
+        logger.info(f"Fetching unused identities from Sonrai API for account {aws_account}...")
         identities = api_client.fetch_unused_identities(
             limit=1000, scope=None, days_since_login="0", filter_account=aws_account
         )
@@ -198,24 +192,16 @@ def fetch_zombies(
         # Filter out quarantined identities (from save file)
         if quarantined_identities:
             before_filter = len(identities)
-            identities = [
-                i for i in identities if i.identity_id not in quarantined_identities
-            ]
+            identities = [i for i in identities if i.identity_id not in quarantined_identities]
             filtered_count = before_filter - len(identities)
             if filtered_count > 0:
-                logger.info(
-                    f"Filtered out {filtered_count} quarantined identities from save file"
-                )
+                logger.info(f"Filtered out {filtered_count} quarantined identities from save file")
 
         # Filter for test-user identities if requested
         if filter_test_users:
             before_filter = len(identities)
-            identities = [
-                i for i in identities if "test-user" in i.identity_name.lower()
-            ]
-            logger.info(
-                f"Filtered from {before_filter} to {len(identities)} test-user identities"
-            )
+            identities = [i for i in identities if "test-user" in i.identity_name.lower()]
+            logger.info(f"Filtered from {before_filter} to {len(identities)} test-user identities")
 
         if not identities:
             logger.warning("No test-user identities found after filtering")
@@ -322,9 +308,7 @@ def main():
 
         # Log account information
         logger.info(f"Found {len(account_data)} AWS accounts:")
-        for account, count in sorted(
-            account_data.items(), key=lambda x: x[1], reverse=True
-        ):
+        for account, count in sorted(account_data.items(), key=lambda x: x[1], reverse=True):
             logger.info(f"  {account}: {count} zombies")
 
         # Initialize level manager
@@ -338,9 +322,7 @@ def main():
 
         # Fetch 3rd party access information (MyHealth organization)
         logger.info("Fetching 3rd party access from Sonrai API...")
-        third_party_data = api_client.fetch_third_parties_by_account(
-            root_scope="aws/r-ipxz"
-        )
+        third_party_data = api_client.fetch_third_parties_by_account(root_scope="aws/r-ipxz")
         logger.info(f"Found 3rd parties in {len(third_party_data)} accounts")
         for account, parties in third_party_data.items():
             if parties:
@@ -352,9 +334,7 @@ def main():
         all_zombies = []
         for account_num, zombie_count in account_data.items():
             if zombie_count > 0:
-                logger.info(
-                    f"Fetching {zombie_count} zombies from account {account_num}..."
-                )
+                logger.info(f"Fetching {zombie_count} zombies from account {account_num}...")
                 try:
                     account_zombies = fetch_zombies(
                         api_client,
@@ -368,9 +348,7 @@ def main():
                         f"  -> Added {len(account_zombies)} zombies from account {account_num}"
                     )
                 except Exception as e:
-                    logger.warning(
-                        f"  -> Failed to fetch zombies from account {account_num}: {e}"
-                    )
+                    logger.warning(f"  -> Failed to fetch zombies from account {account_num}: {e}")
                     continue
 
         zombies = all_zombies
@@ -489,9 +467,7 @@ def main():
 
         # Update renderer scroll (classic mode only)
         if not game_map:
-            renderer.update_scroll(
-                game_engine.get_scroll_offset() - renderer.scroll_offset
-            )
+            renderer.update_scroll(game_engine.get_scroll_offset() - renderer.scroll_offset)
 
         # Render game entities
         zombies = game_engine.get_zombies()
@@ -526,7 +502,7 @@ def main():
         boss = game_engine.get_boss()
         if boss:
             # Import cyber boss types for type checking
-            from cyber_boss import ScatteredSpiderBoss, HeartbleedBoss, WannaCryBoss
+            from cyber_boss import HeartbleedBoss, ScatteredSpiderBoss, WannaCryBoss
 
             # Render appropriate boss type
             if isinstance(boss, ScatteredSpiderBoss):
@@ -546,9 +522,7 @@ def main():
             # Render service nodes (Bedrock icons)
             service_nodes = game_engine.get_service_nodes()
             if service_nodes:
-                renderer.render_service_nodes(
-                    service_nodes, game_map, game_state.play_time
-                )
+                renderer.render_service_nodes(service_nodes, game_map, game_state.play_time)
 
             # Render hacker character
             hacker = game_engine.get_hacker()
@@ -559,9 +533,7 @@ def main():
             active_quest = game_engine.get_active_quest()
             if active_quest:
                 # Render countdown timer
-                renderer.render_race_timer(
-                    active_quest.time_remaining, active_quest.status
-                )
+                renderer.render_race_timer(active_quest.time_remaining, active_quest.status)
 
                 # Render quest warning message
                 if game_state.quest_message and game_state.quest_message_timer > 0:
@@ -596,41 +568,38 @@ def main():
         player = game_engine.get_player()
         renderer.render_ui(game_state, player)
 
-        # Render minimap (if using map mode, but not in platformer levels)
-        if game_map and game_map.mode != "platformer":
+        # Render minimap (if using map mode, but not in platformer levels or landing zone view)
+        if game_map and game_map.mode != "platformer" and not game_map.landing_zone_view:
             renderer.render_minimap(game_map, player.position, zombies)
+
+        # Render landing zone overlay (if in landing zone view)
+        if game_map and game_map.landing_zone_view:
+            renderer.render_landing_zone_overlay(game_map)
 
         # Render boss dialogue if showing
         if game_engine.showing_boss_dialogue and game_engine.boss_dialogue_content:
             renderer.render_boss_dialogue(game_engine.boss_dialogue_content)
 
         # Render congratulations message if present
-        if (
-            game_state.status == GameStatus.PAUSED
-            and game_state.congratulations_message
-        ):
+        if game_state.status == GameStatus.PAUSED and game_state.congratulations_message:
             renderer.render_message_bubble(game_state.congratulations_message)
 
         # Scale and display game surface with aspect ratio preservation
         if is_fullscreen or display.get_size() != game_surface.get_size():
             # Calculate scaled dimensions with letterboxing/pillarboxing
             display_width, display_height = display.get_size()
-            scaled_width, scaled_height, offset_x, offset_y = (
-                calculate_scaled_dimensions(
-                    config["game_width"],
-                    config["game_height"],
-                    display_width,
-                    display_height,
-                )
+            scaled_width, scaled_height, offset_x, offset_y = calculate_scaled_dimensions(
+                config["game_width"],
+                config["game_height"],
+                display_width,
+                display_height,
             )
 
             # Clear display (black background for letterboxing)
             display.fill((0, 0, 0))
 
             # Scale game surface and blit to display
-            scaled_surface = pygame.transform.scale(
-                game_surface, (scaled_width, scaled_height)
-            )
+            scaled_surface = pygame.transform.scale(game_surface, (scaled_width, scaled_height))
             display.blit(scaled_surface, (offset_x, offset_y))
         else:
             # Windowed mode at native resolution - direct blit
