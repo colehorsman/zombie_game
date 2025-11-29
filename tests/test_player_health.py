@@ -1,14 +1,7 @@
 """Tests for player health and damage system."""
 
-import pytest
-import sys
-from pathlib import Path
-
-# Add src directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-
-from player import Player
 from models import Vector2
+from player import Player
 
 
 class TestPlayerHealth:
@@ -115,9 +108,11 @@ class TestInvincibilityFrames:
         player.take_damage(1)
         initial_timer = player.invincibility_timer
 
-        player.update_invincibility(0.5)
+        # Use half the duration so player stays invincible
+        delta = player.invincibility_duration / 2
+        player.update_invincibility(delta)
 
-        assert player.invincibility_timer == initial_timer - 0.5
+        assert player.invincibility_timer == initial_timer - delta
         assert player.is_invincible  # Still invincible
 
     def test_invincibility_ends_after_duration(self):
