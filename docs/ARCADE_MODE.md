@@ -72,7 +72,7 @@ Arcade Mode is a 60-second elimination challenge where you eliminate as many zom
 
 ### Keyboard
 - **Arrow Keys:** Move
-- **Space:** Shoot
+- **Space:** Zap
 - **UP UP DOWN DOWN A B:** Activate arcade mode
 - **ESC:** Pause
 - **ENTER/SPACE:** Confirm menu selections
@@ -80,7 +80,7 @@ Arcade Mode is a 60-second elimination challenge where you eliminate as many zom
 
 ### Controller (8BitDo SN30 Pro)
 - **D-Pad:** Move
-- **A Button:** Shoot
+- **A Button:** Zap
 - **UP UP DOWN DOWN A B:** Activate arcade mode
 - **Start:** Pause
 - **A Button:** Confirm menu selections
@@ -116,7 +116,7 @@ Press ENTER/SPACE to continue
 1. **Build Combos:** Keep eliminating within 3 seconds for multiplier
 2. **Collect Power-Ups:** LASER_BEAM and BURST_SHOT are game-changers
 3. **Stay Mobile:** Zombies respawn near you, keep moving
-4. **Use Platforms:** Higher ground gives better shooting angles
+4. **Use Platforms:** Higher ground gives better zapping angles
 
 ### Combo Mastery
 - Combo window: 3 seconds

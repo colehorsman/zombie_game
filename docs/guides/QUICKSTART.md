@@ -87,13 +87,13 @@ FULLSCREEN=true
 
 ### Lobby Mode (Top-Down)
 - **Arrow Keys / WASD** - Move in 8 directions
-- **Space** - Fire ray gun
+- **Space** - Zap (fire ray gun)
 - **Walk into doors** - Enter account levels
 
 ### Platformer Mode (Side-Scrolling)
 - **Arrow Keys (← →) / A/D** - Move left/right
 - **Up Arrow / W** - Jump
-- **Space** - Fire ray gun
+- **Space** - Zap (fire ray gun)
 
 ### Universal
 - **F11 / F / CMD+F** - Toggle fullscreen
@@ -102,7 +102,7 @@ FULLSCREEN=true
 
 ### 🎮 Controller Support
 - Works with Bluetooth and wired controllers (8BitDo tested)
-- **A button** - Fire
+- **A button** - Zap
 - **B button** - Jump (platformer only)
 - **D-pad/Stick** - Movement
 - **Start** - Pause

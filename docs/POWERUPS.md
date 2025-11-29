@@ -12,7 +12,7 @@ The game features AWS-themed power-ups that spawn on platforms in platformer lev
 
 When you collect Star Power:
 - You become **invincible** - zombies can't damage you
-- Any zombie you **touch** is **instantly quarantined** (no shooting required!)
+- Any zombie you **touch** is **instantly quarantined** (no zapping required!)
 - Best used to clear groups of zombies quickly
 - Especially helpful in Sandbox levels with 500+ zombies
 
@@ -52,7 +52,7 @@ When you collect Lambda Speed:
 - Power-ups appear **on top of platforms**
 - Floating ~40 pixels above the platform surface
 - Gentle bouncing animation to make them visible
-- Collect by touching them (no need to shoot)
+- Collect by touching them (no need to zap)
 
 ---
 
@@ -81,7 +81,7 @@ When you collect Lambda Speed:
 - Save for **dense zombie clusters**
 - Rush **into** groups rather than around them
 - Each zombie touched counts as an elimination (score + progress)
-- Don't waste time shooting - just touch and move
+- Don't waste time zapping - just touch and move
 
 ### Lambda Speed Best Practices
 - Use to **traverse long distances** quickly

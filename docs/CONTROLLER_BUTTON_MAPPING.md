@@ -11,7 +11,7 @@ Based on testing, this appears to be a standard Bluetooth controller with the fo
 
 | Button | Number | Function in Game |
 |--------|--------|------------------|
-| A | 0 | Fire / Confirm / Dismiss messages |
+| A | 0 | Zap / Confirm / Dismiss messages |
 | B | 1 | Jump / Cancel / Dismiss messages |
 | X | 2 | (unused) |
 | Y | 3 | (unused) |
@@ -59,7 +59,7 @@ Based on testing, this appears to be a standard Bluetooth controller with the fo
 
 | Button | Number | Function in Game |
 |--------|--------|------------------|
-| A | 0 | Fire / Confirm / Dismiss messages |
+| A | 0 | Zap / Confirm / Dismiss messages |
 | B | 1 | Jump / Cancel / Dismiss messages |
 | X | 2 | (unused) |
 | Y | 3 | (unused) |
@@ -89,8 +89,8 @@ Based on testing, this appears to be a standard Bluetooth controller with the fo
 - **Keyboard**: Arrow keys or WASD, Space to jump
 
 ### Combat
-- **A Button**: Fire raygun
-- **Keyboard**: Space or Enter to fire
+- **A Button**: Zap (fire raygun)
+- **Keyboard**: Space or Enter to zap
 
 ### Menus
 - **D-Pad Up/Down**: Navigate menu options
@@ -137,7 +137,7 @@ If a new controller doesn't work as expected, use this debug process:
 | Feature | File | Method/Location |
 |---------|------|-----------------|
 | Pause (Start/Select) | `game_engine.py` | Event loop, buttons 6, 7, 9 |
-| A Button (Fire/Confirm) | `game_engine.py` | Event loop, button 0 |
+| A Button (Zap/Confirm) | `game_engine.py` | Event loop, button 0 |
 | B Button (Jump/Cancel) | `game_engine.py` | Event loop, button 1 |
 | D-Pad Navigation | `game_engine.py` | Event loop, buttons 11-14 |
 | Unlock Combo | `cheat_code_controller.py` | `check_controller_unlock_combo()` |

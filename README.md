@@ -50,7 +50,7 @@ cp .env.example .env  # Edit with your Sonrai API credentials
 python3 src/main.py
 ```
 
-**Controls:** WASD/Arrows to move • Space to shoot • Enter to dismiss messages
+**Controls:** WASD/Arrows to move • Space to zap • Enter to dismiss messages
 
 **Need more details?** See [QUICKSTART.md](docs/guides/QUICKSTART.md) for comprehensive setup guide.
 
@@ -64,7 +64,7 @@ This game teaches [Sonrai Cloud Permissions Firewall](https://sonraisecurity.com
 
 | Game Action | What You Learn | Sonrai API |
 |-------------|----------------|------------|
-| 🧟 Shoot zombie | Quarantine unused IAM identities | `ChangeQuarantineStatus` |
+| 🧟 Zap zombie | Quarantine unused IAM identities | `ChangeQuarantineStatus` |
 | 🚫 Block vendor | Revoke risky third-party access | `DenyThirdPartyAccess` |
 | 🏆 Win Hacker Race | Protect sensitive services (Bedrock, SageMaker) | `ProtectService` |
 | ⏱️ Complete JIT Quest | Enable just-in-time admin access | `SetJitConfiguration` |
