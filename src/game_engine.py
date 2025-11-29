@@ -1486,6 +1486,7 @@ class GameEngine:
 
         # Check for game over (player health depleted)
         if self.player.current_health <= 0:
+            logger.info(f"💀 GAME OVER TRIGGERED - Health: {self.player.current_health}")
             self._show_game_over_screen()
             return  # Stop updating game logic
 
@@ -3104,6 +3105,12 @@ class GameEngine:
 
         # Update player (platformer mode - with gravity)
         self.player.update(delta_time, is_platformer_mode=True)
+
+        # Check for game over (player health depleted)
+        if self.player.current_health <= 0:
+            logger.info(f"💀 GAME OVER TRIGGERED (Boss Battle) - Health: {self.player.current_health}")
+            self._show_game_over_screen()
+            return  # Stop updating game logic
 
         # Update boss
         if self.boss:

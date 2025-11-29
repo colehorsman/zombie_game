@@ -1170,3 +1170,35 @@ elif event.button == 7:
 **Action:** ENHANCEMENT-003 should be elevated to P0 - this is a major UX issue affecting entire game
 
 ---
+
+
+### BUG-020: Game Over Screen Not Triggering
+**Severity:** P0 - CRITICAL
+**Component:** Game Over System
+**Description:** Health depletes to 0 but game over screen doesn't appear
+**User Feedback:** "depleting health doesnt send a message"
+**Impact:** Game over feature not working
+
+**Investigation Needed:**
+- Check if health check is being reached
+- Verify game state when health depletes
+- Check if _update_playing is being called
+- Add logging to confirm health check
+
+---
+
+### BUG-021: Hacker Challenge Timer Overlays HUD Text
+**Severity:** P1
+**Component:** UI / HUD Rendering
+**Description:** Timer text for hacker challenge overlays zombie and 3rd party count, making it illegible
+**User Feedback:** "just noticed during the hacker challenfe that the timer text for the hacker challenge overlays zombie and 3rd party text making it not legible"
+**Impact:** Can't read important HUD information during quest
+
+**Fix Needed:**
+- Adjust timer position to not overlap other HUD elements
+- Or move zombie/3rd party counts to avoid overlap
+- Or use different background/styling for timer
+
+**Likely Location:** `src/renderer.py` HUD rendering
+
+---
