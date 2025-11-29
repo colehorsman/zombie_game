@@ -87,7 +87,9 @@ class GameMap:
         self.zoom_speed = 2.0  # How fast to transition zoom
 
         # Zombie reveal radius (pixels) - smaller radius means you have to get closer
-        self.reveal_radius = reveal_radius  # Can be customized per environment difficulty
+        self.reveal_radius = (
+            reveal_radius  # Can be customized per environment difficulty
+        )
 
     def _generate_rooms_from_accounts(
         self, tiles_wide: int, tiles_high: int
@@ -106,7 +108,9 @@ class GameMap:
         total_zombies = sum(self.account_data.values())
 
         # Sort accounts by zombie count (largest first)
-        sorted_accounts = sorted(self.account_data.items(), key=lambda x: x[1], reverse=True)
+        sorted_accounts = sorted(
+            self.account_data.items(), key=lambda x: x[1], reverse=True
+        )
 
         # Calculate room sizes proportionally
         # Leave space for hallways (20% of map)
@@ -134,7 +138,9 @@ class GameMap:
 
             # Ensure room fits within map bounds
             if current_y + room_height > usable_height:
-                print(f"Warning: Room {i} ({account_name}) would exceed map bounds, skipping")
+                print(
+                    f"Warning: Room {i} ({account_name}) would exceed map bounds, skipping"
+                )
                 continue
 
             # Add room (ensuring it's within bounds)
@@ -161,7 +167,9 @@ class GameMap:
         total_zombies = sum(self.account_data.values())
         num_accounts = len(self.account_data)
 
-        print(f"Creating map for {num_accounts} AWS accounts with {total_zombies} total zombies")
+        print(
+            f"Creating map for {num_accounts} AWS accounts with {total_zombies} total zombies"
+        )
 
         # Base map dimensions - scale based on zombie count
         # Minimum size for small accounts, scale up for larger
@@ -359,18 +367,24 @@ class GameMap:
                 wx = castle_x + 80 + col * 55
                 wy = castle_y + 120 + row * 45
                 # Window frame
-                pygame.draw.rect(self.map_surface, CASTLE_DARK, (wx - 3, wy - 3, 26, 32))
+                pygame.draw.rect(
+                    self.map_surface, CASTLE_DARK, (wx - 3, wy - 3, 26, 32)
+                )
                 # Window glow
                 pygame.draw.rect(self.map_surface, WINDOW_YELLOW, (wx, wy, 20, 26))
 
         # Tower windows - scaled up
-        pygame.draw.rect(self.map_surface, WINDOW_YELLOW, (castle_x + 22, castle_y + 85, 14, 20))
+        pygame.draw.rect(
+            self.map_surface, WINDOW_YELLOW, (castle_x + 22, castle_y + 85, 14, 20)
+        )
         pygame.draw.rect(
             self.map_surface,
             WINDOW_YELLOW,
             (castle_x + castle_width - 36, castle_y + 85, 14, 20),
         )
-        pygame.draw.rect(self.map_surface, WINDOW_YELLOW, (center_x + 25, castle_y + 65, 14, 20))
+        pygame.draw.rect(
+            self.map_surface, WINDOW_YELLOW, (center_x + 25, castle_y + 65, 14, 20)
+        )
 
         # Draw castle entrance (arched door) - scaled up
         door_width = 50
@@ -382,7 +396,9 @@ class GameMap:
             CASTLE_DARK,
             (door_x, door_y + 18, door_width, door_height - 18),
         )
-        pygame.draw.ellipse(self.map_surface, CASTLE_DARK, (door_x, door_y, door_width, 40))
+        pygame.draw.ellipse(
+            self.map_surface, CASTLE_DARK, (door_x, door_y, door_width, 40)
+        )
 
         # Draw "CONTROL TOWER" label - BIGGER for screenshots
         try:
@@ -485,7 +501,9 @@ class GameMap:
         # Also store ground segments for zombie placement
         ground_y = (tiles_high - ground_height) * self.tile_size
         for x in range(0, tiles_wide, 12):  # Ground segments every 12 tiles
-            self.platform_positions.append((x * self.tile_size, ground_y, 12 * self.tile_size))
+            self.platform_positions.append(
+                (x * self.tile_size, ground_y, 12 * self.tile_size)
+            )
 
         print(f"Created {len(self.platform_positions)} randomized platform segments")
 
@@ -493,7 +511,11 @@ class GameMap:
         self.rooms = [(0, 0, tiles_wide, tiles_high)]
         self.room_accounts = {
             0: {
-                "name": (list(self.account_data.keys())[0] if self.account_data else "Default"),
+                "name": (
+                    list(self.account_data.keys())[0]
+                    if self.account_data
+                    else "Default"
+                ),
                 "zombie_count": total_zombies,
                 "chamber_num": 1,
                 "total_chambers": 1,
@@ -557,24 +579,34 @@ class GameMap:
         BLACK = (0, 0, 0)
 
         # Main ground top
-        pygame.draw.rect(self.map_surface, GROUND_TOP, (x, y, self.tile_size, self.tile_size))
+        pygame.draw.rect(
+            self.map_surface, GROUND_TOP, (x, y, self.tile_size, self.tile_size)
+        )
 
         # Add grass-like details
         for i in range(3):
             grass_x = x + 2 + i * 5
-            pygame.draw.line(self.map_surface, GRASS_DARK, (grass_x, y), (grass_x, y + 3), 1)
+            pygame.draw.line(
+                self.map_surface, GRASS_DARK, (grass_x, y), (grass_x, y + 3), 1
+            )
 
         # Black outline
-        pygame.draw.rect(self.map_surface, BLACK, (x, y, self.tile_size, self.tile_size), 1)
+        pygame.draw.rect(
+            self.map_surface, BLACK, (x, y, self.tile_size, self.tile_size), 1
+        )
 
     def _draw_floor_tile(self, x: int, y: int, base_color: tuple) -> None:
         """Draw a simple Mario-style floor tile."""
         # Fill with base color
-        pygame.draw.rect(self.map_surface, base_color, (x, y, self.tile_size, self.tile_size))
+        pygame.draw.rect(
+            self.map_surface, base_color, (x, y, self.tile_size, self.tile_size)
+        )
 
         # Add subtle border for tile definition
         border_color = tuple(max(0, c - 20) for c in base_color)
-        pygame.draw.rect(self.map_surface, border_color, (x, y, self.tile_size, self.tile_size), 1)
+        pygame.draw.rect(
+            self.map_surface, border_color, (x, y, self.tile_size, self.tile_size), 1
+        )
 
     def _draw_wall_tile(self, x: int, y: int) -> None:
         """Draw a Mario-style wall block with purple theme."""
@@ -584,11 +616,17 @@ class GameMap:
         BLACK = (0, 0, 0)
 
         # Main block
-        pygame.draw.rect(self.map_surface, WALL_PURPLE, (x, y, self.tile_size, self.tile_size))
+        pygame.draw.rect(
+            self.map_surface, WALL_PURPLE, (x, y, self.tile_size, self.tile_size)
+        )
 
         # Top and left highlights (3 pixels thick like Mario)
-        pygame.draw.line(self.map_surface, WALL_HIGHLIGHT, (x, y), (x + self.tile_size - 1, y), 3)
-        pygame.draw.line(self.map_surface, WALL_HIGHLIGHT, (x, y), (x, y + self.tile_size - 1), 3)
+        pygame.draw.line(
+            self.map_surface, WALL_HIGHLIGHT, (x, y), (x + self.tile_size - 1, y), 3
+        )
+        pygame.draw.line(
+            self.map_surface, WALL_HIGHLIGHT, (x, y), (x, y + self.tile_size - 1), 3
+        )
 
         # Bottom and right shadows
         pygame.draw.line(
@@ -607,7 +645,9 @@ class GameMap:
         )
 
         # Black outline
-        pygame.draw.rect(self.map_surface, BLACK, (x, y, self.tile_size, self.tile_size), 1)
+        pygame.draw.rect(
+            self.map_surface, BLACK, (x, y, self.tile_size, self.tile_size), 1
+        )
 
     def _add_room_labels(self) -> None:
         """Add AWS account labels to rooms."""
@@ -638,13 +678,19 @@ class GameMap:
                     # Render zombie count
                     count_text = f"{zombie_count} zombies"
                     count_surface = small_font.render(count_text, True, WHITE)
-                    count_rect = count_surface.get_rect(center=(center_x, center_y + 10))
+                    count_rect = count_surface.get_rect(
+                        center=(center_x, center_y + 10)
+                    )
 
                     # Draw shadows
                     name_shadow = font.render(friendly_name, True, (0, 0, 0))
                     count_shadow = small_font.render(count_text, True, (0, 0, 0))
-                    self.map_surface.blit(name_shadow, (name_rect.x + 2, name_rect.y + 2))
-                    self.map_surface.blit(count_shadow, (count_rect.x + 2, count_rect.y + 2))
+                    self.map_surface.blit(
+                        name_shadow, (name_rect.x + 2, name_rect.y + 2)
+                    )
+                    self.map_surface.blit(
+                        count_shadow, (count_rect.x + 2, count_rect.y + 2)
+                    )
 
                     # Draw text
                     self.map_surface.blit(name_surface, name_rect)
@@ -737,7 +783,9 @@ class GameMap:
 
         # Place collectibles on some platforms (not all - keep it somewhat infrequent)
         # Place on roughly every 5th-8th platform
-        for i, (platform_x, platform_y, platform_width) in enumerate(self.platform_positions):
+        for i, (platform_x, platform_y, platform_width) in enumerate(
+            self.platform_positions
+        ):
             # Skip most platforms - only place power-up on ~15% of platforms
             if random.randint(1, 100) > 15:
                 continue
@@ -764,7 +812,9 @@ class GameMap:
         third_parties = []
 
         if not self.third_party_data:
-            logger.info("No 3rd party data provided, skipping 3rd party entity creation")
+            logger.info(
+                "No 3rd party data provided, skipping 3rd party entity creation"
+            )
             return third_parties
 
         # Check if we have org-level 3rd parties (under "all" key)
@@ -802,7 +852,9 @@ class GameMap:
 
                 for wall_idx, wall in enumerate(walls):
                     # Distribute extra parties among first walls
-                    num_on_this_wall = parties_per_wall + (1 if wall_idx < extra_parties else 0)
+                    num_on_this_wall = parties_per_wall + (
+                        1 if wall_idx < extra_parties else 0
+                    )
 
                     for wall_position in range(num_on_this_wall):
                         if party_index >= num_parties:
@@ -852,15 +904,23 @@ class GameMap:
                             patrol_max = (ry + rh) * self.tile_size
 
                         # Ensure position is within map bounds
-                        hallway_tile_x = max(2, min(hallway_tile_x, self.tiles_wide - 3))
-                        hallway_tile_y = max(2, min(hallway_tile_y, self.tiles_high - 3))
+                        hallway_tile_x = max(
+                            2, min(hallway_tile_x, self.tiles_wide - 3)
+                        )
+                        hallway_tile_y = max(
+                            2, min(hallway_tile_y, self.tiles_high - 3)
+                        )
 
                         # Check if this is a walkable position
                         max_attempts = 20
                         position_found = False
                         for attempt in range(max_attempts):
-                            test_x = (hallway_tile_x + (attempt % 3) - 1) * self.tile_size
-                            test_y = (hallway_tile_y + (attempt // 3) - 1) * self.tile_size
+                            test_x = (
+                                hallway_tile_x + (attempt % 3) - 1
+                            ) * self.tile_size
+                            test_y = (
+                                hallway_tile_y + (attempt // 3) - 1
+                            ) * self.tile_size
 
                             if self.is_walkable(int(test_x), int(test_y)):
                                 third_party_x = test_x
@@ -881,7 +941,9 @@ class GameMap:
                         )
 
                         # Store patrol information for pacing along wall
-                        third_party.patrol_axis = patrol_axis  # 'horizontal' or 'vertical'
+                        third_party.patrol_axis = (
+                            patrol_axis  # 'horizontal' or 'vertical'
+                        )
                         third_party.patrol_min = patrol_min
                         third_party.patrol_max = patrol_max
 
@@ -892,7 +954,9 @@ class GameMap:
                     f"Created {len(third_parties)} 3rd party entities surrounding MyHealth Production"
                 )
             else:
-                logger.warning("MyHealth Production room not found, 3rd parties not created")
+                logger.warning(
+                    "MyHealth Production room not found, 3rd parties not created"
+                )
 
             return third_parties
 
@@ -958,7 +1022,9 @@ class GameMap:
                 )
                 third_parties.append(third_party)
 
-        logger.info(f"Created {len(third_parties)} 3rd party entities across all accounts")
+        logger.info(
+            f"Created {len(third_parties)} 3rd party entities across all accounts"
+        )
         return third_parties
 
     def _load_actual_floorplan(self, image_path: str) -> None:
@@ -1126,9 +1192,13 @@ class GameMap:
         self.map_surface.fill(AISLE_COLOR)
         # Add subtle grid pattern for concrete floor feel
         for x in range(0, self.map_width, 50):
-            pygame.draw.line(self.map_surface, (170, 190, 200), (x, 0), (x, self.map_height), 1)
+            pygame.draw.line(
+                self.map_surface, (170, 190, 200), (x, 0), (x, self.map_height), 1
+            )
         for y in range(0, self.map_height, 50):
-            pygame.draw.line(self.map_surface, (170, 190, 200), (0, y), (self.map_width, y), 1)
+            pygame.draw.line(
+                self.map_surface, (170, 190, 200), (0, y), (self.map_width, y), 1
+            )
 
         # Define exhibit areas with realistic re:invent + zombie theme
         areas = [
@@ -1199,13 +1269,17 @@ class GameMap:
                     stripe_start = (x + i, y)
                     stripe_end = (x, y + i)
                     if stripe_start[0] <= x + w and stripe_end[1] <= y + h:
-                        pygame.draw.line(self.map_surface, BLOOD_RED, stripe_start, stripe_end, 2)
+                        pygame.draw.line(
+                            self.map_surface, BLOOD_RED, stripe_start, stripe_end, 2
+                        )
 
             # Add label with appropriate color
             label_color = (
                 TEXT_COLOR if is_safe else (255, 200, 200)
             )  # Slight red tint for danger zones
-            self._draw_text_centered(label, x + w // 2, y + h // 2, label_color, size=28)
+            self._draw_text_centered(
+                label, x + w // 2, y + h // 2, label_color, size=28
+            )
 
         # Draw AWS logo/branding areas
         self._draw_aws_branding()
@@ -1213,7 +1287,9 @@ class GameMap:
         # Add directional markers
         self._draw_directional_markers()
 
-    def _draw_text_centered(self, text: str, x: int, y: int, color: tuple, size: int = 24) -> None:
+    def _draw_text_centered(
+        self, text: str, x: int, y: int, color: tuple, size: int = 24
+    ) -> None:
         """Draw centered text with optional multi-line support."""
         try:
             font = pygame.font.Font(None, size)
@@ -1223,7 +1299,9 @@ class GameMap:
 
             for i, line in enumerate(lines):
                 text_surface = font.render(line, True, color)
-                text_rect = text_surface.get_rect(center=(x, start_y + i * size + size // 2))
+                text_rect = text_surface.get_rect(
+                    center=(x, start_y + i * size + size // 2)
+                )
                 self.map_surface.blit(text_surface, text_rect)
         except:
             pass  # Fallback if font rendering fails
@@ -1261,7 +1339,9 @@ class GameMap:
         self._draw_biohazard(150, 50, 40, WARNING_YELLOW)
         self._draw_biohazard(self.map_width - 150, 50, 40, WARNING_YELLOW)
         self._draw_biohazard(150, self.map_height - 50, 40, WARNING_YELLOW)
-        self._draw_biohazard(self.map_width - 150, self.map_height - 50, 40, WARNING_YELLOW)
+        self._draw_biohazard(
+            self.map_width - 150, self.map_height - 50, 40, WARNING_YELLOW
+        )
 
     def _draw_biohazard(self, x: int, y: int, size: int, color: tuple) -> None:
         """Draw a biohazard symbol (8-bit style)."""
@@ -1275,7 +1355,9 @@ class GameMap:
             rad = math.radians(angle)
             outer_x = x + int(size * 0.7 * math.cos(rad))
             outer_y = y + int(size * 0.7 * math.sin(rad))
-            pygame.draw.circle(self.map_surface, color, (outer_x, outer_y), size // 3, 2)
+            pygame.draw.circle(
+                self.map_surface, color, (outer_x, outer_y), size // 3, 2
+            )
 
     def _draw_blood_splatter(self, x: int, y: int, size: int) -> None:
         """Draw a blood splatter (8-bit style)."""
@@ -1349,7 +1431,9 @@ class GameMap:
             entrance_rect = entrance_text.get_rect(center=(entrance_x, entrance_y))
             # Black outline
             outline_text = font.render("⬇ EVACUATION ROUTE ⬇", True, (0, 0, 0))
-            self.map_surface.blit(outline_text, (entrance_rect.x - 2, entrance_rect.y - 2))
+            self.map_surface.blit(
+                outline_text, (entrance_rect.x - 2, entrance_rect.y - 2)
+            )
             self.map_surface.blit(entrance_text, entrance_rect)
         except:
             pass
@@ -1471,7 +1555,12 @@ class GameMap:
         tile_y = y // self.tile_size
 
         # Check bounds
-        if tile_x < 0 or tile_x >= self.tiles_wide or tile_y < 0 or tile_y >= self.tiles_high:
+        if (
+            tile_x < 0
+            or tile_x >= self.tiles_wide
+            or tile_y < 0
+            or tile_y >= self.tiles_high
+        ):
             return False
 
         # Check tile map (0 = walkable floor, 1 = wall)
@@ -1528,7 +1617,9 @@ class GameMap:
             account_zombies = zombies_by_account.get(account_num, [])
 
             if not account_zombies:
-                logger.warning(f"No zombies found for account {account_num} (room {room_index})")
+                logger.warning(
+                    f"No zombies found for account {account_num} (room {room_index})"
+                )
                 continue
 
             # Get room bounds (in tiles)
@@ -1546,8 +1637,13 @@ class GameMap:
                 min_distance = max(min_distance, 128)
 
                 # Get list of platform positions to place zombies on
-                if not hasattr(self, "platform_positions") or not self.platform_positions:
-                    logger.error("No platform positions available for zombie placement!")
+                if (
+                    not hasattr(self, "platform_positions")
+                    or not self.platform_positions
+                ):
+                    logger.error(
+                        "No platform positions available for zombie placement!"
+                    )
                     continue
 
                 logger.info(
@@ -1567,9 +1663,9 @@ class GameMap:
                         if platform_index >= len(self.platform_positions):
                             platform_index = 0  # Wrap around
 
-                        platform_x, platform_y, platform_width = self.platform_positions[
-                            platform_index
-                        ]
+                        platform_x, platform_y, platform_width = (
+                            self.platform_positions[platform_index]
+                        )
 
                         # Place zombie randomly along this platform
                         # Add some padding from platform edges
@@ -1613,9 +1709,11 @@ class GameMap:
 
                     if not position_found:
                         # Fallback: place on any platform (ignore distance)
-                        platform_x, platform_y, platform_width = self.platform_positions[
-                            platform_index % len(self.platform_positions)
-                        ]
+                        platform_x, platform_y, platform_width = (
+                            self.platform_positions[
+                                platform_index % len(self.platform_positions)
+                            ]
+                        )
                         x = platform_x + platform_width // 2
                         y = platform_y - 16
                         zombie.position = Vector2(x, y)
@@ -1700,8 +1798,12 @@ class GameMap:
             self.camera_y = player_y - self.screen_height // 2
 
             # Clamp camera to map bounds
-            self.camera_x = max(0, min(self.camera_x, self.map_width - self.screen_width))
-            self.camera_y = max(0, min(self.camera_y, self.map_height - self.screen_height))
+            self.camera_x = max(
+                0, min(self.camera_x, self.map_width - self.screen_width)
+            )
+            self.camera_y = max(
+                0, min(self.camera_y, self.map_height - self.screen_height)
+            )
 
     def toggle_landing_zone_view(self) -> None:
         """Toggle between normal view and landing zone (zoomed out) view."""
@@ -1789,7 +1891,9 @@ class GameMap:
 
         return (screen_x, screen_y)
 
-    def is_on_screen(self, world_x: float, world_y: float, width: int, height: int) -> bool:
+    def is_on_screen(
+        self, world_x: float, world_y: float, width: int, height: int
+    ) -> bool:
         """
         Check if an object is visible on screen.
 

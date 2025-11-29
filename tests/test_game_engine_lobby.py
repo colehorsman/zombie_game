@@ -19,9 +19,11 @@ from zombie import Zombie
 @pytest.fixture
 def mock_pygame():
     """Mock pygame to avoid GUI dependencies."""
-    with patch("pygame.init"), patch("pygame.display.set_mode"), patch("pygame.font.Font"), patch(
-        "pygame.time.Clock"
-    ), patch("pygame.joystick.init"), patch("pygame.joystick.get_count", return_value=0):
+    with patch("pygame.init"), patch("pygame.display.set_mode"), patch(
+        "pygame.font.Font"
+    ), patch("pygame.time.Clock"), patch("pygame.joystick.init"), patch(
+        "pygame.joystick.get_count", return_value=0
+    ):
         yield
 
 

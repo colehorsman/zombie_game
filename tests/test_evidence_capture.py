@@ -115,7 +115,9 @@ class TestScreenshotCapture:
             mock_screen = Mock(spec=pygame.Surface)
 
             with patch("pygame.image.save") as mock_save:
-                with patch.object(evidence, "_generate_filename", return_value="ZB_test.png"):
+                with patch.object(
+                    evidence, "_generate_filename", return_value="ZB_test.png"
+                ):
                     result = evidence.take_screenshot(mock_screen)
 
                     assert result == "ZB_test.png"
@@ -414,7 +416,9 @@ class TestSaveRecording:
             evidence.recording_frames = [mock_frame]
 
             with patch("pygame.image.tostring", return_value=b"\x00" * 30000):
-                with patch.object(evidence, "_save_frames_as_pngs", return_value="test_folder/"):
+                with patch.object(
+                    evidence, "_save_frames_as_pngs", return_value="test_folder/"
+                ):
                     evidence._save_recording()
 
                     assert evidence.recording_frames == []

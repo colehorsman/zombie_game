@@ -152,7 +152,9 @@ class EvidenceCapture:
         # Check if max duration reached
         elapsed = current_time - self.recording_start_time
         if elapsed >= self.MAX_RECORDING_SECONDS:
-            logger.info(f"⏱️ Max recording duration ({self.MAX_RECORDING_SECONDS}s) reached")
+            logger.info(
+                f"⏱️ Max recording duration ({self.MAX_RECORDING_SECONDS}s) reached"
+            )
             self.stop_recording()
             return
 
@@ -244,7 +246,9 @@ class EvidenceCapture:
             flash_surface.set_alpha(int(self.flash_alpha))
             screen.blit(flash_surface, (0, 0))
 
-    def render_recording_indicator(self, screen: pygame.Surface, current_time: float) -> None:
+    def render_recording_indicator(
+        self, screen: pygame.Surface, current_time: float
+    ) -> None:
         """Render red recording dot and timer in top-right corner."""
         if not self.is_recording:
             return
