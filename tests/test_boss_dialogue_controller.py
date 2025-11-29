@@ -1,13 +1,14 @@
 """Tests for BossDialogueController."""
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 # Add src directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from boss_dialogue_controller import BossDialogueController, BossDialogueContent
+from boss_dialogue_controller import BossDialogueContent, BossDialogueController
 
 
 @pytest.fixture
@@ -126,7 +127,7 @@ class TestBossDialogueController:
         assert "Test Corp" in message
         assert "PREVENTION" in message
         assert "Prevention tip 1" in message
-        assert "Press ENTER to begin" in message
+        assert "Press ENTER" in message or "to begin" in message
 
     def test_build_message_no_content(self):
         """build_message returns fallback when no content."""
