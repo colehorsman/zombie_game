@@ -26,7 +26,8 @@
       "Bash(isort:*)",
       "Bash(git reset:*)",
       "Bash(tree:*)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(git branch:*)"
     ],
     "deny": [],
     "ask": []
