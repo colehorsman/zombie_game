@@ -1484,6 +1484,10 @@ class GameEngine:
         # Update player invincibility frames
         self.player.update_invincibility(delta_time)
 
+        # Debug: Log health when low
+        if self.player.current_health <= 3:
+            logger.info(f"⚠️ LOW HEALTH: {self.player.current_health}/{self.player.max_health}")
+
         # Check for game over (player health depleted)
         if self.player.current_health <= 0:
             logger.info(f"💀 GAME OVER TRIGGERED - Health: {self.player.current_health}")
@@ -3105,6 +3109,10 @@ class GameEngine:
 
         # Update player (platformer mode - with gravity)
         self.player.update(delta_time, is_platformer_mode=True)
+
+        # Debug: Log health when low
+        if self.player.current_health <= 3:
+            logger.info(f"⚠️ LOW HEALTH (Boss): {self.player.current_health}/{self.player.max_health}")
 
         # Check for game over (player health depleted)
         if self.player.current_health <= 0:
