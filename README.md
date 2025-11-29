@@ -275,4 +275,4 @@ This project is open source and available for:
 
 ---
 
-**Built with ❤️ by Sonrai Security** • Making cloud security fun, one zombie at a time 🎮🧟‍♂️🛡️
+**Built with 💜 by Sonrai Security** • Making cloud security fun, one zombie at a time 🎮🧟‍♂️🛡️
