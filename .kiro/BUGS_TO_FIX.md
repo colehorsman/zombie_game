@@ -226,6 +226,47 @@ def render_message_bubble(self, message: str) -> None:
 
 ## P2 - Medium Priority
 
+### FEATURE-004: Unquarantine Identities on Game Over
+**Severity:** P2
+**Component:** Game Over System / Sonrai API
+**Description:** When game over occurs, unquarantine all identities that were quarantined during gameplay
+**User Feedback:** "the identities that got quarantined should be unquarantined. for example there were 2 that i had quarantined. those identities would be unquarantined when game over occurs"
+**Impact:** Better "security breach" narrative, cleaner API state
+
+**Design:**
+When player dies (game over):
+1. Track all quarantined identities during level
+2. Call Sonrai API to unquarantine each one
+3. Show message: "⚠️ X identities reactivated!"
+4. Reset quarantine tracking
+
+**Sonrai Agent Task:**
+- Provide GraphQL mutation to unquarantine identity
+- Similar to `ChangeQuarantineStatus` but with `quarantine: false`
+- Need identity SRN and scope
+
+**Implementation:**
+```python
+def _unquarantine_all_identities(self):
+    """Unquarantine all identities when game over occurs."""
+    for identity_id in self.quarantined_identities:
+        # Get zombie to find SRN and scope
+        zombie = next((z for z in self.zombies if z.identity_id == identity_id), None)
+        if zombie:
+            self.api_client.unquarantine_identity(zombie.identity_id, zombie.scope)
+
+    logger.info(f"⚠️ Unquarantined {len(self.quarantined_identities)} identities")
+```
+
+**Benefits:**
+- Realistic "security breach" consequence
+- Clean up API state after game over
+- Educational: shows what happens when security fails
+
+**Priority:** P2 - Nice to have, not critical for demo
+
+---
+
 ### TEST-001: Verify Zombie Quarantine in All Levels
 **Status:** Needs testing
 **Tested:** MyHealth Sandbox ✅
@@ -474,13 +515,13 @@ elif event.button == 7:
 if self.boss and not self.boss.is_defeated:
     boss_bounds = self.boss.get_bounds()
     player_bounds = self.player.get_bounds()
-    
+
     if boss_bounds.colliderect(player_bounds):
         # Boss touching player - deal damage
         if not self.player.is_invincible():
             self.player.take_damage(1)  # 1 heart damage
             logger.info("💔 Player hit by boss!")
-            
+
             # Optional: Knockback effect
             # Push player away from boss
 ```
@@ -518,7 +559,7 @@ message = "⚠️ SERVICE PROTECTION CHALLENGE!\n\nHacker detected!\nProtect ser
 # In renderer.py:
 # Add "CHALLENGE" keyword detection for purple theme
 is_challenge = any(word in message for word in [
-    "CHALLENGE", "QUEST", "MISSION", "OBJECTIVE", 
+    "CHALLENGE", "QUEST", "MISSION", "OBJECTIVE",
     "SUCCESS", "FAILED", "HACKER", "PROTECTION"
 ])
 ```
@@ -558,7 +599,7 @@ Zombies Eliminated: [count]
 # In game_engine.py, check player health:
 def _update_playing(self, delta_time):
     # ... existing code ...
-    
+
     # Check if player died
     if self.player.health <= 0:
         self._show_game_over_screen()
@@ -567,7 +608,7 @@ def _show_game_over_screen(self):
     """Show game over screen with consequences."""
     self.game_state.previous_status = self.game_state.status
     self.game_state.status = GameStatus.PAUSED
-    
+
     message = (
         "💀 SECURITY BREACH!\n\n"
         "All zombies have been released!\n"
@@ -577,7 +618,7 @@ def _show_game_over_screen(self):
         "▶ Retry Level\n"
         "  Return to Lobby"
     )
-    
+
     self.game_state.congratulations_message = message
     self.game_over_menu_active = True
     logger.info("💀 Game Over - Player died!")
@@ -708,9 +749,9 @@ def render_message_bubble(self, message: str) -> None:
     """Render message with consistent purple theme."""
     # ALL messages should use purple theme for consistency
     # Only exception: critical errors (red theme?)
-    
+
     is_menu = "▶" in message or self._has_menu_options(message)
-    
+
     # Use purple theme for everything
     self._render_purple_menu(message)
 ```
@@ -736,8 +777,8 @@ Use a button combination like:
 def check_controller_unlock_combo(self, joystick) -> bool:
     """Check if unlock button combo is pressed."""
     # Example: L (button 4) + R (button 5) + Start (button 7)
-    if (joystick.get_button(4) and 
-        joystick.get_button(5) and 
+    if (joystick.get_button(4) and
+        joystick.get_button(5) and
         joystick.get_button(7)):
         return True
     return False
@@ -783,20 +824,20 @@ if self.joystick and self.cheat_code_controller.check_controller_unlock_combo(se
 for third_party in self.third_parties[:]:
     if third_party.is_hidden:
         continue
-    
+
     # Check if third party is protected (Sonrai or exempted)
     is_protected = (
-        third_party.is_sonrai or 
+        third_party.is_sonrai or
         third_party.identity_id in self.exempted_third_parties
     )
-    
+
     if is_protected:
         continue  # Protected third parties don't damage
-    
+
     # Check collision with player
     tp_bounds = third_party.get_bounds()
     player_bounds = self.player.get_bounds()
-    
+
     if tp_bounds.colliderect(player_bounds):
         # Third party hit player
         if not self.player.is_invincible():
@@ -968,7 +1009,7 @@ for third_party in self.third_parties[:]:
 # In renderer.py render_hud:
 def render_hud(self, game_state):
     # ... existing health rendering ...
-    
+
     # Render level name
     if game_state.current_level:
         level = self.level_manager.get_level(game_state.current_level)
@@ -978,7 +1019,7 @@ def render_hud(self, game_state):
             level_x = 20
             level_y = 60  # Below health hearts
             self.screen.blit(level_surface, (level_x, level_y))
-    
+
     # ... existing zombies count rendering ...
 ```
 
@@ -1048,7 +1089,7 @@ def render_hud(self, game_state):
    - "MyHealth - Production"
    - "Account: MyHealth (Prod)"
    - "MyHealth Production"
-3. **Styling:** 
+3. **Styling:**
    - Font size relative to other HUD elements?
    - Color coding by environment (sandbox=green, prod=red)?
    - Always visible or fade after intro?
@@ -1172,18 +1213,41 @@ elif event.button == 7:
 ---
 
 
-### BUG-020: Game Over Screen Not Triggering
+### ✅ BUG-020: Game Over Screen Not Triggering
+**Status:** ✅ FIXED
 **Severity:** P0 - CRITICAL
 **Component:** Game Over System
-**Description:** Health depletes to 0 but game over screen doesn't appear
-**User Feedback:** "depleting health doesnt send a message"
-**Impact:** Game over feature not working
+**Description:** Health depletes to 0 but health resets to 10 instead of showing game over screen
+**User Feedback:** "i depleted my health bar and nothing happened but my health started over"
+**Impact:** Game over feature not working - health auto-resets
 
-**Investigation Needed:**
-- Check if health check is being reached
-- Verify game state when health depletes
-- Check if _update_playing is being called
-- Add logging to confirm health check
+**Root Cause:**
+`_on_player_damaged()` was calling old `_on_player_death()` method which:
+- Reset health to max (10 HP / 5 hearts)
+- Auto-restarted level
+- Prevented game over screen from showing
+
+**Fix Applied:**
+- Removed death check from `_on_player_damaged()` method
+- Removed old `_on_player_death()` method entirely
+- Now health check in `_update_playing()` properly triggers `_show_game_over_screen()`
+
+**Result:**
+When player health reaches 0 (all 5 hearts depleted):
+- Game over screen appears with "💀 SECURITY BREACH!" message
+- Shows zombies eliminated count
+- Options: **Retry Level** or **Return to Lobby**
+- No auto-restart, player chooses what to do
+
+**How It Works:**
+- Player starts with 5 hearts (10 HP, 2 HP per heart)
+- Takes 1 damage per zombie touch
+- 1.5 second invincibility after each hit (flashing effect)
+- After 10 hits (all hearts depleted), game over screen appears
+
+**Commits:** 46de25a
+**Branch:** feature/game-over-screen-FEATURE-001
+**Fixed:** November 28, 2024
 
 ---
 
@@ -1200,5 +1264,68 @@ elif event.button == 7:
 - Or use different background/styling for timer
 
 **Likely Location:** `src/renderer.py` HUD rendering
+
+---
+
+
+### ✅ BUG-022: Player Spawns Inside Wall
+**Status:** ✅ FIXED
+**Severity:** P0 - CRITICAL
+**Component:** Spawn System / Lobby
+**Description:** Player spawns inside wall, can't move or enter rooms
+**User Feedback:** "i got spawned in a wall. so i cant go in the room and i gant get out of the room"
+**Impact:** Game unplayable, must restart
+
+**Root Cause:** Center spawn point (1800, 1350) was inside walls
+
+**Fix Applied:**
+- Changed spawn to (100, 150) - Far top-left corner
+- Confirmed working by user: "bingo - spawn spot works"
+- Consistent spawn point every game
+- Open lobby area, no wall collisions
+
+**Commits:** 9eae64e, 2310192
+**Branch:** feature/game-over-screen-FEATURE-001
+**Fixed:** November 28, 2024
+
+---
+
+### FEATURE-003: AWS Control Tower Spawn Point
+**Severity:** P1
+**Component:** Lobby / Storytelling
+**Description:** Add AWS Control Tower as spawn point with story context
+**User Feedback:** "we need a consistent spawining point at the beginning of the game that makes sense to tell the story of the aws accounts and the org. Oh maybe we have it start in the top leftish of the lobby map and id love to add a control tower right there like aws control tower similar to a mario castle! purple brick like the game of course"
+**Impact:** Better storytelling, consistent spawn, AWS branding
+
+**Design:**
+- **Location:** Top-left of lobby map
+- **Visual:** Purple brick castle (like Mario castle)
+- **Theme:** AWS Control Tower
+- **Purpose:** Central hub where player starts
+- **Story:** Control Tower manages all AWS accounts (doors to accounts)
+
+**Implementation:**
+1. Design purple brick Control Tower sprite
+2. Place in top-left of lobby map
+3. Set as consistent spawn point
+4. Add visual indicator (flag, sign, glow)
+5. Optional: Add intro text explaining Control Tower
+
+**Benefits:**
+- Consistent, safe spawn point
+- Tells AWS organization story
+- Visual landmark for navigation
+- Reinforces AWS branding
+- Cool visual centerpiece
+
+**UX Agent Input Needed:**
+- Control Tower design (size, style)
+- Intro text/tutorial
+- Visual indicators
+
+**Sonrai Agent Input Needed:**
+- AWS Control Tower messaging
+- How to explain org structure
+- Branding consistency
 
 ---

@@ -115,16 +115,16 @@ class GameEngine:
                     zombie.is_hidden = False
                 logger.info(f"🏛️  Distributed {len(self.zombies)} zombies across lobby rooms")
 
-            # LOBBY: Spawn player in center hallway, away from all doors
-            # Use center of map as safe spawn point - this is in the hallway area
-            # between rooms, not near any door entrances
+            # LOBBY: Spawn player in far top-left corner (open lobby area)
+            # Future: This will be the AWS Control Tower location
+            # Map is 3600x2700, spawn at top-left in open space
             self.landing_zone = Vector2(
-                self.game_map.map_width // 2,  # Center horizontally
-                self.game_map.map_height // 2,  # Center vertically
+                100,  # Far left, in open lobby area
+                150,  # Top area, below any header text
             )
             player_start_pos = self.landing_zone
             logger.info(
-                f"🏛️  Spawning player at LOBBY center hallway ({player_start_pos.x}, {player_start_pos.y})"
+                f"🏛️  Spawning player at LOBBY safe zone (top-left) ({player_start_pos.x}, {player_start_pos.y})"
             )
             self.player = Player(
                 player_start_pos,
@@ -244,7 +244,7 @@ class GameEngine:
 
         # Arcade results menu - now managed by ArcadeResultsController
         self.arcade_results_controller = ArcadeResultsController()
-        
+
         # Game over menu
         self.game_over_menu_active = False
         self.game_over_selected_index = 0
@@ -1484,6 +1484,10 @@ class GameEngine:
         # Update player invincibility frames
         self.player.update_invincibility(delta_time)
 
+        # Debug: Log health when low
+        if self.player.current_health <= 3:
+            logger.info(f"⚠️ LOW HEALTH: {self.player.current_health}/{self.player.max_health}")
+
         # Check for game over (player health depleted)
         if self.player.current_health <= 0:
             logger.info(f"💀 GAME OVER TRIGGERED - Health: {self.player.current_health}")
@@ -1840,11 +1844,6 @@ class GameEngine:
         """
         logger.info(f"💔 Player damaged by {source_zombie.identity_name}!")
 
-        # Check for death
-        if self.player.is_dead:
-            self._on_player_death()
-            return
-
         # ARCADE MODE: Subtract from elimination count instead of respawning
         if self.arcade_manager.is_active():
             state = self.arcade_manager.get_state()
@@ -1882,31 +1881,9 @@ class GameEngine:
         else:
             logger.info("No quarantined zombies to respawn")
 
-    def _on_player_death(self) -> None:
-        """Handle player death - restart level with all zombies respawned."""
-        logger.error("💀 PLAYER DIED! Restarting level...")
-
-        # Show death message
-        self.game_state.resource_message = "💀 SECURITY FAILURE - All identities reactivated!"
-        self.game_state.resource_message_timer = 3.0
-
-        # Respawn ALL quarantined zombies
-        respawn_count = 0
-        for zombie in self.zombies:
-            if zombie.is_hidden:
-                zombie.is_hidden = False
-                zombie.health = zombie.max_health
-                respawn_count += 1
-
-        # Clear quarantine tracking
-        self.quarantined_identities.clear()
-        self.game_state.zombies_remaining = len([z for z in self.zombies if not z.is_hidden])
-
-        # Reset player
-        self.player.reset_health()
-        self.player.position = Vector2(self.landing_zone.x, self.player.ground_y)
-
-        logger.info(f"💀 Respawned {respawn_count} zombies. Level restarting.")
+    # NOTE: _on_player_death() removed - replaced by _show_game_over_screen()
+    # Old implementation would auto-restart level and reset health
+    # New implementation shows game over menu with Retry/Return to Lobby options
 
     def _show_pause_menu(self) -> None:
         """Show Zelda-style pause menu with options. Delegates to PauseMenuController."""
@@ -1981,70 +1958,72 @@ class GameEngine:
     def _show_game_over_screen(self) -> None:
         """Show game over screen when player health reaches 0."""
         logger.info("💀 GAME OVER - Player health depleted!")
-        
+
         # Pause game
         self.game_state.previous_status = self.game_state.status
         self.game_state.status = GameStatus.PAUSED
-        
+
         # Build game over message
         message = (
             "💀 SECURITY BREACH!\n\n"
             "All zombies have been released!\n"
             "All 3rd parties are now allowed!\n"
             "Services are unprotected!\n\n"
-            f"Zombies Eliminated: {self.game_state.zombies_eliminated}\n\n"
+            f"Zombies Quarantined: {self.game_state.zombies_quarantined}\n\n"
             "▶ Retry Level\n"
             "  Return to Lobby"
         )
-        
+
         self.game_state.congratulations_message = message
         self.game_over_menu_active = True
-        
+
     def _navigate_game_over_menu(self, direction: int) -> None:
         """Navigate game over menu options."""
-        if not hasattr(self, 'game_over_selected_index'):
+        if not hasattr(self, "game_over_selected_index"):
             self.game_over_selected_index = 0
-        
+
         # Two options: Retry (0) or Return to Lobby (1)
         self.game_over_selected_index = (self.game_over_selected_index + direction) % 2
-        
+
         # Rebuild message with new selection
         retry_text = "▶ Retry Level" if self.game_over_selected_index == 0 else "  Retry Level"
-        lobby_text = "▶ Return to Lobby" if self.game_over_selected_index == 1 else "  Return to Lobby"
-        
+        lobby_text = (
+            "▶ Return to Lobby" if self.game_over_selected_index == 1 else "  Return to Lobby"
+        )
+
         message = (
             "💀 SECURITY BREACH!\n\n"
             "All zombies have been released!\n"
             "All 3rd parties are now allowed!\n"
             "Services are unprotected!\n\n"
-            f"Zombies Eliminated: {self.game_state.zombies_eliminated}\n\n"
+            f"Zombies Quarantined: {self.game_state.zombies_quarantined}\n\n"
             f"{retry_text}\n"
             f"{lobby_text}"
         )
-        
+
         self.game_state.congratulations_message = message
-        
+
     def _execute_game_over_option(self) -> None:
         """Execute selected game over menu option."""
-        if not hasattr(self, 'game_over_selected_index'):
+        if not hasattr(self, "game_over_selected_index"):
             self.game_over_selected_index = 0
-        
+
         if self.game_over_selected_index == 0:
             # Retry Level
             logger.info("🔄 Retrying level...")
             self.game_over_menu_active = False
             self.game_state.congratulations_message = None
-            
+
             # Reset player health
             self.player.current_health = self.player.max_health
-            
+
             # Reset player position to start
             self.player.position.x = 100
             self.player.position.y = 400
-            
+
             # Resume game
             self.game_state.status = self.game_state.previous_status
-            
+
         elif self.game_over_selected_index == 1:
             # Return to Lobby
             logger.info("🏠 Returning to lobby...")
@@ -2460,7 +2439,7 @@ class GameEngine:
                         if self.game_state.congratulations_message:
                             self.dismiss_message()
                             continue  # Don't process other A button actions
-                        
+
                         # If no message, A button fires projectile
                         if self.game_state.status in (
                             GameStatus.LOBBY,
@@ -3106,9 +3085,17 @@ class GameEngine:
         # Update player (platformer mode - with gravity)
         self.player.update(delta_time, is_platformer_mode=True)
 
+        # Debug: Log health when low
+        if self.player.current_health <= 3:
+            logger.info(
+                f"⚠️ LOW HEALTH (Boss): {self.player.current_health}/{self.player.max_health}"
+            )
+
         # Check for game over (player health depleted)
         if self.player.current_health <= 0:
-            logger.info(f"💀 GAME OVER TRIGGERED (Boss Battle) - Health: {self.player.current_health}")
+            logger.info(
+                f"💀 GAME OVER TRIGGERED (Boss Battle) - Health: {self.player.current_health}"
+            )
             self._show_game_over_screen()
             return  # Stop updating game logic
 

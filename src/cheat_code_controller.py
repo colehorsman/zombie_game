@@ -80,7 +80,16 @@ class CheatCodeController:
     DPAD_RIGHT = 14
 
     # Controller Konami sequence (D-pad buttons)
-    CONTROLLER_KONAMI = [11, 11, 12, 12, 13, 14, 13, 14]  # UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT
+    CONTROLLER_KONAMI = [
+        11,
+        11,
+        12,
+        12,
+        13,
+        14,
+        13,
+        14,
+    ]  # UP UP DOWN DOWN LEFT RIGHT LEFT RIGHT
 
     def __init__(self):
         """Initialize the cheat code controller."""
@@ -195,7 +204,12 @@ class CheatCodeController:
             current_time = time.time()
 
         # Only process D-pad buttons
-        if button not in [self.DPAD_UP, self.DPAD_DOWN, self.DPAD_LEFT, self.DPAD_RIGHT]:
+        if button not in [
+            self.DPAD_UP,
+            self.DPAD_DOWN,
+            self.DPAD_LEFT,
+            self.DPAD_RIGHT,
+        ]:
             return CheatCodeResult(action=CheatCodeAction.NONE)
 
         # Check for timeout
