@@ -661,3 +661,392 @@ self.arcade_manager.arcade_state.eliminations_count -= 1
 **Status:** ✅ FIXED - Ready for retest
 
 ---
+
+
+### BUG-013: Locked Level Message Ugly
+**Severity:** P1
+**Component:** UI / Level System
+**Description:** Locked level message uses ugly white box instead of purple theme
+**User Feedback:** "locked level works and a button works as enter ot get out of that message. also that message is ugly same thing"
+**Impact:** Inconsistent visual style
+
+**Status:** A button works ✅, styling needs fix ⚠️
+
+**Fix:** Apply purple theme to locked level message
+
+---
+
+### ENHANCEMENT-003: Standardize All Message Popups to Purple Theme
+**Severity:** P1
+**Component:** UI/UX - All Messages
+**Description:** All message popups should use consistent purple pause menu styling
+**User Feedback:** "all pop ups with messages should have similar formatting to the new purple pause menu and have the ux agent weigh in on that"
+**Impact:** Visual consistency, professional polish
+
+**Messages to Update:**
+1. ✅ Pause menu - Already purple
+2. ⚠️ Locked level message - White box
+3. ⚠️ WannaCry boss message - White box
+4. ⚠️ Hacker challenge message - White box
+5. ⚠️ Quest messages - White box
+6. ⚠️ Cheat code messages - White box
+7. ⚠️ Game over message - Not implemented yet
+8. ⚠️ Victory messages - White box
+9. ⚠️ Arcade results - Check styling
+
+**UX Agent Input Needed:**
+- Message hierarchy (which messages are most important?)
+- Text length guidelines (how brief should messages be?)
+- Icon usage (when to use emojis vs text?)
+- Button/option styling consistency
+- Color coding (purple for all, or different colors for different types?)
+
+**Implementation:**
+```python
+# In renderer.py render_message_bubble:
+def render_message_bubble(self, message: str) -> None:
+    """Render message with consistent purple theme."""
+    # ALL messages should use purple theme for consistency
+    # Only exception: critical errors (red theme?)
+    
+    is_menu = "▶" in message or self._has_menu_options(message)
+    
+    # Use purple theme for everything
+    self._render_purple_menu(message)
+```
+
+---
+
+### FEATURE-002: Controller Cheat Code to Unlock All Levels
+**Severity:** P1
+**Component:** Cheat Code System / Controller Input
+**Description:** No way to unlock all levels with controller (UNLOCK requires typing)
+**User Feedback:** "for the controller we dont have a way to enter the unlock cheatcode to upen up all levels we need a controller cheat code to unlock all levels"
+**Impact:** Controller users can't access all content
+
+**Proposed Solution:**
+Use a button combination like:
+- **L + R + Start** (hold all 3 buttons)
+- Or **Select + Start** (hold both)
+- Or **L + R + A + B** (hold all 4)
+
+**Implementation:**
+```python
+# In cheat_code_controller.py:
+def check_controller_unlock_combo(self, joystick) -> bool:
+    """Check if unlock button combo is pressed."""
+    # Example: L (button 4) + R (button 5) + Start (button 7)
+    if (joystick.get_button(4) and 
+        joystick.get_button(5) and 
+        joystick.get_button(7)):
+        return True
+    return False
+
+# In game_engine.py input handling:
+# Check every frame if combo is held
+if self.joystick and self.cheat_code_controller.check_controller_unlock_combo(self.joystick):
+    if not self.unlock_combo_triggered:
+        # Unlock all levels
+        self.level_manager.unlock_all_levels()
+        self.unlock_combo_triggered = True
+        # Show message
+        message = "🔓 ALL LEVELS UNLOCKED!\n\nController combo activated!\n\nPress A to continue"
+```
+
+**Button Mapping Options:**
+1. **L + R + Start** - Easy to remember, hard to press accidentally
+2. **Select + Start** - Classic "reset" combo, easy to press
+3. **L + R + A + B** - Very hard to press accidentally
+4. **Hold Start for 3 seconds** - Simple but might conflict with pause
+
+**Recommendation:** L + R + Start (buttons 4 + 5 + 7)
+
+---
+
+### BUG-014: Third Parties Don't Damage Player
+**Severity:** P1
+**Component:** Combat System / Third Party Entities
+**Description:** Third party entities should damage player on contact (except Sonrai and exempted)
+**User Feedback:** "3rd parties should be able to damage character help except for the sonray and exempted characters that should also have the purple shield"
+**Impact:** No challenge from third parties, inconsistent game mechanics
+
+**Expected Behavior:**
+1. Third party touches player → Player takes 1 damage
+2. Sonrai third party → No damage (has purple shield)
+3. Exempted third parties → No damage (has purple shield)
+4. Regular third parties → Damage player
+
+**Implementation:**
+```python
+# In game_engine.py _update_playing:
+# Check third party collisions with player
+for third_party in self.third_parties[:]:
+    if third_party.is_hidden:
+        continue
+    
+    # Check if third party is protected (Sonrai or exempted)
+    is_protected = (
+        third_party.is_sonrai or 
+        third_party.identity_id in self.exempted_third_parties
+    )
+    
+    if is_protected:
+        continue  # Protected third parties don't damage
+    
+    # Check collision with player
+    tp_bounds = third_party.get_bounds()
+    player_bounds = self.player.get_bounds()
+    
+    if tp_bounds.colliderect(player_bounds):
+        # Third party hit player
+        if not self.player.is_invincible():
+            self.player.take_damage(1)
+            logger.info(f"💔 Player hit by third party: {third_party.identity_name}")
+```
+
+**Also Need:**
+- Purple shields on Sonrai third parties ✅ (already implemented?)
+- Purple shields on exempted third parties ✅ (already implemented?)
+- Visual feedback when hit by third party
+- Player invincibility frames after hit
+
+---
+
+## Updated Implementation Priority
+
+### Phase 1: Critical Fixes (Today/Tomorrow)
+1. ✅ BUG-001: Controller pause button - FIXED
+2. ✅ BUG-002: Controller Konami code - FIXED
+3. ✅ BUG-008: Controller A button - FIXED
+4. ✅ BUG-012: Arcade mode crash - FIXED
+5. 🔥 **FEATURE-001: Game Over Screen** - CRITICAL
+6. 🔥 **FEATURE-002: Controller unlock combo** - HIGH PRIORITY
+7. 🔍 BUG-009: Start button pause during boss
+8. BUG-003: Pause menu text rendering
+
+### Phase 2: Combat & Damage System
+9. BUG-010: Boss doesn't damage player
+10. BUG-014: Third parties don't damage player
+11. Player invincibility frames
+12. Visual damage feedback
+
+### Phase 3: UI/UX Polish
+13. **ENHANCEMENT-003: Standardize all messages to purple theme** (UX Agent)
+14. BUG-013: Locked level message styling
+15. BUG-011: Hacker challenge message styling
+16. BUG-007: WannaCry message styling
+17. BUG-004: Add Sonrai logo to pause menu
+18. BUG-005: Fix pause icon display
+
+### Phase 4: Other Issues
+19. BUG-006: Health regeneration in lobby
+20. ENHANCEMENT-001: Purple theme consistency
+21. ENHANCEMENT-002: Standardize A=ENTER
+22. TEST-001: Test all levels
+
+---
+
+## UX Agent Review Needed
+
+**@UX-Agent:** Please review and provide guidance on:
+
+1. **Message Styling Consistency**
+   - Should ALL messages use purple theme?
+   - Or different colors for different message types?
+   - What about error messages vs success messages?
+
+2. **Message Length Guidelines**
+   - Maximum lines per message?
+   - How brief should messages be?
+   - When to use multi-screen messages vs single screen?
+
+3. **Visual Hierarchy**
+   - Which messages are most important?
+   - How to make critical messages stand out?
+   - Icon usage guidelines?
+
+4. **Button/Option Styling**
+   - Consistent format for menu options?
+   - How to show selected vs unselected?
+   - Keyboard vs controller instructions?
+
+5. **Color Coding**
+   - Purple for all messages?
+   - Red for errors/danger?
+   - Green for success?
+   - Gold for achievements?
+
+---
+
+
+### ✅ WORKING: Unlock Cheat Code
+**Status:** ✅ CONFIRMED WORKING
+**User Feedback:** "unlock cheat code works"
+**Component:** Cheat Code System
+**Note:** Keyboard UNLOCK cheat works, still need controller version (FEATURE-002)
+
+---
+
+### BUG-015: AgentCore Challenge Same in All Levels
+**Severity:** P1
+**Component:** Quest System / Service Protection Quest
+**Description:** AgentCore challenge appears in both Sandbox and Production with same content
+**User Feedback:** "the agentcore challenge is the same in this level as in the sandbox level but this should be an entirely different challenge"
+**Impact:** Repetitive gameplay, no variety
+
+**Expected Behavior:**
+- Each level should have different service to protect
+- Different third parties trying to access
+- Varied difficulty and challenge types
+- Unique quest per account
+
+**Current:** Same AgentCore service in multiple levels
+**Desired:** Different services per level (e.g., AgentCore, DataService, APIGateway, etc.)
+
+**Investigation Needed:**
+- Check how Service Protection Quest selects services
+- Verify if quest is level-specific or global
+- Check if third parties are level-specific
+
+**Likely Location:** `src/service_protection_quest.py` or quest initialization in `game_engine.py`
+
+---
+
+### BUG-016: Start Button Doesn't Work in MyHealth Production Level
+**Severity:** P0 - CRITICAL
+**Component:** Input System / Controller
+**Description:** Controller Start button doesn't pause in MyHealth Production level
+**User Feedback:** "start button on the controller in the myhealth prodcution level doesnt work or do anything"
+**Impact:** Can't pause in production levels with controller
+
+**Related to:** BUG-009 (Start button doesn't work during boss battle)
+
+**Pattern Emerging:**
+- Start button works in Sandbox ✅
+- Start button doesn't work in Production ❌
+- Start button doesn't work during Boss Battle ❌
+
+**Possible Root Causes:**
+1. Production levels have different game state
+2. Quest dialogs blocking input
+3. Event handling order issue
+4. Production-specific code interfering
+
+**Investigation Priority:** HIGH - This is blocking controller gameplay in production levels
+
+---
+
+### ENHANCEMENT-004: Display Level Name in HUD
+**Severity:** P2
+**Component:** UI/UX - HUD
+**Description:** Show current level/account name in HUD during gameplay
+**User Feedback:** "it would be nice to see the Myhelath production accoutn name visibile on the the top of the level and for all levels (correlating to the appropriate level we have entered) below health hears above zombies quarantined if the uz agent agrees"
+**Impact:** Better context awareness, professional polish
+
+**Proposed Layout:**
+```
+┌─────────────────────────────────────┐
+│  ❤️❤️❤️❤️❤️ (Health)                │
+│  MyHealth - Production              │  ← NEW: Level name
+│  Zombies Quarantined: 15/50        │
+│  Score: 1,500                       │
+└─────────────────────────────────────┘
+```
+
+**UX Agent Input Needed:**
+- Placement: Below health, above zombies count? ✅ (user suggested)
+- Format: "MyHealth - Production" or "Account: MyHealth (Prod)"?
+- Font size: Same as other HUD elements or larger?
+- Color: White, gold, or match account type (sandbox=green, prod=red)?
+- Always visible or fade after 5 seconds?
+
+**Implementation:**
+```python
+# In renderer.py render_hud:
+def render_hud(self, game_state):
+    # ... existing health rendering ...
+    
+    # Render level name
+    if game_state.current_level:
+        level = self.level_manager.get_level(game_state.current_level)
+        if level:
+            level_text = f"{level.name} - {level.environment}"
+            level_surface = self.hud_font.render(level_text, True, (255, 255, 255))
+            level_x = 20
+            level_y = 60  # Below health hearts
+            self.screen.blit(level_surface, (level_x, level_y))
+    
+    # ... existing zombies count rendering ...
+```
+
+**Benefits:**
+- Players know which account they're in
+- Helps with testing and bug reports
+- Professional game feel
+- Context for difficulty/challenges
+
+---
+
+## Updated Critical Issues
+
+### P0 - CRITICAL (Blocking Demo)
+1. 🔥 FEATURE-001: Game Over Screen - MISSING
+2. 🔥 BUG-016: Start button doesn't work in Production levels - NEW
+3. 🔥 BUG-009: Start button doesn't work during Boss Battle
+4. ⚠️ BUG-003: Pause menu text rendering
+
+**Pattern:** Start button has widespread issues across different game states
+
+### P1 - HIGH PRIORITY
+5. FEATURE-002: Controller unlock combo
+6. BUG-015: AgentCore challenge same in all levels
+7. BUG-014: Third parties don't damage player
+8. BUG-010: Boss doesn't damage player
+9. BUG-011: Hacker challenge message styling
+10. BUG-007: WannaCry message styling
+11. BUG-013: Locked level message styling
+12. ENHANCEMENT-003: Standardize all messages to purple theme
+
+### P2 - MEDIUM PRIORITY
+13. ENHANCEMENT-004: Display level name in HUD (UX Agent review)
+14. BUG-006: Health regeneration in lobby
+15. ENHANCEMENT-001: Purple theme consistency
+16. ENHANCEMENT-002: Standardize A=ENTER
+
+---
+
+## Investigation Needed: Start Button Issues
+
+**Affected Areas:**
+- ❌ Production levels (BUG-016)
+- ❌ Boss battles (BUG-009)
+- ✅ Sandbox levels (working)
+- ✅ Lobby (working)
+
+**Next Steps:**
+1. Add logging to track game state when Start pressed
+2. Check if quest dialogs are active
+3. Verify event handling order
+4. Test with keyboard ESC key in same scenarios
+5. Compare Sandbox vs Production level initialization
+
+**Hypothesis:** Quest dialogs or production-specific code is consuming the Start button event before it reaches the pause handler.
+
+---
+
+## UX Agent Review Requested
+
+**@UX-Agent:** Please review ENHANCEMENT-004 (Level Name in HUD):
+
+1. **Placement:** User suggests below health, above zombies count. Agree?
+2. **Format:** How should we display level name?
+   - "MyHealth - Production"
+   - "Account: MyHealth (Prod)"
+   - "MyHealth Production"
+3. **Styling:** 
+   - Font size relative to other HUD elements?
+   - Color coding by environment (sandbox=green, prod=red)?
+   - Always visible or fade after intro?
+4. **Priority:** Is this P2 or should it be higher for demo?
+
+---
