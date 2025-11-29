@@ -2435,7 +2435,13 @@ class GameEngine:
 
                     # A button (0) - Universal message dismissal (like ENTER) OR Fire
                     if event.button == 0:
-                        # PRIORITY: Universal message dismissal (works like ENTER key)
+                        # PRIORITY 1: Boss dialogue dismissal
+                        if self.boss_dialogue_controller.is_showing:
+                            self.boss_dialogue_controller.dismiss()
+                            self._spawn_cyber_boss()
+                            continue
+
+                        # PRIORITY 2: Universal message dismissal (works like ENTER key)
                         if self.game_state.congratulations_message:
                             self.dismiss_message()
                             continue  # Don't process other A button actions
