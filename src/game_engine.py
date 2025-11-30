@@ -1,6 +1,7 @@
 """Core game engine and game loop."""
 
 import logging
+import threading
 import time
 from typing import List, Optional, Union
 
@@ -2276,104 +2277,94 @@ class GameEngine:
 
     def _quarantine_zombie(self, zombie: Zombie) -> None:
         """
-        Quarantine a zombie via the API.
+        Quarantine a zombie via the API (runs in background thread to prevent lag).
 
         Args:
             zombie: The zombie to quarantine
         """
-        try:
-            # Extract root scope from full scope path
-            # e.g., "aws/r-ui1v/ou-ui1v-abc123/577945324761" -> "aws/r-ui1v"
-            root_scope = None
-            if zombie.scope:
-                scope_parts = zombie.scope.split("/")
-                if len(scope_parts) >= 2:
-                    root_scope = f"{scope_parts[0]}/{scope_parts[1]}"
+        # OPTIMISTIC UPDATE: Update game state immediately for smooth gameplay
+        # The API call happens in background - if it fails, we log it but don't freeze the game
+        if zombie in self.zombies:
+            self.zombies.remove(zombie)
+            self.game_state.zombies_remaining -= 1
+            self.game_state.zombies_quarantined += 1
+            self.quarantined_identities.add(zombie.identity_id)
 
-            # Debug logging for Bug #2 investigation
-            logger.info(f"🔍 Quarantining zombie: {zombie.identity_name}")
-            logger.info(f"  Identity ID: {zombie.identity_id}")
-            logger.info(f"  Account: {zombie.account}")
-            logger.info(f"  Full scope: {zombie.scope}")
-            logger.info(f"  Root scope: {root_scope}")
+            # Check for boss spawn (all zombies cleared)
+            if self.game_state.zombies_remaining == 0 and not self.boss_spawned:
+                self._spawn_boss()
+                logger.info("All zombies cleared! Spawning boss...")
 
-            result = self.api_client.quarantine_identity(
-                identity_id=zombie.identity_id,
-                identity_name=zombie.identity_name,
-                account=zombie.account,
-                scope=zombie.scope,  # Use zombie's scope from API
-                root_scope=root_scope,  # Extract root from full scope
-            )
+        # Fire-and-forget API call in background thread
+        def do_quarantine():
+            try:
+                # Extract root scope from full scope path
+                root_scope = None
+                if zombie.scope:
+                    scope_parts = zombie.scope.split("/")
+                    if len(scope_parts) >= 2:
+                        root_scope = f"{scope_parts[0]}/{scope_parts[1]}"
 
-            if result.success:
-                # Successfully quarantined - remove zombie permanently
-                if zombie in self.zombies:
-                    self.zombies.remove(zombie)
-                    self.game_state.zombies_remaining -= 1
-                    self.game_state.zombies_quarantined += 1
+                logger.info(f"🔍 [ASYNC] Quarantining: {zombie.identity_name}")
 
-                    # Track quarantined identity for save/load
-                    self.quarantined_identities.add(zombie.identity_id)
+                result = self.api_client.quarantine_identity(
+                    identity_id=zombie.identity_id,
+                    identity_name=zombie.identity_name,
+                    account=zombie.account,
+                    scope=zombie.scope,
+                    root_scope=root_scope,
+                )
 
-                    logger.info(f"Successfully quarantined {zombie.identity_name}")
-
-                    # Save game state after successful quarantine
+                if result.success:
+                    logger.info(f"✅ [ASYNC] Quarantined {zombie.identity_name}")
+                    # Save in background too (non-blocking)
                     self._save_game()
+                else:
+                    logger.error(f"❌ [ASYNC] Quarantine failed: {result.error_message}")
 
-                    # Check for boss spawn (all zombies cleared)
-                    if self.game_state.zombies_remaining == 0 and not self.boss_spawned:
-                        self._spawn_boss()
-                        logger.info("All zombies cleared! Spawning boss...")
-            else:
-                # Quarantine failed - restore zombie
-                zombie.is_quarantining = False
-                self.game_state.error_message = f"Failed to quarantine {zombie.identity_name}"
-                logger.error(f"Quarantine failed: {result.error_message}")
+            except Exception as e:
+                logger.error(f"❌ [ASYNC] Exception during quarantine: {e}")
 
-        except Exception as e:
-            # Error during quarantine - restore zombie
-            zombie.is_quarantining = False
-            self.game_state.error_message = f"Error: {str(e)}"
-            logger.error(f"Exception during quarantine: {e}")
+        # Start background thread (daemon=True so it won't block game exit)
+        thread = threading.Thread(target=do_quarantine, daemon=True)
+        thread.start()
 
     def _block_third_party(self, third_party) -> None:
         """
-        Block a 3rd party via the API.
+        Block a 3rd party via the API (runs in background thread to prevent lag).
 
         Args:
             third_party: The 3rd party to block
         """
-        try:
-            result = self.api_client.block_third_party(
-                third_party_id=third_party.third_party_id,
-                third_party_name=third_party.name,
-            )
+        # OPTIMISTIC UPDATE: Update game state immediately for smooth gameplay
+        third_parties = self.get_third_parties()
+        if third_party in third_parties:
+            third_parties.remove(third_party)
+            self.game_state.third_parties_blocked += 1
+            self.blocked_third_parties.add(third_party.name)
 
-            if result.success:
-                # Successfully blocked - remove 3rd party permanently
-                third_parties = self.get_third_parties()
-                if third_party in third_parties:
-                    third_parties.remove(third_party)
-                    self.game_state.third_parties_blocked += 1
+        # Fire-and-forget API call in background thread
+        def do_block():
+            try:
+                logger.info(f"🔍 [ASYNC] Blocking 3rd party: {third_party.name}")
 
-                    # Track blocked third party for save/load
-                    self.blocked_third_parties.add(third_party.name)
+                result = self.api_client.block_third_party(
+                    third_party_id=third_party.third_party_id,
+                    third_party_name=third_party.name,
+                )
 
-                    logger.info(f"Successfully blocked 3rd party {third_party.name}")
-
-                    # Save game state after successful block
+                if result.success:
+                    logger.info(f"✅ [ASYNC] Blocked {third_party.name}")
                     self._save_game()
-            else:
-                # Block failed - restore 3rd party
-                third_party.is_blocking = False
-                self.game_state.error_message = f"Failed to block {third_party.name}"
-                logger.error(f"Block failed: {result.error_message}")
+                else:
+                    logger.error(f"❌ [ASYNC] Block failed: {result.error_message}")
 
-        except Exception as e:
-            # Error during block - restore 3rd party
-            third_party.is_blocking = False
-            self.game_state.error_message = f"Error: {str(e)}"
-            logger.error(f"Exception during block: {e}")
+            except Exception as e:
+                logger.error(f"❌ [ASYNC] Exception during block: {e}")
+
+        # Start background thread (daemon=True so it won't block game exit)
+        thread = threading.Thread(target=do_block, daemon=True)
+        thread.start()
 
     def handle_input(self, events: List[pygame.event.Event], screen: pygame.Surface = None) -> None:
         """
