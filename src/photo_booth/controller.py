@@ -478,7 +478,9 @@ class PhotoBoothController:
             self._logger.error(f"Gameplay capture error: {e}")
             return False
 
-    def generate_composite(self, zombie_count: int) -> Optional[str]:
+    def generate_composite(
+        self, zombie_count: int, is_new_high_score: bool = False
+    ) -> Optional[str]:
         """
         Generate final photo booth composite.
 
@@ -487,6 +489,7 @@ class PhotoBoothController:
 
         Args:
             zombie_count: Number of zombies eliminated
+            is_new_high_score: If True, display a "NEW HIGH SCORE!" badge
 
         Returns:
             Path to saved composite image, or None on failure
@@ -547,6 +550,7 @@ class PhotoBoothController:
                 zombie_count=zombie_count,
                 config=self.config,
                 skip_selfie_retro=skip_selfie_retro,
+                is_new_high_score=is_new_high_score,
             )
 
             # Save to file
