@@ -143,11 +143,11 @@ class PhotoBoothCompositor:
         skip_retro: bool = False,
     ) -> Image.Image:
         """Create the pixelated selfie panel."""
-        # Apply arcade selfie effect unless already processed
+        # Apply enhanced arcade effect (with background removal and video game look)
         if skip_retro:
             retro_selfie = selfie
         else:
-            retro_selfie = RetroFilter.apply_arcade_selfie_effect(selfie)
+            retro_selfie = RetroFilter.apply_enhanced_arcade_effect(selfie)
 
         # Create panel background
         panel = Image.new("RGB", (panel_width, panel_height), self.PANEL_BG)

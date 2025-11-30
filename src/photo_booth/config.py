@@ -7,8 +7,16 @@ Loads settings from environment variables with sensible defaults.
 import logging
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+
+def get_project_root() -> Path:
+    """Get the project root directory (parent of src/)."""
+    # This file is at src/photo_booth/config.py
+    # Project root is two levels up
+    return Path(__file__).parent.parent.parent
 
 
 def detect_best_camera() -> int:
@@ -92,6 +100,10 @@ class PhotoBoothConfig:
         else:
             camera_index = 0
 
+        # Determine output directory - use absolute path from project root
+        default_output_dir = str(get_project_root() / ".kiro" / "evidence" / "booth_photos")
+        output_dir = os.getenv("PHOTO_BOOTH_OUTPUT_DIR", default_output_dir)
+
         return cls(
             enabled=os.getenv("PHOTO_BOOTH_ENABLED", "true").lower() == "true",
             camera_index=camera_index,
@@ -99,7 +111,7 @@ class PhotoBoothConfig:
             booth_number=os.getenv("PHOTO_BOOTH_BOOTH_NUMBER", "435"),
             qr_url=os.getenv("PHOTO_BOOTH_QR_URL", "https://sonraisecurity.com/zombie-blaster"),
             hashtag=os.getenv("PHOTO_BOOTH_HASHTAG", "#SonraiZombieBlaster"),
-            output_dir=os.getenv("PHOTO_BOOTH_OUTPUT_DIR", ".kiro/evidence/booth_photos"),
+            output_dir=output_dir,
             consent_timeout=float(os.getenv("PHOTO_BOOTH_CONSENT_TIMEOUT", "5.0")),
             min_arcade_time=float(os.getenv("PHOTO_BOOTH_MIN_ARCADE_TIME", "10.0")),
             screenshot_delay=float(os.getenv("PHOTO_BOOTH_SCREENSHOT_DELAY", "15.0")),

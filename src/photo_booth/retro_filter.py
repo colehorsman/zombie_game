@@ -6,9 +6,21 @@ to create an authentic retro gaming aesthetic while preserving
 recognizable features.
 """
 
+import logging
 import math
 
 from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+
+# Try to import rembg for background removal
+try:
+    from rembg import remove as remove_bg
+
+    REMBG_AVAILABLE = True
+except ImportError:
+    REMBG_AVAILABLE = False
+    logging.warning("rembg not available - background removal disabled")
+
+logger = logging.getLogger(__name__)
 
 
 class RetroFilter:
@@ -107,6 +119,49 @@ class RetroFilter:
         (100, 150, 200),
         (80, 120, 180),
         (60, 100, 160),
+    ]
+
+    # 32-color balanced palette optimized for skin tones + game colors
+    # This creates a more authentic video game character look
+    VIDEO_GAME_PALETTE = [
+        # Skin tones (essential for recognizable faces)
+        (255, 224, 189),  # Light skin
+        (255, 205, 148),  # Medium light skin
+        (234, 192, 134),  # Medium skin
+        (200, 160, 130),  # Tan
+        (165, 126, 82),  # Medium dark skin
+        (90, 56, 37),  # Dark skin
+        # Hair colors
+        (0, 0, 0),  # Black
+        (60, 40, 25),  # Dark brown
+        (120, 80, 40),  # Brown
+        (180, 140, 80),  # Light brown
+        (220, 200, 180),  # Blonde
+        # Eyes
+        (66, 133, 244),  # Blue
+        (76, 153, 0),  # Green
+        (100, 70, 40),  # Brown
+        # Game theme colors (Sonrai/AWS/Zombie)
+        (255, 255, 255),  # White
+        (128, 0, 128),  # Purple (Sonrai)
+        (75, 0, 130),  # Indigo
+        (138, 43, 226),  # Blue Violet
+        (40, 20, 60),  # Dark purple (background)
+        (255, 165, 0),  # Orange (AWS)
+        (255, 0, 0),  # Red
+        (0, 200, 0),  # Zombie green
+        (0, 128, 0),  # Dark green
+        (255, 255, 0),  # Yellow
+        (255, 192, 203),  # Pink
+        # Grays for depth
+        (32, 32, 32),
+        (64, 64, 64),
+        (96, 96, 96),
+        (128, 128, 128),
+        (160, 160, 160),
+        # Lip/cheek tones
+        (200, 120, 120),
+        (180, 100, 100),
     ]
 
     @staticmethod
@@ -431,5 +486,108 @@ class RetroFilter:
 
         # Add very subtle scanlines for CRT feel
         img = cls.add_scanlines(img, opacity=20, spacing=4)
+
+        return img
+
+    @staticmethod
+    def remove_background(image: Image.Image) -> Image.Image:
+        """
+        Remove background from selfie image using AI segmentation.
+
+        Args:
+            image: PIL Image (selfie)
+
+        Returns:
+            RGBA image with transparent background, or original if rembg unavailable
+        """
+        if not REMBG_AVAILABLE:
+            logger.warning("📸 Background removal not available - rembg not installed")
+            return image
+
+        logger.info("📸 Removing selfie background...")
+        try:
+            # rembg returns RGBA with transparent background
+            result = remove_bg(image)
+            logger.info("📸 Background removed successfully")
+            return result
+        except Exception as e:
+            logger.error(f"📸 Background removal failed: {e}")
+            return image
+
+    @staticmethod
+    def add_game_background(image: Image.Image, bg_color: tuple = (40, 20, 60)) -> Image.Image:
+        """
+        Add solid game-themed background to transparent image.
+
+        Args:
+            image: RGBA image with transparent background
+            bg_color: RGB tuple for background color (default: dark purple)
+
+        Returns:
+            RGB image with solid background
+        """
+        if image.mode != "RGBA":
+            return image
+
+        # Create background
+        bg = Image.new("RGBA", image.size, (*bg_color, 255))
+        # Composite the person on top
+        bg.paste(image, (0, 0), image)
+        return bg.convert("RGB")
+
+    @classmethod
+    def apply_video_game_character_effect(cls, image: Image.Image, pixel_size: int = 5) -> Image.Image:
+        """
+        Apply heavy video game character transformation.
+
+        Creates an authentic 8-bit/16-bit video game character look with:
+        - Background removal (person extracted)
+        - Heavy pixelation for blocky retro look
+        - Limited 32-color palette optimized for skin tones
+        - Game-themed purple background
+
+        Args:
+            image: PIL Image (selfie from webcam)
+            pixel_size: Pixel block size (5 = chunky retro, 4 = more detail)
+
+        Returns:
+            Video game character styled image
+        """
+        logger.info(f"📸 Applying video game character effect (pixel_size={pixel_size})")
+
+        # Step 1: Remove background
+        img_nobg = cls.remove_background(image)
+
+        # Step 2: Add game-themed purple background
+        img_with_bg = cls.add_game_background(img_nobg, bg_color=(40, 20, 60))
+
+        # Step 3: Apply heavier pixelation for authentic retro look
+        img_pixelated = cls.pixelate(img_with_bg, pixel_size=pixel_size)
+
+        # Step 4: Reduce to video game palette (32 colors with good skin tones)
+        img_final = cls.reduce_colors(img_pixelated, cls.VIDEO_GAME_PALETTE)
+
+        logger.info("📸 Video game character effect applied")
+        return img_final
+
+    @classmethod
+    def apply_enhanced_arcade_effect(cls, image: Image.Image) -> Image.Image:
+        """
+        Apply enhanced arcade photo booth effect.
+
+        This is the RECOMMENDED effect for the photo booth - creates an
+        authentic video game character look while keeping the person recognizable.
+
+        Args:
+            image: PIL Image (selfie from webcam)
+
+        Returns:
+            Arcade-styled selfie that looks like a video game character
+        """
+        # Apply the full video game character transformation
+        img = cls.apply_video_game_character_effect(image, pixel_size=5)
+
+        # Add subtle scanlines for CRT arcade feel
+        img = cls.add_scanlines(img, opacity=25, spacing=4)
 
         return img
