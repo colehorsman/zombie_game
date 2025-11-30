@@ -33,6 +33,7 @@ from evidence_capture import EvidenceCapture
 from game_map import GameMap
 from hacker import Hacker
 from jit_access_quest import AdminRole, Auditor, create_jit_quest_entities
+from level_entry_menu_controller import LevelEntryAction, LevelEntryMenuController
 from level_manager import LevelManager
 from models import GameState, GameStatus, JitQuestState, PermissionSet, Vector2
 from pause_menu_controller import PauseMenuAction, PauseMenuController
@@ -127,7 +128,9 @@ class GameEngine:
                 # Make zombies visible in lobby (they're hidden by default)
                 for zombie in self.zombies:
                     zombie.is_hidden = False
-                logger.info(f"🏛️  Distributed {len(self.zombies)} zombies across lobby rooms")
+                logger.info(
+                    f"🏛️  Distributed {len(self.zombies)} zombies across lobby rooms"
+                )
 
             # LOBBY: Spawn player in far top-left corner (open lobby area)
             # Future: This will be the AWS Control Tower location
@@ -148,7 +151,9 @@ class GameEngine:
             )
 
             # Spatial grid for entire map
-            self.spatial_grid = SpatialGrid(self.game_map.map_width, self.game_map.map_height)
+            self.spatial_grid = SpatialGrid(
+                self.game_map.map_width, self.game_map.map_height
+            )
         else:
             self.game_map = None
             self.landing_zone = Vector2(screen_width // 2, screen_height // 2)
@@ -170,7 +175,9 @@ class GameEngine:
         self.star_power_touched_zombies = (
             set()
         )  # Track which zombies we've already touched during current Star Power
-        self.star_power_was_active = False  # Track when Star Power ends to clear touched set
+        self.star_power_was_active = (
+            False  # Track when Star Power ends to clear touched set
+        )
 
         # Arcade Mode
         self.arcade_manager = ArcadeModeManager()
@@ -184,7 +191,9 @@ class GameEngine:
         # Get level info
         current_level = level_manager.get_current_level() if level_manager else None
         level_number = current_level.level_number if current_level else 1
-        environment_type = current_level.environment_type if current_level else "sandbox"
+        environment_type = (
+            current_level.environment_type if current_level else "sandbox"
+        )
 
         # Game state - START IN LOBBY MODE
         # In lobby, zombies are visible but not interactive (they're in rooms)
@@ -205,8 +214,12 @@ class GameEngine:
 
         # Save/load game state
         self.save_manager = SaveManager()
-        self.quarantined_identities = set()  # Track identity IDs that have been quarantined
-        self.blocked_third_parties = set()  # Track third-party names that have been blocked
+        self.quarantined_identities = (
+            set()
+        )  # Track identity IDs that have been quarantined
+        self.blocked_third_parties = (
+            set()
+        )  # Track third-party names that have been blocked
 
         # Evidence capture (screenshots & recordings)
         self.evidence_capture = EvidenceCapture()
@@ -217,7 +230,9 @@ class GameEngine:
         self.cheat_code_controller = CheatCodeController()
 
         # Door interaction cooldown (prevents immediate re-entry after returning to lobby)
-        self.door_interaction_cooldown = 0.0  # Seconds remaining before doors can be entered
+        self.door_interaction_cooldown = (
+            0.0  # Seconds remaining before doors can be entered
+        )
 
         # Timing
         self.start_time = time.time()
@@ -239,7 +254,9 @@ class GameEngine:
         self.scroll_offset = 0.0
 
         # Boss battle (supports both old Boss and new cyber bosses)
-        self.boss: Optional[Union[Boss, ScatteredSpiderBoss, HeartbleedBoss, WannaCryBoss]] = None
+        self.boss: Optional[
+            Union[Boss, ScatteredSpiderBoss, HeartbleedBoss, WannaCryBoss]
+        ] = None
         self.boss_spawned = False
         self.boss_type: Optional[BossType] = None
 
@@ -252,9 +269,23 @@ class GameEngine:
         # Arcade results menu - now managed by ArcadeResultsController
         self.arcade_results_controller = ArcadeResultsController()
 
+        # Level entry mode selector - shows when entering levels (Arcade vs Story mode)
+        import os
+
+        level_entry_enabled = (
+            os.getenv("LEVEL_ENTRY_MODE_SELECTOR_ENABLED", "true").lower() == "true"
+        )
+        default_level_entry_mode = os.getenv("DEFAULT_LEVEL_ENTRY_MODE", "arcade")
+        self.level_entry_menu_controller = LevelEntryMenuController(
+            enabled=level_entry_enabled, default_mode=default_level_entry_mode
+        )
+        self._pending_door_entry = None  # Door waiting for mode selection
+
         # Photo booth for arcade mode selfies
         self.photo_booth = None
-        self._pending_arcade_stats = None  # Stats pending while photo booth summary is shown
+        self._pending_arcade_stats = (
+            None  # Stats pending while photo booth summary is shown
+        )
         self.renderer = None  # Set by main.py after creation for photo booth capture
         print(f"📸 PHOTO_BOOTH_AVAILABLE = {PHOTO_BOOTH_AVAILABLE}")
         if PHOTO_BOOTH_AVAILABLE:
@@ -304,7 +335,9 @@ class GameEngine:
             "437154727976",  # Sonrai MyHealth - Org
         }
 
-    def _init_controller_with_retry(self, max_retries: int = 5, delay: float = 0.3) -> None:
+    def _init_controller_with_retry(
+        self, max_retries: int = 5, delay: float = 0.3
+    ) -> None:
         """
         Initialize controller with retry logic.
 
@@ -316,7 +349,9 @@ class GameEngine:
             max_retries: Number of retry attempts
             delay: Delay in seconds between retries
         """
-        logger.info(f"🎮 Initializing controller detection (max {max_retries} attempts)...")
+        logger.info(
+            f"🎮 Initializing controller detection (max {max_retries} attempts)..."
+        )
         print(f"🎮 Initializing controller detection (max {max_retries} attempts)...")
 
         for attempt in range(max_retries):
@@ -361,7 +396,9 @@ class GameEngine:
                 "⌨️  No controller detected, using keyboard (connect controller and it will be auto-detected)"
             )
             print("⌨️  No controller detected, using keyboard")
-            print("💡 Tip: Connect your controller and it will be auto-detected via hot-plug")
+            print(
+                "💡 Tip: Connect your controller and it will be auto-detected via hot-plug"
+            )
 
     def start(self) -> None:
         """Start the game."""
@@ -384,7 +421,9 @@ class GameEngine:
         # Level 6: Production (613056517323)
 
         # Sandbox quest (Level 1) - only create if bedrock-agentcore is unprotected
-        sandbox_level = next((l for l in self.level_manager.levels if l.level_number == 1), None)
+        sandbox_level = next(
+            (l for l in self.level_manager.levels if l.level_number == 1), None
+        )
         if sandbox_level:
             logger.info(
                 f"🔍 Checking protection status for Sandbox account {sandbox_level.account_id}..."
@@ -403,12 +442,18 @@ class GameEngine:
                     service_pos=Vector2(5000, SERVICE_ICON_Y),
                 )
                 self.quest_manager.add_quest(sandbox_quest)
-                logger.info(f"✅ Created Sandbox Bedrock AgentCore quest (service is unprotected)")
+                logger.info(
+                    f"✅ Created Sandbox Bedrock AgentCore quest (service is unprotected)"
+                )
             else:
-                logger.info(f"⏭️  Skipping Sandbox quest - bedrock-agentcore already protected")
+                logger.info(
+                    f"⏭️  Skipping Sandbox quest - bedrock-agentcore already protected"
+                )
 
         # Production quest (Level 6) - only create if bedrock-agentcore is unprotected
-        production_level = next((l for l in self.level_manager.levels if l.level_number == 6), None)
+        production_level = next(
+            (l for l in self.level_manager.levels if l.level_number == 6), None
+        )
         if production_level:
             logger.info(
                 f"🔍 Checking protection status for Production account {production_level.account_id}..."
@@ -432,7 +477,9 @@ class GameEngine:
                     f"✅ Created Production Bedrock AgentCore quest (service is unprotected)"
                 )
             else:
-                logger.info(f"⏭️  Skipping Production quest - bedrock-agentcore already protected")
+                logger.info(
+                    f"⏭️  Skipping Production quest - bedrock-agentcore already protected"
+                )
 
     def _initialize_jit_quest(self, account_id: str) -> None:
         """
@@ -448,7 +495,9 @@ class GameEngine:
 
         # Only initialize for production accounts
         if account_id not in self.JIT_QUEST_ACCOUNTS:
-            logger.info(f"⏭️  Account {account_id} is not a production account - skipping JIT quest")
+            logger.info(
+                f"⏭️  Account {account_id} is not a production account - skipping JIT quest"
+            )
             return
 
         try:
@@ -460,7 +509,9 @@ class GameEngine:
             permission_sets_data = self.api_client.fetch_permission_sets(account_id)
 
             if not permission_sets_data:
-                logger.info(f"⏭️  No admin/privileged permission sets found - skipping JIT quest")
+                logger.info(
+                    f"⏭️  No admin/privileged permission sets found - skipping JIT quest"
+                )
                 return
 
             # Fetch JIT configuration to see which are already protected
@@ -488,7 +539,9 @@ class GameEngine:
 
             # Only create quest if there are unprotected roles
             if unprotected_count == 0:
-                logger.info(f"⏭️  All admin/privileged roles already have JIT - skipping quest")
+                logger.info(
+                    f"⏭️  All admin/privileged roles already have JIT - skipping quest"
+                )
                 return
 
             # Create quest entities
@@ -500,7 +553,10 @@ class GameEngine:
             # Use the same ground level as zombies - get from platform positions
             # The last platforms in the list are the ground segments
             ground_y = 400  # Default fallback
-            if hasattr(self.game_map, "platform_positions") and self.game_map.platform_positions:
+            if (
+                hasattr(self.game_map, "platform_positions")
+                and self.game_map.platform_positions
+            ):
                 # Get the ground platform (last ones in the list are ground segments)
                 # Ground platforms have y position around 600-650
                 for (
@@ -545,7 +601,9 @@ class GameEngine:
         from models import QuestStatus
 
         # Get quest for current level
-        active_quest = self.quest_manager.get_quest_for_level(self.game_state.current_level)
+        active_quest = self.quest_manager.get_quest_for_level(
+            self.game_state.current_level
+        )
         if not active_quest:
             return
 
@@ -579,13 +637,19 @@ class GameEngine:
                 self.hacker.update(delta_time, self.game_map)
 
                 # Check if hacker reached service
-                hacker_dist = self._distance(self.hacker.position, active_quest.service_position)
+                hacker_dist = self._distance(
+                    self.hacker.position, active_quest.service_position
+                )
                 if hacker_dist < 50:  # Hacker reached icon
-                    self._handle_quest_failure(active_quest, "Hacker reached service first!")
+                    self._handle_quest_failure(
+                        active_quest, "Hacker reached service first!"
+                    )
                     return
 
             # Check if player near service (auto-protect within 80px)
-            player_dist = self._distance(self.player.position, active_quest.service_position)
+            player_dist = self._distance(
+                self.player.position, active_quest.service_position
+            )
             if player_dist < 80:  # Auto-protect range
                 # Find service node
                 for service_node in self.service_nodes:
@@ -616,7 +680,9 @@ class GameEngine:
                 logger.warning(f"Reset is_quarantining flag on {zombie.identity_name}")
 
         # Pause game to show failure message
-        self.game_state.previous_status = self.game_state.status  # BUG FIX: Save previous status
+        self.game_state.previous_status = (
+            self.game_state.status
+        )  # BUG FIX: Save previous status
         self.game_state.status = GameStatus.PAUSED
 
         # Show mission failed message
@@ -754,7 +820,9 @@ class GameEngine:
             admin_role: AdminRole entity to protect
         """
         try:
-            logger.info(f"Applying JIT protection to {admin_role.permission_set.name}...")
+            logger.info(
+                f"Applying JIT protection to {admin_role.permission_set.name}..."
+            )
 
             # Call REAL Sonrai API to apply JIT protection
             result = self.api_client.apply_jit_protection(
@@ -790,7 +858,9 @@ class GameEngine:
                 error_msg = result.error_message or "Unknown error"
                 logger.error(f"Failed to apply JIT protection: {error_msg}")
                 self.game_state.jit_quest.quest_message = (
-                    f"⚠️ JIT Protection Failed\n\n" f"Error: {error_msg}\n\n" "Try again!"
+                    f"⚠️ JIT Protection Failed\n\n"
+                    f"Error: {error_msg}\n\n"
+                    "Try again!"
                 )
                 self.game_state.jit_quest.quest_message_timer = 3.0
 
@@ -854,7 +924,10 @@ class GameEngine:
                 self.game_state.resource_message = None
 
         # Handle photo booth consent timeout
-        if getattr(self.game_state, "photo_booth_consent_active", False) and self.photo_booth:
+        if (
+            getattr(self.game_state, "photo_booth_consent_active", False)
+            and self.photo_booth
+        ):
             if self.photo_booth.check_consent_timeout():
                 logger.info("📸 Photo booth consent timed out")
                 self._begin_arcade_session()
@@ -893,7 +966,9 @@ class GameEngine:
         if self.door_interaction_cooldown > 0:
             self.door_interaction_cooldown -= delta_time
             if self.door_interaction_cooldown <= 0:
-                logger.info("🚪 Door interaction cooldown expired - doors can now be entered")
+                logger.info(
+                    "🚪 Door interaction cooldown expired - doors can now be entered"
+                )
 
         # Update camera to follow player
         if self.use_map and self.game_map:
@@ -950,7 +1025,9 @@ class GameEngine:
                                     # Check if previous level is complete
                                     level_index = self.level_manager.levels.index(level)
                                     if level_index > 0:
-                                        prev_level = self.level_manager.levels[level_index - 1]
+                                        prev_level = self.level_manager.levels[
+                                            level_index - 1
+                                        ]
                                         if (
                                             prev_level.account_id
                                             in self.completed_level_account_ids
@@ -963,14 +1040,36 @@ class GameEngine:
                                 break
 
                     if level_unlocked:
-                        # Player entered an unlocked door - transition to level mode
-                        logger.info(f"🚪 Door collision detected! Door name: '{door_name}'")
-                        self._enter_level(door)
+                        # Player entered an unlocked door
+                        logger.info(
+                            f"🚪 Door collision detected! Door name: '{door_name}'"
+                        )
+
+                        # Check if this is Sandbox and level entry menu is enabled
+                        is_sandbox = door_name.lower() == "sandbox" or (
+                            hasattr(door, "account_id")
+                            and door.account_id == "577945324761"
+                        )
+
+                        if is_sandbox and self.level_entry_menu_controller.enabled:
+                            # Show level entry mode selector for Sandbox
+                            self._pending_door_entry = door
+                            self.game_state.congratulations_message = (
+                                self.level_entry_menu_controller.show(door_name)
+                            )
+                            self.game_state.previous_status = self.game_state.status
+                            self.game_state.status = GameStatus.PAUSED
+                            logger.info(f"🚪 Showing level entry menu for {door_name}")
+                        else:
+                            # Direct entry for non-Sandbox levels or when menu disabled
+                            self._enter_level(door)
                         break
                     else:
                         # Door is locked - show message but DON'T enter
                         if locked_reason:
-                            logger.info(f"🔒 Attempted to enter locked door: {door_name}")
+                            logger.info(
+                                f"🔒 Attempted to enter locked door: {door_name}"
+                            )
                             self.game_state.congratulations_message = locked_reason
                             # Save current status before pausing
                             self.game_state.previous_status = self.game_state.status
@@ -996,7 +1095,9 @@ class GameEngine:
             for projectile in self.projectiles[:]:
                 for third_party in self.game_map.third_parties[:]:
                     if not third_party.is_blocking and not third_party.is_protected:
-                        if projectile.get_bounds().colliderect(third_party.get_bounds()):
+                        if projectile.get_bounds().colliderect(
+                            third_party.get_bounds()
+                        ):
                             # Remove projectile
                             if projectile in self.projectiles:
                                 self.projectiles.remove(projectile)
@@ -1033,7 +1134,9 @@ class GameEngine:
                 return
 
             logger.info(f"🚪 Step 2: Looking for level matching door: '{door_name}'")
-            logger.info(f"Available levels: {[l.account_name for l in self.level_manager.levels]}")
+            logger.info(
+                f"Available levels: {[l.account_name for l in self.level_manager.levels]}"
+            )
 
             # Find matching level by account name
             current_level = None
@@ -1054,15 +1157,20 @@ class GameEngine:
 
             logger.info(f"🚪 Step 3: Setting level index")
             # Set current level in level manager
-            self.level_manager.current_level_index = self.level_manager.levels.index(current_level)
+            self.level_manager.current_level_index = self.level_manager.levels.index(
+                current_level
+            )
 
-            logger.info(f"🚪 Step 4: Loading zombies for account {current_level.account_id}")
+            logger.info(
+                f"🚪 Step 4: Loading zombies for account {current_level.account_id}"
+            )
             # Load zombies for this level's account, excluding already quarantined ones
             account_id = current_level.account_id
             level_zombies = [
                 z
                 for z in self.all_zombies
-                if z.account == account_id and z.identity_id not in self.quarantined_identities
+                if z.account == account_id
+                and z.identity_id not in self.quarantined_identities
             ]
             logger.info(
                 f"Loaded {len(level_zombies)} zombies for level {current_level.level_number} (excluding {len([z for z in self.all_zombies if z.account == account_id])-len(level_zombies)} already quarantined)"
@@ -1073,7 +1181,9 @@ class GameEngine:
             )
             # Initialize difficulty for this level's environment
             try:
-                self.difficulty = get_difficulty_for_environment(current_level.environment_type)
+                self.difficulty = get_difficulty_for_environment(
+                    current_level.environment_type
+                )
                 logger.info(
                     f"Difficulty for {current_level.environment_type}: {self.difficulty.zombie_hp} HP, {self.difficulty.reveal_radius}px reveal"
                 )
@@ -1097,13 +1207,17 @@ class GameEngine:
                     api_client=self.api_client,
                     mode="platformer",  # PLATFORMER MODE for levels!
                 )
-                logger.info(f"✅ GameMap reinitialized as PLATFORMER level successfully")
+                logger.info(
+                    f"✅ GameMap reinitialized as PLATFORMER level successfully"
+                )
 
                 # BUG FIX: Recreate spatial grid for platformer level dimensions
                 # The original grid was created with lobby dimensions, but platformer levels
                 # can be much wider (up to 27,200px for 512 zombies). Without this fix,
                 # zombies beyond the original grid width won't be added to collision cells.
-                self.spatial_grid = SpatialGrid(self.game_map.map_width, self.game_map.map_height)
+                self.spatial_grid = SpatialGrid(
+                    self.game_map.map_width, self.game_map.map_height
+                )
                 logger.info(
                     f"✅ Spatial grid recreated for level: {self.game_map.map_width}x{self.game_map.map_height}"
                 )
@@ -1122,7 +1236,9 @@ class GameEngine:
                         f"Approval system active: {self.difficulty.approvals_needed} approvals needed"
                     )
                 except Exception as e:
-                    logger.error(f"Failed to initialize approval manager: {e}", exc_info=True)
+                    logger.error(
+                        f"Failed to initialize approval manager: {e}", exc_info=True
+                    )
                     self.approval_manager = None
             else:
                 self.approval_manager = None
@@ -1184,7 +1300,9 @@ class GameEngine:
             # Spawn AWS-themed power-ups (stars and lambda speed) on platforms
             try:
                 self.spawn_powerups()
-                logger.info(f"✅ Power-up spawning completed: {len(self.powerups)} powerups active")
+                logger.info(
+                    f"✅ Power-up spawning completed: {len(self.powerups)} powerups active"
+                )
             except Exception as e:
                 logger.error(f"⚠️  Power-up spawning failed: {e}", exc_info=True)
                 self.powerups = []  # Continue level without powerups rather than crash
@@ -1196,7 +1314,9 @@ class GameEngine:
             try:
                 self.service_nodes = []
                 if self.quest_manager:
-                    quest = self.quest_manager.get_quest_for_level(current_level.level_number)
+                    quest = self.quest_manager.get_quest_for_level(
+                        current_level.level_number
+                    )
                     if quest:
                         # Quest exists - create service node!
                         if current_level.level_number == 1:
@@ -1225,7 +1345,9 @@ class GameEngine:
                 logger.error(f"⚠️  Service node creation failed: {e}", exc_info=True)
                 self.service_nodes = []
 
-            logger.info(f"🚪 Step 15: Initializing JIT Access Quest (if production account)")
+            logger.info(
+                f"🚪 Step 15: Initializing JIT Access Quest (if production account)"
+            )
             # Initialize JIT Access Quest for production accounts
             self._initialize_jit_quest(account_id)
 
@@ -1294,7 +1416,9 @@ class GameEngine:
         )
 
         # Recreate spatial grid for lobby dimensions (matches _enter_level fix)
-        self.spatial_grid = SpatialGrid(self.game_map.map_width, self.game_map.map_height)
+        self.spatial_grid = SpatialGrid(
+            self.game_map.map_width, self.game_map.map_height
+        )
         logger.info(
             f"✅ Spatial grid recreated for lobby: {self.game_map.map_width}x{self.game_map.map_height}"
         )
@@ -1373,7 +1497,9 @@ class GameEngine:
         # Set door interaction cooldown to prevent immediate re-entry
         # Increased to 2 seconds to ensure player has time to move away from door
         self.door_interaction_cooldown = 2.0  # 2 second cooldown
-        logger.info("🚪 Door interaction cooldown set to 2.0 seconds (prevents immediate re-entry)")
+        logger.info(
+            "🚪 Door interaction cooldown set to 2.0 seconds (prevents immediate re-entry)"
+        )
 
         logger.info("✅ Returned to lobby")
 
@@ -1412,7 +1538,9 @@ class GameEngine:
                     self.arcade_manager.respawn_zombie(
                         zombie, self.player.position, self.game_map.map_width, ground_y
                     )
-                    logger.info(f"♻️  Respawned zombie in arcade mode: {zombie.identity_name}")
+                    logger.info(
+                        f"♻️  Respawned zombie in arcade mode: {zombie.identity_name}"
+                    )
 
         # Photo booth timed captures during active gameplay
         if self.photo_booth:
@@ -1431,7 +1559,9 @@ class GameEngine:
                 if self.photo_booth.should_capture_gameplay():
                     if self.renderer and hasattr(self.renderer, "screen"):
                         self.photo_booth.capture_gameplay(self.renderer.screen)
-                        logger.info("📸 Captured gameplay screenshot during arcade mode")
+                        logger.info(
+                            "📸 Captured gameplay screenshot during arcade mode"
+                        )
                     else:
                         logger.warning(
                             f"📸 Cannot capture gameplay: renderer={self.renderer is not None}, has_screen={hasattr(self.renderer, 'screen') if self.renderer else 'N/A'}"
@@ -1444,7 +1574,9 @@ class GameEngine:
                         f"camera_available={self.photo_booth.is_camera_available}"
                     )
                     result = self.photo_booth.capture_selfie()
-                    logger.info(f"📸 Captured selfie during arcade mode, result={result}")
+                    logger.info(
+                        f"📸 Captured selfie during arcade mode, result={result}"
+                    )
 
         # Disable quests during arcade mode
         # (Quests are updated in _update_playing, which still runs)
@@ -1455,7 +1587,9 @@ class GameEngine:
             logger.info("🎮 ========== STARTING ARCADE MODE SESSION ==========")
             logger.info(f"🎮 Current game state: {self.game_state.status}")
             logger.info(f"🎮 Current level: {self.game_state.current_level}")
-            logger.info(f"🎮 Current account: {self.game_state.current_level_account_id}")
+            logger.info(
+                f"🎮 Current account: {self.game_state.current_level_account_id}"
+            )
             logger.info(f"🎮 Has game_map: {self.game_map is not None}")
             logger.info(f"🎮 Zombie count: {len(self.zombies)}")
 
@@ -1478,7 +1612,9 @@ class GameEngine:
                 # Don't start arcade yet - wait for consent
                 return
             else:
-                logger.info("📸 Photo booth disabled or not available - skipping consent")
+                logger.info(
+                    "📸 Photo booth disabled or not available - skipping consent"
+                )
 
             # Continue with arcade start
             self._begin_arcade_session()
@@ -1496,7 +1632,9 @@ class GameEngine:
 
             # Start arcade manager
             self.arcade_manager.start_session()
-            logger.info(f"🎮 Arcade manager started. Is active: {self.arcade_manager.is_active()}")
+            logger.info(
+                f"🎮 Arcade manager started. Is active: {self.arcade_manager.is_active()}"
+            )
 
             # Start photo booth arcade tracking for timed captures
             # Always start tracking if photo booth is available - consent may complete later
@@ -1537,9 +1675,7 @@ class GameEngine:
                 logger.info(f"🎁 Spawned {len(arcade_powerups)} arcade power-ups")
 
             # Show confirmation message (use resource_message to avoid blocking shooting)
-            self.game_state.resource_message = (
-                "🎮 ARCADE MODE ACTIVATED!\n\nEliminate as many zombies as possible in 60 seconds!"
-            )
+            self.game_state.resource_message = "🎮 ARCADE MODE ACTIVATED!\n\nEliminate as many zombies as possible in 60 seconds!"
             self.game_state.resource_message_timer = 3.0
 
             logger.info("✅ Arcade session started successfully")
@@ -1581,16 +1717,22 @@ class GameEngine:
                 # Only generate if we have a gameplay screenshot
                 if self.photo_booth.gameplay_captured:
                     logger.info("📸 Generating photo booth composite...")
-                    photo_path = self.photo_booth.generate_composite(stats.total_eliminations)
+                    photo_path = self.photo_booth.generate_composite(
+                        stats.total_eliminations
+                    )
                     if photo_path:
                         logger.info(f"📸 Photo booth image saved: {photo_path}")
                         # Store path for display on results screen
                         self.game_state.photo_booth_path = photo_path
                 else:
-                    logger.info("📸 No gameplay screenshot captured - skipping photo booth")
+                    logger.info(
+                        "📸 No gameplay screenshot captured - skipping photo booth"
+                    )
             else:
                 elapsed = self.photo_booth.get_arcade_elapsed_time()
-                logger.info(f"📸 Arcade session too short ({elapsed:.1f}s) - skipping photo booth")
+                logger.info(
+                    f"📸 Arcade session too short ({elapsed:.1f}s) - skipping photo booth"
+                )
 
         # Pause game first
         self.game_state.previous_status = self.game_state.status
@@ -1609,7 +1751,9 @@ class GameEngine:
         else:
             # No photo booth - show results directly
             self.arcade_results_controller.show(stats_snapshot)
-            self.game_state.congratulations_message = self._build_arcade_results_message()
+            self.game_state.congratulations_message = (
+                self._build_arcade_results_message()
+            )
 
     def _build_arcade_results_message(self) -> str:
         """Build the arcade results message. Delegates to ArcadeResultsController."""
@@ -1637,7 +1781,9 @@ class GameEngine:
         # Now show the arcade results with the pending stats
         if self._pending_arcade_stats:
             self.arcade_results_controller.show(self._pending_arcade_stats)
-            self.game_state.congratulations_message = self._build_arcade_results_message()
+            self.game_state.congratulations_message = (
+                self._build_arcade_results_message()
+            )
             self._pending_arcade_stats = None
 
     def _navigate_arcade_results_menu(self, direction: int) -> None:
@@ -1733,11 +1879,15 @@ class GameEngine:
 
         # Debug: Log health when low
         if self.player.current_health <= 3:
-            logger.info(f"⚠️ LOW HEALTH: {self.player.current_health}/{self.player.max_health}")
+            logger.info(
+                f"⚠️ LOW HEALTH: {self.player.current_health}/{self.player.max_health}"
+            )
 
         # Check for game over (player health depleted)
         if self.player.current_health <= 0:
-            logger.info(f"💀 GAME OVER TRIGGERED - Health: {self.player.current_health}")
+            logger.info(
+                f"💀 GAME OVER TRIGGERED - Health: {self.player.current_health}"
+            )
             self._show_game_over_screen()
             return  # Stop updating game logic
 
@@ -1756,7 +1906,9 @@ class GameEngine:
                                 f"⭐ STAR POWER: Touching {zombie.identity_name} - instant quarantine!"
                             )
                             self.star_power_touched_zombies.add(zombie)
-                            self._handle_zombie_elimination(zombie)  # Instant elimination
+                            self._handle_zombie_elimination(
+                                zombie
+                            )  # Instant elimination
                         continue  # Don't push player back, zombie is eliminated
 
                     # Apply damage to player (if not invincible)
@@ -1793,13 +1945,17 @@ class GameEngine:
             powerup.update(delta_time)
 
         # Update player speed based on Lambda Speed power-up
-        speed_multiplier = self.powerup_manager.get_effect_value(PowerUpType.LAMBDA_SPEED) or 1.0
+        speed_multiplier = (
+            self.powerup_manager.get_effect_value(PowerUpType.LAMBDA_SPEED) or 1.0
+        )
         self.player.set_speed_multiplier(speed_multiplier)
 
         # Check for power-up collection
         player_bounds = self.player.get_bounds()
         for powerup in self.powerups:
-            if not powerup.collected and player_bounds.colliderect(powerup.get_bounds()):
+            if not powerup.collected and player_bounds.colliderect(
+                powerup.get_bounds()
+            ):
                 powerup.collected = True
                 self._apply_powerup_effect(powerup)
                 # Show power-up message bubble
@@ -1846,7 +2002,9 @@ class GameEngine:
                             message = f"🔒 Protected: {resource_type}\n"
                             if data_class:
                                 message += f"Data Class: {data_class}\n"
-                            message += "⚠️ ChatOps approval required\nfor sensitive permissions"
+                            message += (
+                                "⚠️ ChatOps approval required\nfor sensitive permissions"
+                            )
                     elif protection_status == "blocked":
                         # Special message for blocked RDS - works for "rds-backups", "backup-rds", etc.
                         if is_rds:
@@ -1886,7 +2044,9 @@ class GameEngine:
         # Update zombies with AI (only if not in boss battle)
         if self.game_state.status != GameStatus.BOSS_BATTLE:
             for zombie in self.zombies:
-                zombie.update(delta_time, player_pos=self.player.position, game_map=self.game_map)
+                zombie.update(
+                    delta_time, player_pos=self.player.position, game_map=self.game_map
+                )
 
         # Update 3rd parties
         third_parties = self.get_third_parties()
@@ -1919,7 +2079,9 @@ class GameEngine:
                     self.projectiles.remove(projectile)
             else:
                 # Classic mode: check against screen bounds
-                if projectile.is_off_screen(self.screen_width, self.screen_height, map_mode=False):
+                if projectile.is_off_screen(
+                    self.screen_width, self.screen_height, map_mode=False
+                ):
                     self.projectiles.remove(projectile)
 
         # Skip zombie collisions during boss battle
@@ -1931,7 +2093,9 @@ class GameEngine:
                     z
                     for z in self.zombies
                     if not z.is_hidden
-                    and self.game_map.is_on_screen(z.position.x, z.position.y, z.width, z.height)
+                    and self.game_map.is_on_screen(
+                        z.position.x, z.position.y, z.width, z.height
+                    )
                 ]
             else:
                 visible_zombies = self.zombies
@@ -1957,7 +2121,9 @@ class GameEngine:
                             z.position.x, z.position.y, z.width, z.height
                         )
                     )
-                    logger.warning(f"   Hidden: {hidden_count}, Off-screen: {offscreen_count}")
+                    logger.warning(
+                        f"   Hidden: {hidden_count}, Off-screen: {offscreen_count}"
+                    )
 
                 # Log first projectile and zombie positions if both exist
                 if self.projectiles and visible_zombies:
@@ -1976,7 +2142,9 @@ class GameEngine:
 
             # DEBUG: Log collision results
             if len(self.projectiles) > 0:
-                logger.info(f"🎯 COLLISION RESULT: {len(collisions)} collisions detected")
+                logger.info(
+                    f"🎯 COLLISION RESULT: {len(collisions)} collisions detected"
+                )
         else:
             collisions = []
 
@@ -2154,7 +2322,9 @@ class GameEngine:
 
     def _build_pause_menu_message(self) -> str:
         """Build the pause menu message. Delegates to PauseMenuController."""
-        return self.pause_menu_controller.build_message(has_controller=self.joystick is not None)
+        return self.pause_menu_controller.build_message(
+            has_controller=self.joystick is not None
+        )
 
     def _navigate_pause_menu(self, direction: int) -> None:
         """Navigate the pause menu. Delegates to PauseMenuController."""
@@ -2183,7 +2353,9 @@ class GameEngine:
             self.game_state.status = self.game_state.previous_status
             logger.info(f"🎮 Status restored to: {self.game_state.status}")
             self._start_arcade_mode()
-            logger.info(f"🎮 After start, arcade active: {self.arcade_manager.is_active()}")
+            logger.info(
+                f"🎮 After start, arcade active: {self.arcade_manager.is_active()}"
+            )
             logger.info("🎮 ========================================================")
         elif action == PauseMenuAction.RETURN_TO_LOBBY:
             if self.game_state.previous_status in (
@@ -2203,6 +2375,46 @@ class GameEngine:
             logger.info("Saving game before quit...")
             self._save_game()
             self.running = False
+
+    def _handle_level_entry_selection(self) -> None:
+        """Handle level entry menu selection (Arcade or Story mode)."""
+        action = self.level_entry_menu_controller.select()
+        door = self._pending_door_entry
+
+        if action == LevelEntryAction.ARCADE_MODE:
+            logger.info("🕹️ Level entry: ARCADE MODE selected")
+            self.level_entry_menu_controller.hide()
+            self.game_state.congratulations_message = None
+            self._pending_door_entry = None
+
+            # Enter the level first, then start arcade mode
+            if door:
+                self._enter_level(door)
+                # After entering level, start arcade mode flow (with photo booth if available)
+                self._start_arcade_mode()
+
+        elif action == LevelEntryAction.STORY_MODE:
+            logger.info("📖 Level entry: STORY MODE selected")
+            self.level_entry_menu_controller.hide()
+            self.game_state.congratulations_message = None
+            self._pending_door_entry = None
+
+            # Enter level normally (standard gameplay)
+            if door:
+                self._enter_level(door)
+
+    def _handle_level_entry_cancel(self) -> None:
+        """Handle level entry menu cancellation (return to lobby)."""
+        logger.info("❌ Level entry: CANCELLED - returning to lobby")
+        self.level_entry_menu_controller.cancel()
+        self.game_state.congratulations_message = None
+        self._pending_door_entry = None
+
+        # Resume lobby state
+        self.game_state.status = GameStatus.LOBBY
+
+        # Push player away from door to prevent immediate re-trigger
+        self.player.position.x -= 50
 
     def _show_game_over_screen(self) -> None:
         """Show game over screen when player health reaches 0."""
@@ -2235,9 +2447,13 @@ class GameEngine:
         self.game_over_selected_index = (self.game_over_selected_index + direction) % 2
 
         # Rebuild message with new selection
-        retry_text = "▶ Retry Level" if self.game_over_selected_index == 0 else "  Retry Level"
+        retry_text = (
+            "▶ Retry Level" if self.game_over_selected_index == 0 else "  Retry Level"
+        )
         lobby_text = (
-            "▶ Return to Lobby" if self.game_over_selected_index == 1 else "  Return to Lobby"
+            "▶ Return to Lobby"
+            if self.game_over_selected_index == 1
+            else "  Return to Lobby"
         )
 
         message = (
@@ -2282,7 +2498,10 @@ class GameEngine:
 
     def dismiss_message(self) -> None:
         """Dismiss the congratulations message and resume gameplay."""
-        if self.game_state.status == GameStatus.PAUSED and self.game_state.congratulations_message:
+        if (
+            self.game_state.status == GameStatus.PAUSED
+            and self.game_state.congratulations_message
+        ):
             # No need to quarantine/block - already done immediately when entity was hit
             # Just clear the message and resume
             self.game_state.congratulations_message = None
@@ -2340,7 +2559,9 @@ class GameEngine:
                     # Save in background too (non-blocking)
                     self._save_game()
                 else:
-                    logger.error(f"❌ [ASYNC] Quarantine failed: {result.error_message}")
+                    logger.error(
+                        f"❌ [ASYNC] Quarantine failed: {result.error_message}"
+                    )
 
             except Exception as e:
                 logger.error(f"❌ [ASYNC] Exception during quarantine: {e}")
@@ -2386,7 +2607,9 @@ class GameEngine:
         thread = threading.Thread(target=do_block, daemon=True)
         thread.start()
 
-    def handle_input(self, events: List[pygame.event.Event], screen: pygame.Surface = None) -> None:
+    def handle_input(
+        self, events: List[pygame.event.Event], screen: pygame.Surface = None
+    ) -> None:
         """
         Handle input events (keyboard and 8-bit controller).
 
@@ -2401,14 +2624,18 @@ class GameEngine:
             # Handle controller hot-plugging
             elif event.type == pygame.JOYDEVICEADDED:
                 # Controller connected - reinitialize
-                logger.info(f"🎮 JOYDEVICEADDED event received (device_index={event.device_index})")
+                logger.info(
+                    f"🎮 JOYDEVICEADDED event received (device_index={event.device_index})"
+                )
                 print(f"🎮 Controller device added (device_index={event.device_index})")
                 if self.joystick is None:
                     try:
                         joystick = pygame.joystick.Joystick(event.device_index)
                         joystick.init()
                         self.joystick = joystick
-                        logger.info(f"🎮 ✅ Controller connected: {joystick.get_name()}")
+                        logger.info(
+                            f"🎮 ✅ Controller connected: {joystick.get_name()}"
+                        )
                         print(f"🎮 ✅ Controller connected: {joystick.get_name()}")
                     except Exception as e:
                         logger.error(f"🎮 ❌ Failed to initialize controller: {e}")
@@ -2416,10 +2643,17 @@ class GameEngine:
 
             elif event.type == pygame.JOYDEVICEREMOVED:
                 # Controller disconnected
-                logger.info(f"🎮 JOYDEVICEREMOVED event received (instance_id={event.instance_id})")
+                logger.info(
+                    f"🎮 JOYDEVICEREMOVED event received (instance_id={event.instance_id})"
+                )
                 print(f"🎮 Controller device removed")
-                if self.joystick and self.joystick.get_instance_id() == event.instance_id:
-                    logger.info(f"🎮 Controller disconnected: {self.joystick.get_name()}")
+                if (
+                    self.joystick
+                    and self.joystick.get_instance_id() == event.instance_id
+                ):
+                    logger.info(
+                        f"🎮 Controller disconnected: {self.joystick.get_name()}"
+                    )
                     print(f"🎮 Controller disconnected: {self.joystick.get_name()}")
                     self.joystick = None
                     # Check if another controller is available
@@ -2456,13 +2690,33 @@ class GameEngine:
                         self._dismiss_photo_booth_summary()
                         continue
 
+                # Handle level entry menu navigation
+                if self.level_entry_menu_controller.active:
+                    if event.key in (pygame.K_UP, pygame.K_w):
+                        self.game_state.congratulations_message = (
+                            self.level_entry_menu_controller.navigate(-1)
+                        )
+                        continue
+                    elif event.key in (pygame.K_DOWN, pygame.K_s):
+                        self.game_state.congratulations_message = (
+                            self.level_entry_menu_controller.navigate(1)
+                        )
+                        continue
+                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        self._handle_level_entry_selection()
+                        continue
+                    elif event.key == pygame.K_ESCAPE:
+                        self._handle_level_entry_cancel()
+                        continue
+
                 # Handle pause menu navigation (if paused with menu active)
                 if self.game_state.status == GameStatus.PAUSED:
                     # Check if we're showing arcade results menu
                     if (
                         self.arcade_results_options
                         and self.game_state.congratulations_message
-                        and "ARCADE MODE COMPLETE" in self.game_state.congratulations_message
+                        and "ARCADE MODE COMPLETE"
+                        in self.game_state.congratulations_message
                     ):
                         # UP arrow or W - move selection up
                         if event.key in (pygame.K_UP, pygame.K_w):
@@ -2518,11 +2772,16 @@ class GameEngine:
                     self.game_state.status = GameStatus.PAUSED
 
                 elif cheat_result.action == CheatCodeAction.SKIP_LEVEL:
-                    if self.game_state.status == GameStatus.PLAYING and self.level_manager:
+                    if (
+                        self.game_state.status == GameStatus.PLAYING
+                        and self.level_manager
+                    ):
                         current_level = self.level_manager.levels[
                             self.level_manager.current_level_index
                         ]
-                        logger.info(f"🔓 CHEAT: Skipping level {current_level.account_name}")
+                        logger.info(
+                            f"🔓 CHEAT: Skipping level {current_level.account_name}"
+                        )
                         self._return_to_lobby(mark_completed=True)
 
                 elif cheat_result.action == CheatCodeAction.SPAWN_BOSS:
@@ -2534,7 +2793,9 @@ class GameEngine:
                         if self.game_state.current_level_account_id == "577945324761":
                             self._start_arcade_mode()
                         else:
-                            logger.info("⚠️  Arcade mode only available in Sandbox account")
+                            logger.info(
+                                "⚠️  Arcade mode only available in Sandbox account"
+                            )
 
                 # Handle boss dialogue dismissal (ENTER key only)
                 if event.key == pygame.K_RETURN:
@@ -2553,13 +2814,20 @@ class GameEngine:
                         active_quest = self.quest_manager.get_quest_for_level(
                             self.game_state.current_level
                         )
-                        if active_quest and active_quest.status == QuestStatus.TRIGGERED:
+                        if (
+                            active_quest
+                            and active_quest.status == QuestStatus.TRIGGERED
+                        ):
                             # Dismiss quest dialog
                             self.game_state.quest_message = None
 
                             # Spawn hacker ON GROUND near player for side-by-side race!
-                            spawn_x = self.player.position.x - 50  # Slightly behind player
-                            spawn_y = 832 - 32  # On the ground (ground_y - hacker_height)
+                            spawn_x = (
+                                self.player.position.x - 50
+                            )  # Slightly behind player
+                            spawn_y = (
+                                832 - 32
+                            )  # On the ground (ground_y - hacker_height)
                             self.hacker = Hacker(
                                 spawn_position=Vector2(spawn_x, spawn_y),
                                 target_position=active_quest.service_position,
@@ -2670,7 +2938,9 @@ class GameEngine:
                 )
 
                 # Handle photo booth consent input (controller)
-                consent_active = getattr(self.game_state, "photo_booth_consent_active", False)
+                consent_active = getattr(
+                    self.game_state, "photo_booth_consent_active", False
+                )
                 logger.info(
                     f"📸 CONSENT CHECK: active={consent_active}, photo_booth={self.photo_booth is not None}, button={event.button}"
                 )
@@ -2683,7 +2953,9 @@ class GameEngine:
                     # Accept EITHER A (0) or B (1) as "Yes" for selfie - some controllers have swapped buttons
                     # This ensures the user can opt-in regardless of button mapping
                     if event.button == 0 or event.button == 1:
-                        logger.info(f"📸 User opted IN to selfie (button {event.button})")
+                        logger.info(
+                            f"📸 User opted IN to selfie (button {event.button})"
+                        )
                         self.photo_booth.handle_consent_input(opted_in=True)
                         logger.info(
                             f"📸 POST-CONSENT: selfie_opted_in={self.photo_booth.selfie_opted_in}, "
@@ -2694,11 +2966,36 @@ class GameEngine:
 
                 # Handle photo booth summary dismissal (INSERT COIN TO CONTINUE)
                 if getattr(self.game_state, "photo_booth_summary_active", False):
-                    if event.button == 0 or event.button == 1:  # A or B button = dismiss
+                    if (
+                        event.button == 0 or event.button == 1
+                    ):  # A or B button = dismiss
                         logger.info(
                             f"📸 User dismissed photo booth summary (button {event.button})"
                         )
                         self._dismiss_photo_booth_summary()
+                        continue
+
+                # Handle level entry menu navigation (controller)
+                if self.level_entry_menu_controller.active:
+                    # D-pad UP (11) - navigate up
+                    if event.button == 11:
+                        self.game_state.congratulations_message = (
+                            self.level_entry_menu_controller.navigate(-1)
+                        )
+                        continue
+                    # D-pad DOWN (12) - navigate down
+                    elif event.button == 12:
+                        self.game_state.congratulations_message = (
+                            self.level_entry_menu_controller.navigate(1)
+                        )
+                        continue
+                    # A button (0) - confirm selection
+                    elif event.button == 0:
+                        self._handle_level_entry_selection()
+                        continue
+                    # B button (1) - cancel
+                    elif event.button == 1:
+                        self._handle_level_entry_cancel()
                         continue
 
                 # Evidence capture - works even without joystick initialized
@@ -2736,7 +3033,8 @@ class GameEngine:
                         if (
                             self.arcade_results_options
                             and self.game_state.congratulations_message
-                            and "ARCADE MODE COMPLETE" in self.game_state.congratulations_message
+                            and "ARCADE MODE COMPLETE"
+                            in self.game_state.congratulations_message
                         ):
                             # D-pad UP (11) - navigate up
                             if event.button == 11:
@@ -2753,7 +3051,8 @@ class GameEngine:
                         # Check if we're showing game over menu
                         elif (
                             self.game_state.congratulations_message
-                            and "SECURITY BREACH" in self.game_state.congratulations_message
+                            and "SECURITY BREACH"
+                            in self.game_state.congratulations_message
                         ):
                             # D-pad UP (11) - navigate up
                             if event.button == 11:
@@ -2819,13 +3118,20 @@ class GameEngine:
                             active_quest = self.quest_manager.get_quest_for_level(
                                 self.game_state.current_level
                             )
-                            if active_quest and active_quest.status == QuestStatus.TRIGGERED:
+                            if (
+                                active_quest
+                                and active_quest.status == QuestStatus.TRIGGERED
+                            ):
                                 # Dismiss quest dialog
                                 self.game_state.quest_message = None
 
                                 # Spawn hacker ON GROUND near player for side-by-side race!
-                                spawn_x = self.player.position.x - 50  # Slightly behind player
-                                spawn_y = 832 - 32  # On the ground (ground_y - hacker_height)
+                                spawn_x = (
+                                    self.player.position.x - 50
+                                )  # Slightly behind player
+                                spawn_y = (
+                                    832 - 32
+                                )  # On the ground (ground_y - hacker_height)
                                 self.hacker = Hacker(
                                     spawn_position=Vector2(spawn_x, spawn_y),
                                     target_position=active_quest.service_position,
@@ -2886,14 +3192,24 @@ class GameEngine:
         # Skip continuous movement if paused (prevents interference with menu navigation)
         if self.game_state.status == GameStatus.LOBBY:
             # Check keyboard input
-            keyboard_left = pygame.K_LEFT in self.keys_pressed or pygame.K_a in self.keys_pressed
-            keyboard_right = pygame.K_RIGHT in self.keys_pressed or pygame.K_d in self.keys_pressed
-            keyboard_up = pygame.K_UP in self.keys_pressed or pygame.K_w in self.keys_pressed
-            keyboard_down = pygame.K_DOWN in self.keys_pressed or pygame.K_s in self.keys_pressed
+            keyboard_left = (
+                pygame.K_LEFT in self.keys_pressed or pygame.K_a in self.keys_pressed
+            )
+            keyboard_right = (
+                pygame.K_RIGHT in self.keys_pressed or pygame.K_d in self.keys_pressed
+            )
+            keyboard_up = (
+                pygame.K_UP in self.keys_pressed or pygame.K_w in self.keys_pressed
+            )
+            keyboard_down = (
+                pygame.K_DOWN in self.keys_pressed or pygame.K_s in self.keys_pressed
+            )
 
             # Check controller unlock combo (L1 + R1 + Start)
             if self.joystick and not self.controller_unlock_combo_triggered:
-                if self.cheat_code_controller.check_controller_unlock_combo(self.joystick):
+                if self.cheat_code_controller.check_controller_unlock_combo(
+                    self.joystick
+                ):
                     self.controller_unlock_combo_triggered = True
                     self.cheat_code_controller.enable_unlock()
                     logger.info("🔓 CONTROLLER UNLOCK COMBO ACTIVATED! (L + R + Start)")
@@ -2933,7 +3249,9 @@ class GameEngine:
                     if hat[1] > 0:
                         controller_up = True  # Hat Y-axis: positive = UP (pressed up)
                     elif hat[1] < 0:
-                        controller_down = True  # Hat Y-axis: negative = DOWN (pressed down)
+                        controller_down = (
+                            True  # Hat Y-axis: negative = DOWN (pressed down)
+                        )
 
                 # Left analog stick (axis 0 and 1) - backup
                 if self.joystick.get_numaxes() > 1:
@@ -2944,9 +3262,13 @@ class GameEngine:
                     elif axis_x > 0.3:
                         controller_right = True
                     if axis_y < -0.3:
-                        controller_up = True  # Stick Y-axis: negative = UP (push stick up)
+                        controller_up = (
+                            True  # Stick Y-axis: negative = UP (push stick up)
+                        )
                     elif axis_y > 0.3:
-                        controller_down = True  # Stick Y-axis: positive = DOWN (push stick down)
+                        controller_down = (
+                            True  # Stick Y-axis: positive = DOWN (push stick down)
+                        )
 
                 # Right analog stick (axis 3 or 4) - zoom control in lobby
                 # Axis 3 is typically right stick Y on most controllers
@@ -2963,7 +3285,9 @@ class GameEngine:
                     elif right_stick_y > 0.5:  # Right stick DOWN = zoom in
                         if self.game_map.landing_zone_view:
                             self.game_map.toggle_landing_zone_view()
-                            logger.info("🔍 Right stick DOWN - Exited Landing Zone View")
+                            logger.info(
+                                "🔍 Right stick DOWN - Exited Landing Zone View"
+                            )
 
             # Horizontal movement (keyboard or controller)
             if keyboard_left or controller_left:
@@ -2990,9 +3314,15 @@ class GameEngine:
         # LEVEL MODE: Platformer movement (left/right + jump)
         elif self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
             # Check keyboard input
-            keyboard_left = pygame.K_LEFT in self.keys_pressed or pygame.K_a in self.keys_pressed
-            keyboard_right = pygame.K_RIGHT in self.keys_pressed or pygame.K_d in self.keys_pressed
-            keyboard_down = pygame.K_DOWN in self.keys_pressed or pygame.K_s in self.keys_pressed
+            keyboard_left = (
+                pygame.K_LEFT in self.keys_pressed or pygame.K_a in self.keys_pressed
+            )
+            keyboard_right = (
+                pygame.K_RIGHT in self.keys_pressed or pygame.K_d in self.keys_pressed
+            )
+            keyboard_down = (
+                pygame.K_DOWN in self.keys_pressed or pygame.K_s in self.keys_pressed
+            )
 
             # Check controller D-pad/analog stick
             controller_left = False
@@ -3038,7 +3368,9 @@ class GameEngine:
                         controller_jump = True
 
             # Check keyboard jump
-            keyboard_jump = pygame.K_UP in self.keys_pressed or pygame.K_w in self.keys_pressed
+            keyboard_jump = (
+                pygame.K_UP in self.keys_pressed or pygame.K_w in self.keys_pressed
+            )
 
             # Apply movement
             if keyboard_left or controller_left:
@@ -3190,7 +3522,9 @@ class GameEngine:
         if self.use_map and self.game_map:
             # Map mode: scatter zombies randomly across the floorplan
             self.game_map.scatter_zombies(self.zombies)
-            logger.info(f"Scattered {len(self.zombies)} zombies across the re:invent floorplan")
+            logger.info(
+                f"Scattered {len(self.zombies)} zombies across the re:invent floorplan"
+            )
         else:
             # Classic mode: distribute zombies across a wide horizontal space
             # Start from 200 pixels so some are visible immediately
@@ -3229,7 +3563,9 @@ class GameEngine:
 
         # Validation 3: Check platform positions attribute exists
         if not hasattr(self.game_map, "platform_positions"):
-            logger.error("GameMap missing platform_positions attribute - powerups skipped")
+            logger.error(
+                "GameMap missing platform_positions attribute - powerups skipped"
+            )
             return
 
         # Validation 4: Check platform positions is not None or empty
@@ -3239,7 +3575,9 @@ class GameEngine:
 
         # Validation 5: Verify we're in platformer mode (not lobby)
         if hasattr(self.game_map, "mode") and self.game_map.mode != "platformer":
-            logger.debug(f"Powerups only spawn in platformer mode (current: {self.game_map.mode})")
+            logger.debug(
+                f"Powerups only spawn in platformer mode (current: {self.game_map.mode})"
+            )
             return
 
         try:
@@ -3251,8 +3589,12 @@ class GameEngine:
             num_powerups = min(12, max(6, len(self.zombies) // 50))
 
             # Prioritize EARLY platforms (first 3000 pixels) so players see powerups quickly
-            early_platforms = [p for p in self.game_map.platform_positions if 100 < p[0] < 3000]
-            later_platforms = [p for p in self.game_map.platform_positions if p[0] >= 3000]
+            early_platforms = [
+                p for p in self.game_map.platform_positions if 100 < p[0] < 3000
+            ]
+            later_platforms = [
+                p for p in self.game_map.platform_positions if p[0] >= 3000
+            ]
 
             if not early_platforms:
                 logger.warning("No early platforms available for powerup spawning")
@@ -3295,7 +3637,9 @@ class GameEngine:
                 powerup = PowerUp(Vector2(powerup_x, powerup_y), powerup_type)
                 self.powerups.append(powerup)
 
-            star_count = sum(1 for p in self.powerups if p.powerup_type == PowerUpType.STAR_POWER)
+            star_count = sum(
+                1 for p in self.powerups if p.powerup_type == PowerUpType.STAR_POWER
+            )
             logger.info(
                 f"✨ Spawned {len(self.powerups)} power-ups ON platforms ({star_count} stars)"
             )
@@ -3348,7 +3692,9 @@ class GameEngine:
             self.powerups.extend(challenge_powerups)
 
             star_count = sum(
-                1 for p in challenge_powerups if p.powerup_type == PowerUpType.STAR_POWER
+                1
+                for p in challenge_powerups
+                if p.powerup_type == PowerUpType.STAR_POWER
             )
             speed_count = len(challenge_powerups) - star_count
 
@@ -3358,7 +3704,9 @@ class GameEngine:
             )
 
         except Exception as e:
-            logger.error(f"Failed to spawn hacker challenge powerups: {e}", exc_info=True)
+            logger.error(
+                f"Failed to spawn hacker challenge powerups: {e}", exc_info=True
+            )
 
     def _apply_powerup_effect(self, powerup: PowerUp) -> None:
         """
@@ -3408,7 +3756,9 @@ class GameEngine:
 
         if self.boss_type:
             # Cyber boss - show educational dialogue first
-            logger.info(f"🕷️  Preparing {self.boss_type.value} boss for level {current_level}")
+            logger.info(
+                f"🕷️  Preparing {self.boss_type.value} boss for level {current_level}"
+            )
 
             # Get dialogue content and show via controller
             dialogue_data = get_boss_dialogue(self.boss_type)
@@ -3463,7 +3813,9 @@ class GameEngine:
 
         # Transition to boss battle state
         self.game_state.status = GameStatus.BOSS_BATTLE
-        logger.info(f"🧙 Wizard Boss spawning at ({boss_pos.x}, {boss_pos.y}) - dropping from sky!")
+        logger.info(
+            f"🧙 Wizard Boss spawning at ({boss_pos.x}, {boss_pos.y}) - dropping from sky!"
+        )
 
     def _spawn_cyber_boss(self) -> None:
         """Actually spawn the cyber boss after dialogue is dismissed."""
@@ -3528,7 +3880,9 @@ class GameEngine:
                     boss.ground_y = ground_y
                     self.boss = boss
 
-            logger.info(f"🎮 {self.boss_type.value} boss spawned at ({boss_x}, {boss_y})!")
+            logger.info(
+                f"🎮 {self.boss_type.value} boss spawned at ({boss_x}, {boss_y})!"
+            )
 
         # Check if boss was actually created (Scattered Spider path)
         if self.boss is None:
@@ -3610,7 +3964,8 @@ class GameEngine:
                 import math
 
                 dist = math.sqrt(
-                    (player_center_x - wave_center_x) ** 2 + (player_center_y - wave_center_y) ** 2
+                    (player_center_x - wave_center_x) ** 2
+                    + (player_center_y - wave_center_y) ** 2
                 )
 
                 # Player is hit if within the wave ring (outer edge)
@@ -3716,7 +4071,9 @@ class GameEngine:
                 ):
                     self.projectiles.remove(projectile)
             else:
-                if projectile.is_off_screen(self.screen_width, self.screen_height, map_mode=False):
+                if projectile.is_off_screen(
+                    self.screen_width, self.screen_height, map_mode=False
+                ):
                     self.projectiles.remove(projectile)
 
         # Check projectile collisions with boss
@@ -3783,7 +4140,9 @@ class GameEngine:
                     center_x = (self.player.position.x + self.boss.position.x) / 2
                 self.game_map.update_camera(center_x, self.player.position.y)
             else:
-                self.game_map.update_camera(self.player.position.x, self.player.position.y)
+                self.game_map.update_camera(
+                    self.player.position.x, self.player.position.y
+                )
 
     def _save_game(self) -> None:
         """Save current game state to disk."""
@@ -3836,7 +4195,9 @@ class GameEngine:
             player_data = save_data.get("player", {})
             self.game_state.score = player_data.get("score", 0)
             self.game_state.eliminations = player_data.get("eliminations", 0)
-            self.game_state.damage_multiplier = player_data.get("damage_multiplier", 1.0)
+            self.game_state.damage_multiplier = player_data.get(
+                "damage_multiplier", 1.0
+            )
 
             # Restore player position
             position_data = player_data.get("position", {})
@@ -3864,13 +4225,17 @@ class GameEngine:
                         level.is_unlocked = True
 
             # Restore quarantined identities and blocked third parties
-            self.quarantined_identities = set(save_data.get("quarantined_identities", []))
+            self.quarantined_identities = set(
+                save_data.get("quarantined_identities", [])
+            )
             self.blocked_third_parties = set(save_data.get("blocked_third_parties", []))
 
             logger.info(f"✅ Game state restored:")
             logger.info(f"   Score: {self.game_state.score}")
             logger.info(f"   Eliminations: {self.game_state.eliminations}")
-            logger.info(f"   Quarantined identities: {len(self.quarantined_identities)}")
+            logger.info(
+                f"   Quarantined identities: {len(self.quarantined_identities)}"
+            )
             logger.info(f"   Blocked third parties: {len(self.blocked_third_parties)}")
             logger.info(f"   Completed levels: {len(completed_levels)}")
 
