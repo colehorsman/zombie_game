@@ -1268,3 +1268,64 @@ When player health reaches 0 (all 5 hearts depleted):
 - Branding consistency
 
 ---
+
+
+---
+
+## NEW P0 BUGS - Found During Evidence Capture (Nov 30, 2024)
+
+### BUG-023: Level Entry Mode Selector Not Showing
+**Severity:** P0
+**Component:** Level Entry Menu Controller
+**Description:** Level entry mode selector (Arcade vs Story) doesn't appear when entering Sandbox
+**User Feedback:** "step 2 didnt actually work when i entered sandbox level"
+**Impact:** Feature not working, can't choose between Arcade/Story mode
+
+**Expected:** When entering Sandbox door, menu should appear with Arcade/Story options
+**Actual:** Goes directly into level without showing menu
+
+**Investigation Needed:**
+- Check if `level_entry_menu_controller.enabled` is True
+- Check door collision handling in `game_engine.py`
+- Verify `door.level_id.lower() == "sandbox"` condition
+
+---
+
+### BUG-024: WannaCry Boss Appearing in Wrong Levels
+**Severity:** P0
+**Component:** Boss System / Level Manager
+**Description:** WannaCry boss appears in MyHealth Production instead of correct boss
+**User Feedback:** "Wanna cry is showing up in multiple levels sandbox and myhealth production - this should be a different boss in myhealth production"
+**Impact:** Wrong boss for level, breaks progression
+
+**Expected:**
+- Level 1 (Sandbox): WannaCry
+- Level 6 (Production): Midnight Blizzard (or fallback)
+
+**Root Cause:** Unimplemented bosses likely falling back to WannaCry
+
+**Fix Options:**
+1. Implement missing bosses (Midnight Blizzard, BlackCat, etc.)
+2. Add proper fallback that doesn't reuse WannaCry
+3. Disable boss for levels without implemented boss
+
+---
+
+### BUG-025: Heartbleed Boss Missing Attacks
+**Severity:** P1
+**Component:** Boss System / Heartbleed Boss
+**Description:** Heartbleed (Red Queen) not shooting heart projectiles or showing heart pulse effect
+**User Feedback:** "shes not shooting heart projectiles nor a heart pulse light like wannacry"
+**Impact:** Boss battle less engaging, missing visual effects
+
+**Expected:**
+- Heart-shaped projectiles (bleeding data)
+- Pulsing heart glow effect
+- Phase-based attack patterns
+
+**Investigation Needed:**
+- Check `HeartbleedBoss.update()` attack logic
+- Verify projectile spawning
+- Check renderer for heart effects
+
+---
