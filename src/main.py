@@ -588,6 +588,12 @@ def main():
         if game_map and game_map.landing_zone_view:
             renderer.render_landing_zone_overlay(game_map)
 
+        # Render production outage overlay (if active)
+        if game_state.status == GameStatus.PLAYING:
+            outage_state = game_engine.outage_manager.get_state()
+            if outage_state.active:
+                renderer.render_production_outage(outage_state)
+
         # Render boss dialogue if showing
         if game_engine.showing_boss_dialogue and game_engine.boss_dialogue_content:
             renderer.render_boss_dialogue(game_engine.boss_dialogue_content)

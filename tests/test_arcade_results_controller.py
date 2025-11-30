@@ -1,15 +1,16 @@
 """Tests for ArcadeResultsController."""
 
-import pytest
 import sys
 from pathlib import Path
+
+import pytest
 
 # Add src directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from arcade_results_controller import (
-    ArcadeResultsController,
     ArcadeResultsAction,
+    ArcadeResultsController,
     ArcadeStatsSnapshot,
 )
 
@@ -38,6 +39,19 @@ def stats_empty_queue():
     )
 
 
+@pytest.fixture
+def stats_with_high_score():
+    """Stats snapshot with new high score achieved."""
+    return ArcadeStatsSnapshot(
+        total_eliminations=100,
+        highest_combo=15,
+        powerups_collected=10,
+        eliminations_per_second=1.67,
+        queue_size=85,
+        is_new_high_score=True,
+    )
+
+
 class TestArcadeResultsController:
     """Tests for the ArcadeResultsController class."""
 
@@ -49,12 +63,13 @@ class TestArcadeResultsController:
         assert controller.options == []
 
     def test_show_with_quarantine_options(self, stats_with_queue):
-        """Show with queue displays quarantine options."""
+        """Show with queue displays quarantine options, no selection initially."""
         controller = ArcadeResultsController()
         controller.show(stats_with_queue)
 
         assert controller.is_visible
-        assert controller.selected_index == 0
+        # Starts with no selection (-1) to prevent accidental button press
+        assert controller.selected_index == -1
         assert len(controller.options) == 3
         assert "Yes - Quarantine All" in controller.options
         assert "No - Discard Queue" in controller.options
@@ -82,9 +97,14 @@ class TestArcadeResultsController:
         assert controller.stats is None
 
     def test_navigate_down(self, stats_with_queue):
-        """Navigate down increments selection."""
+        """Navigate down increments selection, first nav selects first item."""
         controller = ArcadeResultsController()
         controller.show(stats_with_queue)
+        # Starts with no selection (-1)
+        assert controller.selected_index == -1
+
+        # First navigation selects first item (index 0)
+        controller.navigate(1)
         assert controller.selected_index == 0
 
         controller.navigate(1)
@@ -97,21 +117,29 @@ class TestArcadeResultsController:
         """Navigate up decrements selection."""
         controller = ArcadeResultsController()
         controller.show(stats_with_queue)
-        controller.navigate(1)  # Go to 1
-        controller.navigate(1)  # Go to 2
+        # First nav selects first item, then navigate to position 2
+        controller.navigate(1)  # -1 -> 0
+        controller.navigate(1)  # 0 -> 1
+        controller.navigate(1)  # 1 -> 2
 
-        controller.navigate(-1)
+        controller.navigate(-1)  # 2 -> 1
         assert controller.selected_index == 1
 
     def test_navigate_wraps_around(self, stats_with_queue):
         """Navigation wraps from last to first and vice versa."""
         controller = ArcadeResultsController()
-        controller.show(stats_with_queue)  # 3 options
+        controller.show(stats_with_queue)  # 3 options, starts at -1
 
-        controller.navigate(-1)  # Up from 0 wraps to 2
+        # First nav from -1 selects first item (0)
+        controller.navigate(1)
+        assert controller.selected_index == 0
+
+        # Up from 0 wraps to 2
+        controller.navigate(-1)
         assert controller.selected_index == 2
 
-        controller.navigate(1)  # Down from 2 wraps to 0
+        # Down from 2 wraps to 0
+        controller.navigate(1)
         assert controller.selected_index == 0
 
     def test_navigate_when_hidden_does_nothing(self):
@@ -120,11 +148,23 @@ class TestArcadeResultsController:
         controller.navigate(1)
         assert controller.selected_index == 0
 
+    def test_select_without_navigation_returns_none(self, stats_with_queue):
+        """Selecting without navigating first returns NONE (prevents accidental selection)."""
+        controller = ArcadeResultsController()
+        controller.show(stats_with_queue)
+        # selected_index is -1, no selection yet
+
+        action = controller.select()
+
+        assert action == ArcadeResultsAction.NONE
+        assert controller.is_visible  # Menu stays visible
+
     def test_select_quarantine_all(self, stats_with_queue):
         """Selecting Quarantine All returns QUARANTINE_ALL action."""
         controller = ArcadeResultsController()
         controller.show(stats_with_queue)
-        # First option is "Yes - Quarantine All"
+        # Must navigate first to select first option
+        controller.navigate(1)  # -1 -> 0 (Yes - Quarantine All)
 
         action = controller.select()
 
@@ -135,7 +175,8 @@ class TestArcadeResultsController:
         """Selecting Discard Queue returns DISCARD_QUEUE action."""
         controller = ArcadeResultsController()
         controller.show(stats_with_queue)
-        controller.navigate(1)  # Move to "No - Discard Queue"
+        controller.navigate(1)  # -1 -> 0 (Yes - Quarantine All)
+        controller.navigate(1)  # 0 -> 1 (No - Discard Queue)
 
         action = controller.select()
 
@@ -146,8 +187,9 @@ class TestArcadeResultsController:
         """Selecting Replay returns REPLAY action."""
         controller = ArcadeResultsController()
         controller.show(stats_with_queue)
-        controller.navigate(1)  # No - Discard Queue
-        controller.navigate(1)  # Replay - Try Again
+        controller.navigate(1)  # -1 -> 0 (Yes - Quarantine All)
+        controller.navigate(1)  # 0 -> 1 (No - Discard Queue)
+        controller.navigate(1)  # 1 -> 2 (Replay - Try Again)
 
         action = controller.select()
 
@@ -158,7 +200,8 @@ class TestArcadeResultsController:
         """Selecting Exit returns EXIT_TO_LOBBY action."""
         controller = ArcadeResultsController()
         controller.show(stats_empty_queue)
-        controller.navigate(1)  # Move to "Exit - Return to Lobby"
+        controller.navigate(1)  # -1 -> 0 (Replay - Try Again)
+        controller.navigate(1)  # 0 -> 1 (Exit - Return to Lobby)
 
         action = controller.select()
 
@@ -183,7 +226,8 @@ class TestArcadeResultsController:
         assert "Highest Combo: 8x" in message
         assert "42 identities queued" in message
         assert "↑/↓ or W/S = Select" in message
-        assert "▶" in message
+        # No selection yet, so shows hint to navigate
+        assert "Navigate to select an option" in message
 
     def test_build_message_controller(self, stats_with_queue):
         """Build message includes controller instructions."""
@@ -210,7 +254,8 @@ class TestArcadeResultsController:
         """Build message highlights current selection."""
         controller = ArcadeResultsController()
         controller.show(stats_with_queue)
-        controller.navigate(1)  # Move to second option
+        controller.navigate(1)  # -1 -> 0 (first option)
+        controller.navigate(1)  # 0 -> 1 (second option)
 
         message = controller.build_message()
 
@@ -223,10 +268,11 @@ class TestArcadeResultsController:
         """get_selected_option returns current selection text."""
         controller = ArcadeResultsController()
         controller.show(stats_with_queue)
+        controller.navigate(1)  # -1 -> 0 (first option)
 
         assert controller.get_selected_option() == "Yes - Quarantine All"
 
-        controller.navigate(1)
+        controller.navigate(1)  # 0 -> 1 (second option)
         assert controller.get_selected_option() == "No - Discard Queue"
 
     def test_get_selected_option_when_empty(self):
@@ -254,3 +300,37 @@ class TestArcadeResultsController:
         assert controller.stats.total_eliminations == 50
         assert controller.stats.highest_combo == 8
         assert controller.stats.queue_size == 42
+
+    def test_is_new_high_score_default_false(self, stats_with_queue):
+        """is_new_high_score defaults to False."""
+        controller = ArcadeResultsController()
+        controller.show(stats_with_queue)
+
+        assert controller.stats.is_new_high_score is False
+
+    def test_is_new_high_score_true(self, stats_with_high_score):
+        """is_new_high_score can be set to True."""
+        controller = ArcadeResultsController()
+        controller.show(stats_with_high_score)
+
+        assert controller.stats.is_new_high_score is True
+        assert controller.stats.total_eliminations == 100
+
+    def test_build_message_shows_high_score_banner(self, stats_with_high_score):
+        """Build message shows NEW HIGH SCORE banner when is_new_high_score is True."""
+        controller = ArcadeResultsController()
+        controller.show(stats_with_high_score)
+
+        message = controller.build_message()
+
+        assert "NEW HIGH SCORE" in message
+        assert "🏆" in message
+
+    def test_build_message_no_high_score_banner(self, stats_with_queue):
+        """Build message does not show high score banner when is_new_high_score is False."""
+        controller = ArcadeResultsController()
+        controller.show(stats_with_queue)
+
+        message = controller.build_message()
+
+        assert "NEW HIGH SCORE" not in message

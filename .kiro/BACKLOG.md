@@ -699,6 +699,35 @@
 
 ---
 
+### Epic: Gameplay Mechanics Improvements
+**Priority**: 🟠 P1 | **Status**: Not Started
+
+#### F-010: Zombie Movement AI (Chase Player)
+- **User Story**: As a player, I want zombies to slowly move toward me so the game is more challenging and engaging
+- **Tasks**:
+  - [ ] Add velocity/movement properties to Zombie class
+  - [ ] Implement directional movement toward player position
+  - [ ] Set slow movement speed (e.g., 20-40 pixels/second)
+  - [ ] Add movement animation frames (optional)
+  - [ ] Ensure zombies respect level boundaries
+  - [ ] Update spatial grid when zombies move
+  - [ ] Test performance with 500+ moving zombies
+- **Acceptance Criteria**:
+  - Zombies slowly walk toward player character
+  - Movement speed is slow enough to be fair but creates tension
+  - Movement is smooth (no jittering)
+  - Performance remains at 60 FPS with many zombies
+  - Zombies stop at level boundaries
+- **Dependencies**: None
+- **Effort**: Medium (4-6 hours)
+- **Technical Notes**:
+  - Calculate direction vector: `(player.x - zombie.x, player.y - zombie.y)`
+  - Normalize and multiply by speed constant
+  - Update position each frame: `zombie.x += dx * dt`, `zombie.y += dy * dt`
+  - Consider adding slight randomness to prevent perfect clustering
+
+---
+
 ### Epic: Visual Polish & UI Improvements
 **Priority**: 🟠 P1 | **Status**: Not Started
 

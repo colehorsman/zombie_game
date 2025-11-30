@@ -28,13 +28,20 @@
 
 After years of watching security teams struggle to explain "unused IAM identities" to stakeholders, we asked: *What if we made it a game?*
 
+![Lobby showing AWS Organization structure](.kiro/evidence/gameplay/01_lobby_aws_org_view.png)
+*The lobby visualizes your AWS organization—each door is a real AWS account*
+
 The metaphor clicked instantly:
+
 - 🧟 **Zombies** = Unused AWS identities (the "dead" accounts that should be eliminated)
 - 🔫 **Shooting zombies** = Real API calls that quarantine actual cloud resources
 - 🛡️ **Purple shields** = Protected identities (Sonrai's Cloud Permissions Firewall)
 - 🎮 **Retro gaming** = Making complex topics approachable and fun
 
 **The resurrection works on two levels:** We resurrected retro gaming AND we're eliminating "zombie" identities that should be dead.
+
+![Gameplay showing zombies and purple shields](.kiro/evidence/gameplay/02_regular_gameplay.png)
+*Zombies are real unused identities—purple shields show protected resources*
 
 ---
 
@@ -65,12 +72,17 @@ The metaphor clicked instantly:
 >
 > **Kiro:** *Generated 800 lines of production code with state machine, dynamic spawning algorithm, combo tracking, and results screen*
 
+![Arcade Results Screen](.kiro/evidence/gameplay/03_arcade_results_no_selfie.png)
+*Arcade mode results—built in 45 minutes with Kiro*
+
 **The Impact:**
+
 | Traditional | With Kiro | Savings |
 |-------------|-----------|---------|
 | 6-8 hours | 45 minutes | **90%** |
 
 **Other Vibe Coding Wins:**
+
 - JIT Access Quest with auditor patrol AI
 - Photo booth with retro pixel filters
 - Spatial grid collision (15 FPS → 60 FPS)
@@ -96,6 +108,13 @@ requirements.md → design.md → tasks.md → implementation → tests
 | **Photo Booth** | Retro selfies with game stats | 20 |
 | **Account Wall Defense** | Tower defense mechanics | 30 |
 | **Level Progression** | Unlock system with difficulty scaling | 15 |
+
+<table>
+<tr>
+<td><img src=".kiro/evidence/gameplay/09_challenge_auditor_jit.png" width="400"/><br/><em>JIT Access Quest—protect admin roles</em></td>
+<td><img src=".kiro/evidence/gameplay/10_challenge_hacker_agentcore_failed.png" width="400"/><br/><em>Service Protection—race the hacker</em></td>
+</tr>
+</table>
 
 **The Magic:** Property-based tests caught **3 edge cases** before they became bugs.
 
@@ -205,16 +224,25 @@ Kiro conducted a comprehensive architecture review acting as **12 specialized ag
 ## 🚧 Challenges We Conquered
 
 ### Challenge 1: Performance Bottleneck
+
 | Problem | Solution | Result |
 |---------|----------|--------|
-| 15 FPS with 100 zombies | Spatial grid collision (O(n²) → O(n)) | **60 FPS with 500+ entities** |
+| 15 FPS with 100 zombies | Spatial grid collision ($O(n^2) \rightarrow O(n)$) | **60 FPS with 500+ entities** |
+
+**The Math:**
+$$T_{naive} = n \times m \times t_{check} \quad \text{(every projectile vs every zombie)}$$
+$$T_{grid} = m \times t_{insert} + n \times k \times t_{check} \quad \text{(only nearby cells)}$$
+
+Where $k$ = average entities per cell (typically 3-5), giving us **18.5× speedup**.
 
 ### Challenge 2: API Rate Limiting
+
 | Problem | Solution | Result |
 |---------|----------|--------|
 | Batch quarantine hitting limits | 10 calls/batch with 1s delays | **Reliable batch operations** |
 
 ### Challenge 3: Deadline Pressure
+
 | Problem | Solution | Result |
 |---------|----------|--------|
 | 11 days to build production game | Kiro's spec-driven development | **Zero P0 bugs, 667 tests** |
@@ -237,6 +265,16 @@ Kiro conducted a comprehensive architecture review acting as **12 specialized ag
 ✅ **Real API Integration** — Not mock data, actual Sonrai GraphQL calls
 ✅ **Production Quality** — 667 tests, 60 FPS, comprehensive error handling
 ✅ **Professional Architecture** — State machines, spatial grids, event systems
+
+<table>
+<tr>
+<td><img src=".kiro/evidence/gameplay/04_boss_wannacry_wade.png" width="270"/><br/><em>WannaCry Boss</em></td>
+<td><img src=".kiro/evidence/gameplay/07_boss_heartbleed_red_queen.png" width="270"/><br/><em>Heartbleed Boss</em></td>
+<td><img src=".kiro/evidence/gameplay/08_boss_scattered_spider.png" width="270"/><br/><em>Scattered Spider Boss</em></td>
+</tr>
+</table>
+
+*Boss battles teach real security breach history—WannaCry, Heartbleed, Scattered Spider*
 
 ### Business Value
 
@@ -295,8 +333,34 @@ Kiro conducted a comprehensive architecture review acting as **12 specialized ag
 │   ├── service-protection-quest/
 │   └── ... (3 more)
 ├── hooks/                       # 7 automated workflows
+├── evidence/                    # Screenshots & recordings
+│   ├── gameplay/                # 12 curated gameplay shots
+│   ├── screenshots/             # 25+ raw captures
+│   └── booth_photos/            # Photo booth composites
 └── ARCHITECTURE_REVIEW_BOARD_REPORT.md  # 12-agent review
 ```
+
+---
+
+## 🖼️ Visual Gallery
+
+<table>
+<tr>
+<td align="center"><img src=".kiro/evidence/gameplay/01_lobby_aws_org_view.png" width="250"/><br/><b>AWS Org Lobby</b></td>
+<td align="center"><img src=".kiro/evidence/gameplay/02_regular_gameplay.png" width="250"/><br/><b>Zombie Blasting</b></td>
+<td align="center"><img src=".kiro/evidence/gameplay/05_purple_shield_exemption.png" width="250"/><br/><b>Purple Shields</b></td>
+</tr>
+<tr>
+<td align="center"><img src=".kiro/evidence/gameplay/03_arcade_results_no_selfie.png" width="250"/><br/><b>Arcade Results</b></td>
+<td align="center"><img src=".kiro/evidence/gameplay/12_production_outage.png" width="250"/><br/><b>Production Outage</b></td>
+<td align="center"><img src=".kiro/evidence/gameplay/11_photo_booth_selfie.png" width="250"/><br/><b>Photo Booth</b></td>
+</tr>
+</table>
+
+### 🚨 NEW: Production Outage Simulation
+
+![Production Outage](.kiro/evidence/gameplay/12_production_outage.png)
+*Production Outage mode—experience the chaos when zombies overwhelm your cloud infrastructure!*
 
 ---
 
@@ -318,9 +382,15 @@ pytest tests/ -v
 ```
 
 **🎮 Cheat Codes:**
+
 - `UNLOCK` — Access all levels
 - `GOD` — Invincibility mode
 - `ARCADE` — Jump to arcade mode
+
+### 📸 Photo Booth Feature
+
+![Photo Booth Selfie](.kiro/evidence/gameplay/11_photo_booth_selfie.png)
+*Take retro-filtered selfies with your game stats—shareable proof of your zombie-blasting skills!*
 
 ---
 

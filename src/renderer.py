@@ -2707,3 +2707,122 @@ class Renderer:
 
         # Render message bubble
         self.render_message_bubble(jit_quest_state.quest_message)
+
+    def render_production_outage(self, outage_state) -> None:
+        """
+        Render production outage overlay - flashing red border, error message, and progress bar.
+
+        Args:
+            outage_state: OutageState object from ProductionOutageManager
+        """
+        if not outage_state or not outage_state.active:
+            return
+
+        # Colors
+        PAGERDUTY_RED = (230, 50, 50)
+        DARK_RED = (150, 30, 30)
+        WHITE = (255, 255, 255)
+        BLACK = (0, 0, 0)
+        ALERT_ORANGE = (255, 140, 0)
+
+        # Flashing red border effect (pulses based on flash_timer)
+        flash_intensity = abs(math.sin(outage_state.flash_timer * 4))  # Pulse 4x per second
+        border_alpha = int(100 + flash_intensity * 100)  # 100-200 alpha range
+
+        # Create border overlay
+        border_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+
+        # Draw flashing red border (thick frame around screen)
+        border_thickness = 8
+        border_color = (*PAGERDUTY_RED, border_alpha)
+
+        # Top border
+        pygame.draw.rect(border_surface, border_color, (0, 0, self.width, border_thickness))
+        # Bottom border
+        pygame.draw.rect(
+            border_surface,
+            border_color,
+            (0, self.height - border_thickness, self.width, border_thickness),
+        )
+        # Left border
+        pygame.draw.rect(border_surface, border_color, (0, 0, border_thickness, self.height))
+        # Right border
+        pygame.draw.rect(
+            border_surface,
+            border_color,
+            (self.width - border_thickness, 0, border_thickness, self.height),
+        )
+
+        self.screen.blit(border_surface, (0, 0))
+
+        # Semi-transparent dark overlay on center
+        overlay = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 120))  # Dark semi-transparent
+        self.screen.blit(overlay, (0, 0))
+
+        # Main alert box (centered)
+        box_width = 500
+        box_height = 200
+        box_x = (self.width - box_width) // 2
+        box_y = (self.height - box_height) // 2
+
+        # Draw alert box background
+        pygame.draw.rect(self.screen, DARK_RED, (box_x, box_y, box_width, box_height))
+        pygame.draw.rect(self.screen, PAGERDUTY_RED, (box_x, box_y, box_width, box_height), 4)
+
+        # Alert header with flashing effect
+        header_text = "!! PRODUCTION OUTAGE !!"
+        header_color = WHITE if int(outage_state.flash_timer * 6) % 2 == 0 else ALERT_ORANGE
+        header_surface = self.timer_font.render(header_text, True, header_color)
+        header_x = box_x + (box_width - header_surface.get_width()) // 2
+        header_y = box_y + 20
+        self.screen.blit(header_surface, (header_x, header_y))
+
+        # Error message
+        error_surface = self.message_font.render(outage_state.error_message, True, WHITE)
+        error_x = box_x + (box_width - error_surface.get_width()) // 2
+        error_y = box_y + 70
+        self.screen.blit(error_surface, (error_x, error_y))
+
+        # "Fixing prod..." status text
+        status_text = "Fixing prod..."
+        status_surface = self.label_font.render(status_text, True, ALERT_ORANGE)
+        status_x = box_x + (box_width - status_surface.get_width()) // 2
+        status_y = box_y + 105
+        self.screen.blit(status_surface, (status_x, status_y))
+
+        # Progress bar
+        bar_width = 400
+        bar_height = 24
+        bar_x = box_x + (box_width - bar_width) // 2
+        bar_y = box_y + 135
+
+        # Progress calculation (0 to 1)
+        progress = 1.0 - (outage_state.time_remaining / outage_state.total_duration)
+        progress = max(0.0, min(1.0, progress))
+
+        # Draw progress bar background
+        pygame.draw.rect(self.screen, BLACK, (bar_x - 2, bar_y - 2, bar_width + 4, bar_height + 4))
+        pygame.draw.rect(self.screen, (60, 60, 60), (bar_x, bar_y, bar_width, bar_height))
+
+        # Draw progress fill (green when almost done, otherwise red/orange)
+        fill_width = int(bar_width * progress)
+        if progress > 0.8:
+            fill_color = (50, 200, 50)  # Green - almost done!
+        elif progress > 0.5:
+            fill_color = ALERT_ORANGE  # Orange - halfway
+        else:
+            fill_color = PAGERDUTY_RED  # Red - still fixing
+
+        if fill_width > 0:
+            pygame.draw.rect(self.screen, fill_color, (bar_x, bar_y, fill_width, bar_height))
+
+        # Progress bar border
+        pygame.draw.rect(self.screen, WHITE, (bar_x, bar_y, bar_width, bar_height), 2)
+
+        # Time remaining text
+        time_text = f"{outage_state.time_remaining:.1f}s remaining"
+        time_surface = self.small_font.render(time_text, True, WHITE)
+        time_x = box_x + (box_width - time_surface.get_width()) // 2
+        time_y = box_y + 165
+        self.screen.blit(time_surface, (time_x, time_y))

@@ -39,6 +39,7 @@ from models import GameState, GameStatus, JitQuestState, PermissionSet, Vector2
 from pause_menu_controller import PauseMenuAction, PauseMenuController
 from player import Player
 from powerup import PowerUp, PowerUpManager, PowerUpType, spawn_random_powerups
+from production_outage import ProductionOutageManager
 from projectile import Projectile
 from reinvent_stats_tracker import record_arcade_session
 from save_manager import SaveManager
@@ -317,6 +318,13 @@ class GameEngine:
             "613056517323",  # MyHealth - Production
             "437154727976",  # Sonrai MyHealth - Org
         }
+
+        # Production Outage system - random events that freeze player while they "fix prod"
+        self.outage_manager = ProductionOutageManager(
+            trigger_chance_per_second=0.005,  # 0.5% chance per second (~once every 3-4 minutes)
+            cooldown_seconds=45.0,  # Minimum 45 seconds between outages
+            outage_duration=5.0,  # 5 second freeze
+        )
 
     def _init_controller_with_retry(self, max_retries: int = 5, delay: float = 0.3) -> None:
         """
@@ -1211,6 +1219,9 @@ class GameEngine:
             self.boss = None
             self.boss_spawned = False
 
+            # Reset production outage state for fresh level
+            self.outage_manager.reset()
+
             logger.info(f"🚪 Step 13: Spawning power-ups for level")
             # Spawn AWS-themed power-ups (stars and lambda speed) on platforms
             try:
@@ -1771,6 +1782,36 @@ class GameEngine:
             self.star_power_touched_zombies.clear()
 
         self.star_power_was_active = star_power_active
+
+        # Update Production Outage system (random "fix prod" events)
+        # Disable outages during boss battles and arcade countdown
+        if self.boss or (
+            self.arcade_manager.is_active() and self.arcade_manager.get_state().in_countdown
+        ):
+            self.outage_manager.disable()
+        else:
+            self.outage_manager.enable()
+
+        # Update outage manager - may trigger random outage
+        outage_just_ended = self.outage_manager.update(delta_time)
+
+        # If outage is active, freeze player and skip most updates
+        if self.outage_manager.is_active():
+            # Stop player movement immediately when outage starts
+            self.player.velocity.x = 0
+            self.player.velocity.y = 0
+
+            # Still update camera to follow player (so screen doesn't jump when outage ends)
+            if self.use_map and self.game_map:
+                self.game_map.update_camera(self.player.position.x, self.player.position.y)
+
+            # Still update zombies (they keep moving - makes it tense!)
+            for zombie in self.zombies:
+                if not zombie.is_hidden:
+                    zombie.update(delta_time, self.player.position, self.game_map)
+
+            # Don't process any other gameplay updates during outage
+            return
 
         # Update scrolling (classic mode only)
         if not self.use_map:
@@ -2646,6 +2687,12 @@ class GameEngine:
                         else:
                             logger.info("⚠️  Arcade mode only available in Sandbox account")
 
+                elif cheat_result.action == CheatCodeAction.TRIGGER_OUTAGE:
+                    # Manually trigger a production outage (for testing)
+                    if self.game_state.status == GameStatus.PLAYING:
+                        self.outage_manager.trigger()
+                        logger.info("🚨 CHEAT: Production outage triggered!")
+
                 # Handle boss dialogue dismissal (ENTER key only)
                 if event.key == pygame.K_RETURN:
                     if self.boss_dialogue_controller.is_showing:
@@ -3122,6 +3169,11 @@ class GameEngine:
 
         # LEVEL MODE: Platformer movement (left/right + jump)
         elif self.game_state.status in (GameStatus.PLAYING, GameStatus.BOSS_BATTLE):
+            # Block input during production outage (player is "fixing prod")
+            if self.outage_manager.is_active():
+                self.player.stop_horizontal()
+                return  # Don't process any movement input during outage
+
             # Check keyboard input
             keyboard_left = pygame.K_LEFT in self.keys_pressed or pygame.K_a in self.keys_pressed
             keyboard_right = pygame.K_RIGHT in self.keys_pressed or pygame.K_d in self.keys_pressed

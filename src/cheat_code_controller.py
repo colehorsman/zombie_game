@@ -19,6 +19,7 @@ class CheatCodeAction(Enum):
     SKIP_LEVEL = auto()
     SPAWN_BOSS = auto()  # Konami code
     START_ARCADE = auto()  # Arcade cheat code
+    TRIGGER_OUTAGE = auto()  # Production outage test
 
 
 @dataclass
@@ -69,6 +70,7 @@ class CheatCodeController:
         pygame.K_a,
         pygame.K_b,
     ]
+    OUTAGE_CODE = [pygame.K_p, pygame.K_r, pygame.K_o, pygame.K_d]  # "PROD"
 
     # Timeout for resetting input sequences (seconds)
     INPUT_TIMEOUT = 2.0
@@ -111,9 +113,7 @@ class CheatCodeController:
         # State
         self.unlock_enabled: bool = False
 
-    def process_key(
-        self, key: int, current_time: Optional[float] = None
-    ) -> CheatCodeResult:
+    def process_key(self, key: int, current_time: Optional[float] = None) -> CheatCodeResult:
         """
         Process a key press and check for cheat code activation.
 
@@ -185,6 +185,15 @@ class CheatCodeController:
             return CheatCodeResult(
                 action=CheatCodeAction.START_ARCADE,
                 message=None,  # Arcade start handled by GameEngine
+            )
+
+        # Check PROD (outage) code
+        if self.cheat_buffer[-4:] == self.OUTAGE_CODE if len(self.cheat_buffer) >= 4 else False:
+            self.cheat_buffer = []
+            logger.info("🚨 PROD CODE ACTIVATED - Triggering production outage!")
+            return CheatCodeResult(
+                action=CheatCodeAction.TRIGGER_OUTAGE,
+                message=None,  # Outage handled by GameEngine
             )
 
         return CheatCodeResult(action=CheatCodeAction.NONE)
