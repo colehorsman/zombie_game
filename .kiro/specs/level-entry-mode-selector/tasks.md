@@ -71,17 +71,17 @@ Implement a level entry mode selector that appears when entering Sandbox, allowi
 - [x] 4. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Write integration tests
-  - [ ] 5.1 Test door collision triggers menu for Sandbox
+- [x] 5. Write integration tests
+  - [x] 5.1 Test door collision triggers menu for Sandbox
     - _Requirements: 3.1_
-  - [ ] 5.2 Test arcade mode selection flows correctly
+  - [x] 5.2 Test arcade mode selection flows correctly
     - _Requirements: 1.5, 3.2_
-  - [ ] 5.3 Test story mode selection flows correctly
+  - [x] 5.3 Test story mode selection flows correctly
     - _Requirements: 3.3_
-  - [ ] 5.4 Test cancel returns to lobby
+  - [x] 5.4 Test cancel returns to lobby
     - _Requirements: 3.4_
-  - [ ] 5.5 Test disabled configuration skips menu
+  - [x] 5.5 Test disabled configuration skips menu
     - _Requirements: 5.2_
 
-- [ ] 6. Final Checkpoint - Ensure all tests pass
+- [x] 6. Final Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
