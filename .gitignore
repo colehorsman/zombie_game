@@ -70,3 +70,6 @@ venv/
 
 # Evidence recordings (can be regenerated)
 .kiro/evidence/recordings/*.gif
+
+# re:Invent stats tracking
+reinvent_2025_stats.json

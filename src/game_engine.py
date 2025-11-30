@@ -40,6 +40,7 @@ from pause_menu_controller import PauseMenuAction, PauseMenuController
 from player import Player
 from powerup import PowerUp, PowerUpManager, PowerUpType, spawn_random_powerups
 from projectile import Projectile
+from reinvent_stats_tracker import record_arcade_session
 from save_manager import SaveManager
 from service_protection_quest import (
     SERVICE_ICON_Y,
@@ -1693,6 +1694,16 @@ class GameEngine:
         # Get stats and create snapshot for the controller
         stats = self.arcade_manager.get_stats()
         queue_size = len(self.arcade_manager.get_elimination_queue())
+
+        # Record stats for re:Invent tracking (only during Dec 1-4, 2025)
+        try:
+            record_arcade_session(
+                zombies_eliminated=stats.total_eliminations,
+                highest_combo=stats.highest_combo,
+                duration_seconds=60.0,  # Arcade mode is always 60 seconds
+            )
+        except Exception as e:
+            logger.warning(f"📊 Failed to record arcade stats: {e}")
 
         stats_snapshot = ArcadeStatsSnapshot(
             total_eliminations=stats.total_eliminations,
