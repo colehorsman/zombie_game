@@ -27,6 +27,7 @@ class ArcadeStatsSnapshot:
     powerups_collected: int
     eliminations_per_second: float
     queue_size: int
+    is_new_high_score: bool = False  # True if this session set a new high score
 
 
 class ArcadeResultsController:
@@ -163,6 +164,11 @@ class ArcadeResultsController:
 
         # Build header - simplified stats
         message = "🎮 ARCADE MODE COMPLETE! 🎮\n\n"
+
+        # Show NEW HIGH SCORE banner if achieved
+        if stats.is_new_high_score:
+            message += "🏆🏆🏆 NEW HIGH SCORE! 🏆🏆🏆\n\n"
+
         message += "═══════════════════════════\n\n"
         message += f"Zombies Eliminated: {stats.total_eliminations}\n"
         message += f"Highest Combo: {stats.highest_combo}x\n"

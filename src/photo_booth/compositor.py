@@ -50,6 +50,7 @@ class PhotoBoothCompositor:
         zombie_count: int,
         config: PhotoBoothConfig,
         skip_selfie_retro: bool = False,
+        is_new_high_score: bool = False,
     ) -> Image.Image:
         """
         Generate complete photo booth composite.
@@ -60,6 +61,7 @@ class PhotoBoothCompositor:
             zombie_count: Number of zombies eliminated
             config: Photo booth configuration
             skip_selfie_retro: If True, skip applying retro filter to selfie (already processed)
+            is_new_high_score: If True, display a "NEW HIGH SCORE!" badge
 
         Returns:
             Complete composite image (1920x1080)
@@ -94,7 +96,7 @@ class PhotoBoothCompositor:
             canvas.paste(gameplay_panel, (self.FRAME_BORDER, content_top))
 
         # Draw score header
-        self._draw_score_header(canvas, zombie_count)
+        self._draw_score_header(canvas, zombie_count, is_new_high_score)
 
         # Draw footer with branding
         self._draw_footer(canvas, config)
@@ -258,9 +260,29 @@ class PhotoBoothCompositor:
             width=1,
         )
 
-    def _draw_score_header(self, canvas: Image.Image, zombie_count: int) -> None:
+    def _draw_score_header(
+        self, canvas: Image.Image, zombie_count: int, is_new_high_score: bool = False
+    ) -> None:
         """Draw the score header with zombie icons and zombie count."""
         draw = ImageDraw.Draw(canvas)
+
+        # Draw NEW HIGH SCORE banner if achieved
+        if is_new_high_score:
+            high_score_text = "🏆 NEW HIGH SCORE! 🏆"
+            hs_bbox = draw.textbbox((0, 0), high_score_text, font=self.pixel_font_medium)
+            hs_width = hs_bbox[2] - hs_bbox[0]
+            hs_x = (self.OUTPUT_WIDTH - hs_width) // 2
+            # Draw gold background bar
+            draw.rectangle(
+                [(hs_x - 20, 5), (hs_x + hs_width + 20, 35)],
+                fill=(180, 140, 0),
+            )
+            draw.text(
+                (hs_x, 8),
+                high_score_text,
+                fill=(255, 255, 255),
+                font=self.pixel_font_medium,
+            )
 
         # Score text (without stars - we'll add zombie icons)
         score_text = f"{zombie_count} ZOMBIES ELIMINATED"

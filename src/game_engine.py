@@ -33,12 +33,14 @@ from evidence_capture import EvidenceCapture
 from game_map import GameMap
 from hacker import Hacker
 from jit_access_quest import AdminRole, Auditor, create_jit_quest_entities
+from level_entry_menu_controller import LevelEntryAction, LevelEntryMenuController
 from level_manager import LevelManager
 from models import GameState, GameStatus, JitQuestState, PermissionSet, Vector2
 from pause_menu_controller import PauseMenuAction, PauseMenuController
 from player import Player
 from powerup import PowerUp, PowerUpManager, PowerUpType, spawn_random_powerups
 from projectile import Projectile
+from reinvent_stats_tracker import record_arcade_session
 from save_manager import SaveManager
 from service_protection_quest import (
     SERVICE_ICON_Y,
@@ -251,6 +253,18 @@ class GameEngine:
 
         # Arcade results menu - now managed by ArcadeResultsController
         self.arcade_results_controller = ArcadeResultsController()
+
+        # Level entry mode selector - shows when entering levels (Arcade vs Story mode)
+        import os
+
+        level_entry_enabled = (
+            os.getenv("LEVEL_ENTRY_MODE_SELECTOR_ENABLED", "true").lower() == "true"
+        )
+        default_level_entry_mode = os.getenv("DEFAULT_LEVEL_ENTRY_MODE", "arcade")
+        self.level_entry_menu_controller = LevelEntryMenuController(
+            enabled=level_entry_enabled, default_mode=default_level_entry_mode
+        )
+        self._pending_door_entry = None  # Door waiting for mode selection
 
         # Photo booth for arcade mode selfies
         self.photo_booth = None
@@ -963,9 +977,26 @@ class GameEngine:
                                 break
 
                     if level_unlocked:
-                        # Player entered an unlocked door - transition to level mode
+                        # Player entered an unlocked door
                         logger.info(f"🚪 Door collision detected! Door name: '{door_name}'")
-                        self._enter_level(door)
+
+                        # Check if this is Sandbox and level entry menu is enabled
+                        is_sandbox = door_name.lower() == "sandbox" or (
+                            hasattr(door, "account_id") and door.account_id == "577945324761"
+                        )
+
+                        if is_sandbox and self.level_entry_menu_controller.enabled:
+                            # Show level entry mode selector for Sandbox
+                            self._pending_door_entry = door
+                            self.game_state.congratulations_message = (
+                                self.level_entry_menu_controller.show(door_name)
+                            )
+                            self.game_state.previous_status = self.game_state.status
+                            self.game_state.status = GameStatus.PAUSED
+                            logger.info(f"🚪 Showing level entry menu for {door_name}")
+                        else:
+                            # Direct entry for non-Sandbox levels or when menu disabled
+                            self._enter_level(door)
                         break
                     else:
                         # Door is locked - show message but DON'T enter
@@ -1558,12 +1589,29 @@ class GameEngine:
         stats = self.arcade_manager.get_stats()
         queue_size = len(self.arcade_manager.get_elimination_queue())
 
+        # Record stats for re:Invent tracking (only during Dec 1-4, 2025)
+        is_new_high_score = False
+        try:
+            is_new_high_score = record_arcade_session(
+                zombies_eliminated=stats.total_eliminations,
+                highest_combo=stats.highest_combo,
+                duration_seconds=60.0,  # Arcade mode is always 60 seconds
+            )
+            if is_new_high_score:
+                logger.info("🏆 NEW HIGH SCORE achieved!")
+        except Exception as e:
+            logger.warning(f"📊 Failed to record arcade stats: {e}")
+
+        # Store high score flag for photo booth display
+        self.game_state.is_new_high_score = is_new_high_score
+
         stats_snapshot = ArcadeStatsSnapshot(
             total_eliminations=stats.total_eliminations,
             highest_combo=stats.highest_combo,
             powerups_collected=stats.powerups_collected,
             eliminations_per_second=stats.eliminations_per_second,
             queue_size=queue_size,
+            is_new_high_score=is_new_high_score,
         )
 
         # Generate photo booth composite if enabled and minimum time passed
@@ -1581,7 +1629,10 @@ class GameEngine:
                 # Only generate if we have a gameplay screenshot
                 if self.photo_booth.gameplay_captured:
                     logger.info("📸 Generating photo booth composite...")
-                    photo_path = self.photo_booth.generate_composite(stats.total_eliminations)
+                    photo_path = self.photo_booth.generate_composite(
+                        stats.total_eliminations,
+                        is_new_high_score=is_new_high_score,
+                    )
                     if photo_path:
                         logger.info(f"📸 Photo booth image saved: {photo_path}")
                         # Store path for display on results screen
@@ -2204,6 +2255,46 @@ class GameEngine:
             self._save_game()
             self.running = False
 
+    def _handle_level_entry_selection(self) -> None:
+        """Handle level entry menu selection (Arcade or Story mode)."""
+        action = self.level_entry_menu_controller.select()
+        door = self._pending_door_entry
+
+        if action == LevelEntryAction.ARCADE_MODE:
+            logger.info("🕹️ Level entry: ARCADE MODE selected")
+            self.level_entry_menu_controller.hide()
+            self.game_state.congratulations_message = None
+            self._pending_door_entry = None
+
+            # Enter the level first, then start arcade mode
+            if door:
+                self._enter_level(door)
+                # After entering level, start arcade mode flow (with photo booth if available)
+                self._start_arcade_mode()
+
+        elif action == LevelEntryAction.STORY_MODE:
+            logger.info("📖 Level entry: STORY MODE selected")
+            self.level_entry_menu_controller.hide()
+            self.game_state.congratulations_message = None
+            self._pending_door_entry = None
+
+            # Enter level normally (standard gameplay)
+            if door:
+                self._enter_level(door)
+
+    def _handle_level_entry_cancel(self) -> None:
+        """Handle level entry menu cancellation (return to lobby)."""
+        logger.info("❌ Level entry: CANCELLED - returning to lobby")
+        self.level_entry_menu_controller.cancel()
+        self.game_state.congratulations_message = None
+        self._pending_door_entry = None
+
+        # Resume lobby state
+        self.game_state.status = GameStatus.LOBBY
+
+        # Push player away from door to prevent immediate re-trigger
+        self.player.position.x -= 50
+
     def _show_game_over_screen(self) -> None:
         """Show game over screen when player health reaches 0."""
         logger.info("💀 GAME OVER - Player health depleted!")
@@ -2456,6 +2547,25 @@ class GameEngine:
                         self._dismiss_photo_booth_summary()
                         continue
 
+                # Handle level entry menu navigation
+                if self.level_entry_menu_controller.active:
+                    if event.key in (pygame.K_UP, pygame.K_w):
+                        self.game_state.congratulations_message = (
+                            self.level_entry_menu_controller.navigate(-1)
+                        )
+                        continue
+                    elif event.key in (pygame.K_DOWN, pygame.K_s):
+                        self.game_state.congratulations_message = (
+                            self.level_entry_menu_controller.navigate(1)
+                        )
+                        continue
+                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
+                        self._handle_level_entry_selection()
+                        continue
+                    elif event.key == pygame.K_ESCAPE:
+                        self._handle_level_entry_cancel()
+                        continue
+
                 # Handle pause menu navigation (if paused with menu active)
                 if self.game_state.status == GameStatus.PAUSED:
                     # Check if we're showing arcade results menu
@@ -2699,6 +2809,29 @@ class GameEngine:
                             f"📸 User dismissed photo booth summary (button {event.button})"
                         )
                         self._dismiss_photo_booth_summary()
+                        continue
+
+                # Handle level entry menu navigation (controller)
+                if self.level_entry_menu_controller.active:
+                    # D-pad UP (11) - navigate up
+                    if event.button == 11:
+                        self.game_state.congratulations_message = (
+                            self.level_entry_menu_controller.navigate(-1)
+                        )
+                        continue
+                    # D-pad DOWN (12) - navigate down
+                    elif event.button == 12:
+                        self.game_state.congratulations_message = (
+                            self.level_entry_menu_controller.navigate(1)
+                        )
+                        continue
+                    # A button (0) - confirm selection
+                    elif event.button == 0:
+                        self._handle_level_entry_selection()
+                        continue
+                    # B button (1) - cancel
+                    elif event.button == 1:
+                        self._handle_level_entry_cancel()
                         continue
 
                 # Evidence capture - works even without joystick initialized
