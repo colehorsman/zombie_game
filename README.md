@@ -69,6 +69,7 @@ This game teaches [Sonrai Cloud Permissions Firewall](https://sonraisecurity.com
 | 🏆 Win Hacker Race | Protect sensitive services (Bedrock, SageMaker) | `ProtectService` |
 | ⏱️ Complete JIT Quest | Enable just-in-time admin access | `SetJitConfiguration` |
 | 🛡️ Purple shields | Recognize exempted/protected identities | Policy exemptions |
+| 🕹️ Arcade Mode | Practice without API calls, choose to quarantine at end | Batch optional |
 
 **Every action triggers real API calls** — when you eliminate a zombie, that identity is actually quarantined in Sonrai.
 
@@ -80,10 +81,11 @@ This game teaches [Sonrai Cloud Permissions Firewall](https://sonraisecurity.com
 ## ✨ Key Features
 
 - **Dual-Mode Gameplay** - Top-down lobby exploration + side-scrolling platformer levels
+- **Arcade Mode** - 60-second timed challenges with combo scoring and photo booth selfies
 - **Real API Integration** - Every action triggers actual Sonrai GraphQL mutations
 - **Side Quests** - Service Protection (hacker race) + JIT Access (auditor challenge)
 - **Performance** - 60 FPS with 500+ entities through spatial grid optimization
-- **Comprehensive Testing** - 610 automated tests with 100% pass rate
+- **Comprehensive Testing** - 600+ automated tests with property-based testing
 - **Pristine Code Quality** - 100% scores across all security scanners (Bandit, Semgrep, Black, Gitleaks)
 
 ---
@@ -130,10 +132,11 @@ This game teaches [Sonrai Cloud Permissions Firewall](https://sonraisecurity.com
 <summary><b>Dual-Engine Architecture</b></summary>
 
 Seamlessly merges two completely different game modes:
-- **Lobby Mode**: Top-down exploration with fog-of-war
+- **Lobby Mode**: Top-down exploration of AWS organization structure
 - **Platformer Mode**: Side-scrolling with gravity physics
+- **Arcade Mode**: Timed challenges with dynamic zombie spawning
 - Mode-aware physics, camera, collision, and controls
-- Seamless transitions through door-based level entry
+- Seamless transitions through door-based level entry with mode selection
 
 </details>
 
