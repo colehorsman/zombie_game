@@ -10,6 +10,17 @@
 
 ### ✅ ALL P0 BUGS FIXED - November 30, 2024
 
+### ✅ BUG-023: Arcade Mode Auto-Start Not Working - FIXED
+**Status:** ✅ FIXED - November 30, 2024
+**Severity:** P0 - Demo Blocker
+**Component:** Level Entry / Arcade Mode
+**Description:** Entering Sandbox level showed mode selection menu instead of auto-starting arcade mode
+**Root Cause:** Level entry menu was showing, requiring user to press A to confirm
+**Fix:** Added `AUTO_START_ARCADE` environment variable (default: true) that skips the menu and goes directly to arcade mode when entering Sandbox
+**Files Modified:** `src/game_engine.py`, `.env`, `.env.example`
+**Tested:** ✅ All 49 tests passing (10 level entry + 39 arcade mode)
+**Configuration:** Set `AUTO_START_ARCADE=false` in `.env` to show the mode selection menu instead
+
 | Bug | Issue | Status |
 |-----|-------|--------|
 | BUG-001 | Controller pause button exits to lobby | ✅ FIXED |

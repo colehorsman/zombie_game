@@ -262,10 +262,13 @@ class GameEngine:
             os.getenv("LEVEL_ENTRY_MODE_SELECTOR_ENABLED", "true").lower() == "true"
         )
         default_level_entry_mode = os.getenv("DEFAULT_LEVEL_ENTRY_MODE", "arcade")
+        # AUTO_START_ARCADE: Skip menu and go directly to arcade mode for Sandbox
+        self.auto_start_arcade = os.getenv("AUTO_START_ARCADE", "true").lower() == "true"
         self.level_entry_menu_controller = LevelEntryMenuController(
             enabled=level_entry_enabled, default_mode=default_level_entry_mode
         )
         self._pending_door_entry = None  # Door waiting for mode selection
+        logger.info(f"🕹️ AUTO_START_ARCADE = {self.auto_start_arcade}")
 
         # Photo booth for arcade mode selfies
         self.photo_booth = None
@@ -989,11 +992,23 @@ class GameEngine:
                         logger.info(f"🚪 Door collision detected! Door name: '{door_name}'")
 
                         # Check if this is Sandbox and level entry menu is enabled
-                        is_sandbox = door_name.lower() == "sandbox" or (
+                        # Door name is "MyHealth - Sandbox", account_id is "577945324761"
+                        is_sandbox = "sandbox" in door_name.lower() or (
                             hasattr(door, "account_id") and door.account_id == "577945324761"
                         )
+                        logger.info(
+                            f"🚪 DEBUG: door_name='{door_name}', is_sandbox={is_sandbox}, "
+                            f"auto_start_arcade={self.auto_start_arcade}"
+                        )
 
-                        if is_sandbox and self.level_entry_menu_controller.enabled:
+                        if is_sandbox and self.auto_start_arcade:
+                            # AUTO_START_ARCADE: Skip menu, go directly to arcade mode
+                            logger.info(
+                                f"🕹️ AUTO_START_ARCADE: Entering {door_name} directly in arcade mode"
+                            )
+                            self._enter_level(door)
+                            self._start_arcade_mode()
+                        elif is_sandbox and self.level_entry_menu_controller.enabled:
                             # Show level entry mode selector for Sandbox
                             self._pending_door_entry = door
                             self.game_state.congratulations_message = (
@@ -1176,10 +1191,10 @@ class GameEngine:
                     self.game_map.map_height,
                     self.game_map,
                 )
-                # Give player 2 seconds of spawn protection
+                # Give player 3 seconds of spawn protection (increased for arcade mode)
                 self.player.is_invincible = True
-                self.player.invincibility_timer = 2.0
-                logger.info(f"✅ Player created with 2s spawn protection")
+                self.player.invincibility_timer = 3.0
+                logger.info(f"✅ Player created with 3s spawn protection")
             except Exception as e:
                 logger.error(f"❌ CRASH during Player init: {e}", exc_info=True)
                 raise
@@ -1547,6 +1562,12 @@ class GameEngine:
                 logger.info(
                     f"📸 Photo booth arcade tracking started (consent_complete={self.photo_booth.is_consent_complete()})"
                 )
+
+            # Give player extra spawn protection for arcade mode (covers countdown + start)
+            if self.player:
+                self.player.is_invincible = True
+                self.player.invincibility_timer = 5.0  # 5 seconds: 3s countdown + 2s buffer
+                logger.info("🛡️ Player given 5s arcade spawn protection")
 
             # Make all zombies visible for arcade mode
             visible_count = 0
@@ -2570,12 +2591,21 @@ class GameEngine:
                     getattr(self.game_state, "photo_booth_consent_active", False)
                     and self.photo_booth
                 ):
-                    if event.key in (pygame.K_y, pygame.K_a):  # Y or A = Yes
+                    if event.key in (
+                        pygame.K_y,
+                        pygame.K_a,
+                        pygame.K_RETURN,
+                        pygame.K_SPACE,
+                    ):  # Y, A, ENTER, SPACE = Yes
                         logger.info("📸 User opted IN to selfie (keyboard)")
                         self.photo_booth.handle_consent_input(opted_in=True)
                         self._begin_arcade_session()
                         continue
-                    elif event.key in (pygame.K_n, pygame.K_b):  # N or B = No
+                    elif event.key in (
+                        pygame.K_n,
+                        pygame.K_b,
+                        pygame.K_ESCAPE,
+                    ):  # N, B, ESC = No
                         logger.info("📸 User opted OUT of selfie (keyboard)")
                         self.photo_booth.handle_consent_input(opted_in=False)
                         self._begin_arcade_session()
