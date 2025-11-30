@@ -90,6 +90,96 @@ This game teaches [Sonrai Cloud Permissions Firewall](https://sonraisecurity.com
 
 ---
 
+## 🎁 Hidden Gems (Features You Might Miss!)
+
+<details>
+<summary><b>📸 Photo Booth</b> - Take retro-filtered selfies with your high score</summary>
+
+After completing an Arcade Mode session, opt-in to capture a webcam selfie that gets:
+- Pixel art retro filter applied
+- Combined with gameplay screenshot
+- Branded with your zombie count and combo
+- Saved as a shareable souvenir image
+
+Perfect for social media posts at AWS re:Invent! 🎮📱
+</details>
+
+<details>
+<summary><b>🎬 In-Game Screen Capture</b> - F12 for screenshots, F9 for recordings</summary>
+
+Built-in capture system for evidence and sharing:
+- **F12 / X Button** - Instant screenshot with flash feedback
+- **F9 / Y Button** - Start/stop GIF recording (up to 60 seconds)
+- Auto-saved to `.kiro/evidence/` with timestamps
+- No external tools needed!
+</details>
+
+<details>
+<summary><b>🏆 High Score Tracking</b> - Compete for the top score at re:Invent</summary>
+
+Persistent high score system for arcade mode:
+- Tracks highest single-session zombie count
+- Best combo ever achieved
+- Cumulative stats across all sessions
+- "🏆 NEW HIGH SCORE!" banner on results screen
+- Gold badge on photo booth images
+- Auto-generates social media posts with stats
+</details>
+
+<details>
+<summary><b>⚡ Combo System</b> - Chain eliminations for bonus points</summary>
+
+Rapid eliminations build combos:
+- Visual combo counter (5x, 10x, 15x...)
+- Highest combo tracked per session
+- Rewards fast, skilled gameplay
+- Combo resets after brief pause
+</details>
+
+<details>
+<summary><b>🎮 Controller Hot-Plug</b> - Connect any controller anytime</summary>
+
+Seamless controller support:
+- Auto-detects Bluetooth/USB controllers
+- Hot-plug support (connect mid-game)
+- Tested with 8BitDo SN30 Pro
+- D-pad, analog sticks, all buttons mapped
+- Falls back to keyboard gracefully
+</details>
+
+<details>
+<summary><b>👹 Cyber Attack Bosses</b> - Real security threats as boss battles</summary>
+
+Each level features a unique boss based on real cyber attacks:
+- **WannaCry (Wade)** - Crying water character, tear projectiles
+- **Heartbleed (Red Queen)** - Bleeding heart attacks, data leak theme
+- **Scattered Spider** - Swarm of 5 mini-spiders, identity theft
+- Multi-phase battles with increasing difficulty
+- Educational dialogue about each attack
+</details>
+
+<details>
+<summary><b>🛡️ Purple Shields</b> - Exempted identities can't be eliminated</summary>
+
+Some zombies have purple shields indicating they're protected:
+- Represents Sonrai policy exemptions
+- Teaches that not all identities should be quarantined
+- Visual distinction from regular zombies
+- Realistic representation of enterprise policies
+</details>
+
+<details>
+<summary><b>🕹️ Level Entry Mode Selector</b> - Choose Arcade or Story mode per level</summary>
+
+When entering Sandbox, choose your gameplay style:
+- **Arcade Mode** - 60-second challenge, batch quarantine at end
+- **Story Mode** - Standard gameplay, real-time API calls
+- Reduces API load during high-traffic events
+- Configurable default via environment variables
+</details>
+
+---
+
 ## 📖 Documentation
 
 <details>
