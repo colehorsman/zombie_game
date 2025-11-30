@@ -53,6 +53,9 @@ class EvidenceCapture:
         # Visual feedback
         self.flash_alpha: int = 0
 
+        # Deferred screenshot flag - screenshot is taken after rendering completes
+        self._screenshot_pending: bool = False
+
         # Ensure directories exist
         self._ensure_directories()
 
@@ -70,9 +73,41 @@ class EvidenceCapture:
     # SCREENSHOT
     # =========================================================================
 
+    def request_screenshot(self) -> None:
+        """
+        Request a screenshot to be taken after the current frame renders.
+
+        This defers the actual capture until process_pending_screenshot() is called,
+        ensuring all rendering layers are complete before capture.
+        """
+        self._screenshot_pending = True
+        logger.info("📸 Screenshot requested - will capture after render completes")
+
+    def process_pending_screenshot(self, screen: pygame.Surface) -> Optional[str]:
+        """
+        Process any pending screenshot request after rendering is complete.
+
+        This should be called at the END of the render loop, after all
+        game elements have been drawn to the screen surface.
+
+        Args:
+            screen: The fully rendered pygame surface to capture
+
+        Returns:
+            Filename if screenshot was taken, None otherwise
+        """
+        if not self._screenshot_pending:
+            return None
+
+        self._screenshot_pending = False
+        return self.take_screenshot(screen)
+
     def take_screenshot(self, screen: pygame.Surface) -> Optional[str]:
         """
         Capture screenshot and save to file.
+
+        Note: For best results, use request_screenshot() instead and let
+        process_pending_screenshot() handle the capture after rendering.
 
         Args:
             screen: The pygame surface to capture
@@ -81,9 +116,18 @@ class EvidenceCapture:
             Filename if successful, None if failed
         """
         try:
+            from PIL import Image
+
             filename = self._generate_filename("png")
             filepath = os.path.join(self.SCREENSHOTS_DIR, filename)
-            pygame.image.save(screen, filepath)
+
+            # Convert pygame surface to PIL Image using RGB (no alpha)
+            # This matches how photo booth captures gameplay successfully
+            raw_str = pygame.image.tostring(screen, "RGB")
+            size = screen.get_size()
+            pil_image = Image.frombytes("RGB", size, raw_str)
+            pil_image.save(filepath, "PNG")
+
             self.flash_alpha = 255  # Trigger flash effect
             logger.info(f"📸 Screenshot saved: {filepath}")
             return filename
@@ -152,9 +196,7 @@ class EvidenceCapture:
         # Check if max duration reached
         elapsed = current_time - self.recording_start_time
         if elapsed >= self.MAX_RECORDING_SECONDS:
-            logger.info(
-                f"⏱️ Max recording duration ({self.MAX_RECORDING_SECONDS}s) reached"
-            )
+            logger.info(f"⏱️ Max recording duration ({self.MAX_RECORDING_SECONDS}s) reached")
             self.stop_recording()
             return
 
@@ -246,9 +288,7 @@ class EvidenceCapture:
             flash_surface.set_alpha(int(self.flash_alpha))
             screen.blit(flash_surface, (0, 0))
 
-    def render_recording_indicator(
-        self, screen: pygame.Surface, current_time: float
-    ) -> None:
+    def render_recording_indicator(self, screen: pygame.Surface, current_time: float) -> None:
         """Render red recording dot and timer in top-right corner."""
         if not self.is_recording:
             return

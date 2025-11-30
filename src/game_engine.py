@@ -2576,10 +2576,9 @@ class GameEngine:
                         projectile = self.player.fire_projectile()
                         self.projectiles.append(projectile)
 
-                # F12 - Screenshot
+                # F12 - Screenshot (deferred until after render completes)
                 if event.key == pygame.K_F12:
-                    if screen:
-                        self.evidence_capture.take_screenshot(screen)
+                    self.evidence_capture.request_screenshot()
                     continue
 
                 # F9 - Toggle Recording
@@ -2672,11 +2671,10 @@ class GameEngine:
                         continue
 
                 # Evidence capture - works even without joystick initialized
-                # X button (2) or Star button (10) = Screenshot
+                # X button (2) or Star button (10) = Screenshot (deferred until after render)
                 if event.button == 2 or event.button == 10:
-                    if screen:
-                        self.evidence_capture.take_screenshot(screen)
-                        logger.info(f"📸 Screenshot triggered by button {event.button}")
+                    self.evidence_capture.request_screenshot()
+                    logger.info(f"📸 Screenshot requested by button {event.button}")
                     continue
                 # Y button (3) = Toggle Recording
                 elif event.button == 3:

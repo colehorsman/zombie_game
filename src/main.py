@@ -604,6 +604,11 @@ def main():
         game_engine.evidence_capture.capture_frame(game_surface, current_time)
         game_engine.evidence_capture.update_flash(delta_time)
         game_engine.evidence_capture.render_recording_indicator(game_surface, current_time)
+
+        # Process any pending screenshot BEFORE flash overlay (capture clean frame)
+        game_engine.evidence_capture.process_pending_screenshot(game_surface)
+
+        # Render flash overlay AFTER screenshot capture
         game_engine.evidence_capture.render_flash(game_surface)
 
         # Scale and display game surface with aspect ratio preservation
