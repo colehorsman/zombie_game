@@ -36,6 +36,7 @@ class TestEvidenceCaptureInitialization:
             assert evidence.recording_frames == []
             assert evidence.last_frame_time == 0.0
             assert evidence.flash_alpha == 0
+            assert evidence._screenshot_pending is False
 
     def test_initialization_sets_class_constants(self):
         """Test that class constants are set correctly."""
@@ -111,29 +112,37 @@ class TestScreenshotCapture:
         with patch.object(EvidenceCapture, "_ensure_directories"):
             evidence = EvidenceCapture()
 
-            # Create a mock screen surface
+            # Create a mock screen surface with get_size method
             mock_screen = Mock(spec=pygame.Surface)
+            mock_screen.get_size.return_value = (1280, 720)
 
             with patch("pygame.image.save") as mock_save:
-                with patch.object(
-                    evidence, "_generate_filename", return_value="ZB_test.png"
-                ):
-                    result = evidence.take_screenshot(mock_screen)
+                with patch("evidence_capture.pygame.Surface") as mock_surface_class:
+                    mock_rgb_surface = Mock()
+                    mock_surface_class.return_value = mock_rgb_surface
+                    with patch.object(
+                        evidence, "_generate_filename", return_value="ZB_test.png"
+                    ):
+                        result = evidence.take_screenshot(mock_screen)
 
-                    assert result == "ZB_test.png"
-                    assert evidence.flash_alpha == 255
-                    mock_save.assert_called_once()
+                        assert result == "ZB_test.png"
+                        assert evidence.flash_alpha == 255
+                        mock_save.assert_called_once()
 
     def test_take_screenshot_triggers_flash(self):
         """Test that taking a screenshot triggers the flash effect."""
         with patch.object(EvidenceCapture, "_ensure_directories"):
             evidence = EvidenceCapture()
             mock_screen = Mock(spec=pygame.Surface)
+            mock_screen.get_size.return_value = (1280, 720)
 
             assert evidence.flash_alpha == 0
 
             with patch("pygame.image.save"):
-                evidence.take_screenshot(mock_screen)
+                with patch("evidence_capture.pygame.Surface") as mock_surface_class:
+                    mock_rgb_surface = Mock()
+                    mock_surface_class.return_value = mock_rgb_surface
+                    evidence.take_screenshot(mock_screen)
 
             assert evidence.flash_alpha == 255
 
@@ -142,11 +151,154 @@ class TestScreenshotCapture:
         with patch.object(EvidenceCapture, "_ensure_directories"):
             evidence = EvidenceCapture()
             mock_screen = Mock(spec=pygame.Surface)
+            mock_screen.get_size.return_value = (1280, 720)
 
-            with patch("pygame.image.save", side_effect=Exception("Save failed")):
+            with patch(
+                "evidence_capture.pygame.Surface",
+                side_effect=Exception("Surface failed"),
+            ):
                 result = evidence.take_screenshot(mock_screen)
 
                 assert result is None
+
+    def test_take_screenshot_converts_to_rgb(self):
+        """Test that screenshot converts screen to RGB surface before saving."""
+        with patch.object(EvidenceCapture, "_ensure_directories"):
+            evidence = EvidenceCapture()
+
+            mock_screen = Mock(spec=pygame.Surface)
+            mock_screen.get_size.return_value = (1280, 720)
+
+            with patch("pygame.image.save") as mock_save:
+                with patch("evidence_capture.pygame.Surface") as mock_surface_class:
+                    mock_rgb_surface = Mock()
+                    mock_surface_class.return_value = mock_rgb_surface
+                    with patch.object(
+                        evidence, "_generate_filename", return_value="ZB_test.png"
+                    ):
+                        evidence.take_screenshot(mock_screen)
+
+                        # Verify RGB surface was created with screen dimensions
+                        mock_surface_class.assert_called_once_with((1280, 720))
+                        # Verify black background was filled
+                        mock_rgb_surface.fill.assert_called_once_with((0, 0, 0))
+                        # Verify screen was blitted onto RGB surface
+                        mock_rgb_surface.blit.assert_called_once_with(
+                            mock_screen, (0, 0)
+                        )
+                        # Verify RGB surface was saved (not original screen)
+                        mock_save.assert_called_once()
+                        saved_surface = mock_save.call_args[0][0]
+                        assert saved_surface == mock_rgb_surface
+
+
+class TestDeferredScreenshot:
+    """Tests for deferred screenshot functionality."""
+
+    def test_request_screenshot_sets_pending_flag(self):
+        """Test that request_screenshot sets the pending flag."""
+        with patch.object(EvidenceCapture, "_ensure_directories"):
+            evidence = EvidenceCapture()
+
+            assert evidence._screenshot_pending is False
+
+            evidence.request_screenshot()
+
+            assert evidence._screenshot_pending is True
+
+    def test_process_pending_screenshot_when_not_pending(self):
+        """Test that process_pending_screenshot returns None when no screenshot pending."""
+        with patch.object(EvidenceCapture, "_ensure_directories"):
+            evidence = EvidenceCapture()
+            mock_screen = Mock(spec=pygame.Surface)
+
+            assert evidence._screenshot_pending is False
+
+            result = evidence.process_pending_screenshot(mock_screen)
+
+            assert result is None
+            assert evidence._screenshot_pending is False
+
+    def test_process_pending_screenshot_when_pending(self):
+        """Test that process_pending_screenshot takes screenshot when pending."""
+        with patch.object(EvidenceCapture, "_ensure_directories"):
+            evidence = EvidenceCapture()
+            mock_screen = Mock(spec=pygame.Surface)
+            mock_screen.get_size.return_value = (1280, 720)
+
+            # Request a screenshot
+            evidence.request_screenshot()
+            assert evidence._screenshot_pending is True
+
+            with patch("evidence_capture.pygame.image.save"):
+                with patch("evidence_capture.pygame.Surface") as mock_surface_class:
+                    mock_rgb_surface = Mock()
+                    mock_surface_class.return_value = mock_rgb_surface
+                    with patch.object(
+                        evidence, "_generate_filename", return_value="ZB_test.png"
+                    ):
+                        result = evidence.process_pending_screenshot(mock_screen)
+
+                        assert result == "ZB_test.png"
+                        assert evidence._screenshot_pending is False
+                        assert evidence.flash_alpha == 255
+
+    def test_process_pending_screenshot_clears_flag_on_failure(self):
+        """Test that process_pending_screenshot clears flag even on failure."""
+        with patch.object(EvidenceCapture, "_ensure_directories"):
+            evidence = EvidenceCapture()
+            mock_screen = Mock(spec=pygame.Surface)
+            mock_screen.get_size.return_value = (1280, 720)
+
+            evidence.request_screenshot()
+            assert evidence._screenshot_pending is True
+
+            with patch(
+                "evidence_capture.pygame.Surface",
+                side_effect=Exception("Surface failed"),
+            ):
+                result = evidence.process_pending_screenshot(mock_screen)
+
+                assert result is None
+                assert evidence._screenshot_pending is False
+
+    def test_deferred_screenshot_workflow(self):
+        """Test complete deferred screenshot workflow."""
+        with patch.object(EvidenceCapture, "_ensure_directories"):
+            evidence = EvidenceCapture()
+            mock_screen = Mock(spec=pygame.Surface)
+            mock_screen.get_size.return_value = (1280, 720)
+
+            # Step 1: Request screenshot (during input handling)
+            evidence.request_screenshot()
+            assert evidence._screenshot_pending is True
+            assert evidence.flash_alpha == 0  # No flash yet
+
+            # Step 2: Process pending screenshot (after render completes)
+            with patch("evidence_capture.pygame.image.save"):
+                with patch("evidence_capture.pygame.Surface") as mock_surface_class:
+                    mock_rgb_surface = Mock()
+                    mock_surface_class.return_value = mock_rgb_surface
+                    with patch.object(
+                        evidence, "_generate_filename", return_value="ZB_deferred.png"
+                    ):
+                        result = evidence.process_pending_screenshot(mock_screen)
+
+                        assert result == "ZB_deferred.png"
+                        assert evidence._screenshot_pending is False
+                        assert evidence.flash_alpha == 255  # Flash triggered
+
+    def test_multiple_request_screenshot_calls(self):
+        """Test that multiple request_screenshot calls don't cause issues."""
+        with patch.object(EvidenceCapture, "_ensure_directories"):
+            evidence = EvidenceCapture()
+
+            # Multiple requests should just keep the flag True
+            evidence.request_screenshot()
+            evidence.request_screenshot()
+            evidence.request_screenshot()
+
+            assert evidence._screenshot_pending is True
 
 
 class TestRecordingControl:
@@ -459,13 +611,17 @@ class TestIntegration:
             evidence = EvidenceCapture()
 
             mock_screen = Mock(spec=pygame.Surface)
+            mock_screen.get_size.return_value = (1280, 720)
 
             # Take screenshot
-            with patch("pygame.image.save"):
-                filename = evidence.take_screenshot(mock_screen)
+            with patch("evidence_capture.pygame.image.save"):
+                with patch("evidence_capture.pygame.Surface") as mock_surface_class:
+                    mock_rgb_surface = Mock()
+                    mock_surface_class.return_value = mock_rgb_surface
+                    filename = evidence.take_screenshot(mock_screen)
 
-                assert filename is not None
-                assert evidence.flash_alpha == 255
+                    assert filename is not None
+                    assert evidence.flash_alpha == 255
 
             # Update flash
             evidence.update_flash(0.2)
