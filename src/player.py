@@ -75,9 +75,7 @@ class Player:
         # Invincibility frames (after taking damage)
         self.is_invincible: bool = False
         self.invincibility_timer: float = 0.0
-        self.invincibility_duration: float = (
-            0.5  # seconds (reduced for faster gameplay)
-        )
+        self.invincibility_duration: float = 0.5  # seconds (reduced for faster gameplay)
         self.flash_timer: float = 0.0
         self.flash_interval: float = 0.1  # Flash every 0.1s during invincibility
         self.is_visible: bool = True  # For flashing effect
@@ -411,13 +409,19 @@ class Player:
 
         # Check collision with map boundaries if game_map is available
         if self.game_map is not None:
-            # Check horizontal and vertical movement independently
-            can_move_x = self._can_move_to(next_x, self.position.y)
-            if can_move_x:
+            # PLATFORMER MODE: Skip horizontal collision check - platforms are only for landing on,
+            # not for blocking horizontal movement. The is_walkable check uses lobby logic where
+            # tile=1 means wall, but in platformer mode tile=1 means platform you walk OVER.
+            if is_platformer_mode:
+                # In platformer mode, just move horizontally (no wall collision)
                 self.position.x = next_x
+            else:
+                # LOBBY MODE: Check horizontal movement against walls
+                can_move_x = self._can_move_to(next_x, self.position.y)
+                if can_move_x:
+                    self.position.x = next_x
 
-            # In top-down mode, check vertical movement independently
-            if not is_platformer_mode:
+                # In top-down mode, check vertical movement independently
                 can_move_y = self._can_move_to(self.position.x, next_y)
                 if can_move_y:
                     self.position.y = next_y
@@ -477,9 +481,7 @@ class Player:
         Returns:
             Pygame Rect representing the player's bounds
         """
-        return pygame.Rect(
-            int(self.position.x), int(self.position.y), self.width, self.height
-        )
+        return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
 
     # ========== Health System Methods ==========
 
@@ -530,9 +532,7 @@ class Player:
     def full_heal(self) -> None:
         """Restore player to full health."""
         self.current_health = self.max_health
-        logger.info(
-            f"💚 Player fully healed! Health: {self.current_health}/{self.max_health}"
-        )
+        logger.info(f"💚 Player fully healed! Health: {self.current_health}/{self.max_health}")
 
     def update_invincibility(self, delta_time: float) -> None:
         """

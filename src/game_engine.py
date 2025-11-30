@@ -336,7 +336,9 @@ class GameEngine:
                 break
             else:
                 if attempt < max_retries - 1:
-                    logger.debug(f"🎮 No controller found (attempt {attempt + 1}/{max_retries}), retrying...")
+                    logger.debug(
+                        f"🎮 No controller found (attempt {attempt + 1}/{max_retries}), retrying..."
+                    )
                     time.sleep(delay)
 
         if self.joystick is None:
@@ -374,10 +376,11 @@ class GameEngine:
 
             if "bedrock-agentcore" in unprotected_services:
                 # Service is unprotected - create quest!
+                # Trigger at x=2500 (halfway through level) to give player time to warm up
                 sandbox_quest = create_bedrock_protection_quest(
                     quest_id="sandbox_bedrock_agentcore",
                     level=1,
-                    trigger_pos=Vector2(200, 400),
+                    trigger_pos=Vector2(2500, 400),
                     service_pos=Vector2(5000, SERVICE_ICON_Y),
                 )
                 self.quest_manager.add_quest(sandbox_quest)
