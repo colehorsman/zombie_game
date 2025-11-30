@@ -3,9 +3,13 @@ Photo Booth Controller.
 
 Manages the photo booth capture flow including consent,
 webcam capture, and composite generation.
+
+Uses background threading for slow operations (background removal)
+to avoid blocking the game loop.
 """
 
 import logging
+import threading
 import time
 from enum import Enum
 from typing import Optional
@@ -15,6 +19,7 @@ from PIL import Image
 
 from .compositor import PhotoBoothCompositor
 from .config import PhotoBoothConfig
+from .retro_filter import RetroFilter
 
 # Try to import OpenCV, but don't fail if not available
 try:
@@ -71,7 +76,8 @@ class PhotoBoothController:
         self._camera_available = False
 
         # Captured images
-        self._selfie_image: Optional[Image.Image] = None
+        self._selfie_image: Optional[Image.Image] = None  # Raw webcam capture
+        self._selfie_processed: Optional[Image.Image] = None  # After bg removal + effects
         self._gameplay_image: Optional[Image.Image] = None
         self._composite_path: Optional[str] = None
 
@@ -80,6 +86,11 @@ class PhotoBoothController:
         self._arcade_start_time: float = 0.0
         self._gameplay_captured: bool = False
         self._selfie_captured: bool = False
+
+        # Async processing
+        self._selfie_processing: bool = False  # True while bg removal is running
+        self._selfie_ready: bool = False  # True when processed selfie is ready
+        self._processing_thread: Optional[threading.Thread] = None
 
         # Compositor
         self._compositor = PhotoBoothCompositor()
@@ -105,6 +116,16 @@ class PhotoBoothController:
     def composite_path(self) -> Optional[str]:
         """Path to generated composite image."""
         return self._composite_path
+
+    @property
+    def is_selfie_ready(self) -> bool:
+        """Whether processed selfie is ready for compositing."""
+        return self._selfie_ready
+
+    @property
+    def is_selfie_processing(self) -> bool:
+        """Whether selfie is currently being processed (bg removal)."""
+        return self._selfie_processing
 
     @property
     def consent_time_remaining(self) -> float:
@@ -222,7 +243,10 @@ class PhotoBoothController:
         if opted_in and not self._camera_available:
             self._logger.warning("📸 User opted in but camera not available - selfie disabled")
         elif opted_in:
-            self._logger.info("📸 User opted IN to selfie - will capture during gameplay")
+            self._logger.info("📸 User opted IN to selfie - starting ASYNC capture + processing")
+            # Start capture in background thread to avoid blocking the game loop
+            # This way the slow webcam read AND processing happen in parallel with gameplay
+            self._start_async_selfie_capture()
 
     def check_consent_timeout(self) -> bool:
         """
@@ -253,9 +277,13 @@ class PhotoBoothController:
             PhotoBoothState.COMPLETE,
         )
 
-    def capture_selfie(self) -> bool:
+    def capture_selfie(self, start_async_processing: bool = True) -> bool:
         """
-        Capture webcam image.
+        Capture webcam image and optionally start background processing.
+
+        Args:
+            start_async_processing: If True, immediately start background removal
+                                   in a separate thread (non-blocking)
 
         Returns:
             True if capture successful or not opted in
@@ -309,11 +337,120 @@ class PhotoBoothController:
             self._selfie_captured = True
 
             self._logger.info(f"📸 Selfie captured successfully: {self._selfie_image.size}")
+
+            # Start async processing (background removal + effects) in separate thread
+            if start_async_processing:
+                self._start_async_selfie_processing()
+
             return True
 
         except Exception as e:
             self._logger.error(f"📸 Webcam capture error: {e}", exc_info=True)
             return False
+
+    def _start_async_selfie_capture(self) -> None:
+        """Start background thread to capture AND process selfie (webcam read + bg removal).
+
+        This runs the entire pipeline in a daemon thread so the game loop is never blocked:
+        1. Read frame from webcam (slow - can take 100-500ms)
+        2. Apply video game character effect with background removal (slow - can take 2-5s)
+        """
+        if self._selfie_processing:
+            self._logger.warning("📸 Async capture already in progress")
+            return
+
+        if not self._camera_available or self._webcam is None:
+            self._logger.warning("📸 Cannot start async capture - camera not available")
+            return
+
+        self._selfie_processing = True
+        self._selfie_ready = False
+        self._selfie_captured = (
+            True  # Mark as captured IMMEDIATELY to prevent duplicate capture attempts
+        )
+        self._logger.info("📸 Starting ASYNC selfie capture + processing in background thread...")
+
+        def capture_and_process():
+            try:
+                # Step 1: Read frame from webcam
+                self._logger.info("📸 [ASYNC] Reading frame from webcam...")
+
+                # Verify webcam is still open
+                if not self._webcam.isOpened():
+                    self._logger.error("📸 [ASYNC] Webcam was closed!")
+                    return
+
+                ret, frame = self._webcam.read()
+
+                if not ret or frame is None:
+                    self._logger.error(f"📸 [ASYNC] Failed to read from webcam: ret={ret}")
+                    return
+
+                # Convert BGR (OpenCV) to RGB (PIL)
+                frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                self._selfie_image = Image.fromarray(frame_rgb)
+                self._selfie_captured = True
+                self._logger.info(f"📸 [ASYNC] Webcam frame captured: {self._selfie_image.size}")
+
+                # Step 2: Apply video game character effect (includes bg removal)
+                self._logger.info("📸 [ASYNC] Starting background removal + effects...")
+                self._selfie_processed = RetroFilter.apply_video_game_character_effect(
+                    self._selfie_image, pixel_size=5
+                )
+                self._selfie_ready = True
+                self._logger.info(
+                    "📸 [ASYNC] Selfie capture + processing COMPLETE - ready for composite"
+                )
+
+            except Exception as e:
+                self._logger.error(
+                    f"📸 [ASYNC] Selfie capture/processing failed: {e}", exc_info=True
+                )
+                # If we got the image but processing failed, use original
+                if self._selfie_image is not None:
+                    self._selfie_processed = self._selfie_image
+                    self._selfie_ready = True
+            finally:
+                self._selfie_processing = False
+
+        self._processing_thread = threading.Thread(target=capture_and_process, daemon=True)
+        self._processing_thread.start()
+
+    def _start_async_selfie_processing(self) -> None:
+        """Start background thread to process selfie (bg removal + effects).
+
+        DEPRECATED: Use _start_async_selfie_capture instead which does both capture and processing.
+        """
+        if self._selfie_image is None:
+            self._logger.warning("📸 Cannot start async processing - no selfie image")
+            return
+
+        if self._selfie_processing:
+            self._logger.warning("📸 Async processing already in progress")
+            return
+
+        self._selfie_processing = True
+        self._selfie_ready = False
+        self._logger.info("📸 Starting async selfie processing (background removal)...")
+
+        def process_selfie():
+            try:
+                # Apply video game character effect (includes bg removal)
+                self._selfie_processed = RetroFilter.apply_video_game_character_effect(
+                    self._selfie_image, pixel_size=5
+                )
+                self._selfie_ready = True
+                self._logger.info("📸 Async selfie processing COMPLETE - ready for composite")
+            except Exception as e:
+                self._logger.error(f"📸 Async selfie processing failed: {e}", exc_info=True)
+                # Fallback: use original image
+                self._selfie_processed = self._selfie_image
+                self._selfie_ready = True
+            finally:
+                self._selfie_processing = False
+
+        self._processing_thread = threading.Thread(target=process_selfie, daemon=True)
+        self._processing_thread.start()
 
     def capture_gameplay(self, screen: pygame.Surface) -> bool:
         """
@@ -345,6 +482,9 @@ class PhotoBoothController:
         """
         Generate final photo booth composite.
 
+        Uses pre-processed selfie if available (from async background removal),
+        otherwise falls back to raw selfie with synchronous processing.
+
         Args:
             zombie_count: Number of zombies eliminated
 
@@ -354,6 +494,8 @@ class PhotoBoothController:
         self._logger.info(
             f"📸 generate_composite called: zombie_count={zombie_count}, "
             f"selfie_image={self._selfie_image is not None}, "
+            f"selfie_processed={self._selfie_processed is not None}, "
+            f"selfie_ready={self._selfie_ready}, "
             f"gameplay_image={self._gameplay_image is not None}, "
             f"selfie_opted_in={self._selfie_opted_in}, "
             f"selfie_captured={self._selfie_captured}"
@@ -365,16 +507,46 @@ class PhotoBoothController:
 
         self._state = PhotoBoothState.COMPOSITING
 
+        # Determine which selfie image to use
+        selfie_for_composite = None
+        if self._selfie_opted_in and self._selfie_captured:
+            if self._selfie_ready and self._selfie_processed is not None:
+                # Use pre-processed selfie (bg already removed, effects applied)
+                selfie_for_composite = self._selfie_processed
+                self._logger.info("📸 Using PRE-PROCESSED selfie (async bg removal done)")
+            elif self._selfie_image is not None:
+                # Fallback: wait briefly for async processing, then use raw
+                if self._selfie_processing:
+                    self._logger.info("📸 Waiting briefly for async processing to complete...")
+                    # Wait up to 5 seconds for processing to complete
+                    for _ in range(50):
+                        if self._selfie_ready:
+                            break
+                        time.sleep(0.1)
+
+                if self._selfie_ready and self._selfie_processed is not None:
+                    selfie_for_composite = self._selfie_processed
+                    self._logger.info("📸 Using PRE-PROCESSED selfie (waited for completion)")
+                else:
+                    # Use raw image - compositor will apply effects synchronously
+                    selfie_for_composite = self._selfie_image
+                    self._logger.warning("📸 Using RAW selfie (async processing not ready)")
+
         try:
             # Generate composite
             self._logger.info(
-                f"📸 Generating composite with selfie={'YES' if self._selfie_image else 'NO'}"
+                f"📸 Generating composite with selfie={'PRE-PROCESSED' if selfie_for_composite is self._selfie_processed else 'RAW' if selfie_for_composite else 'NONE'}"
             )
+
+            # If we have a pre-processed selfie, tell compositor to skip retro filter
+            skip_selfie_retro = selfie_for_composite is self._selfie_processed
+
             composite = self._compositor.generate(
-                selfie=self._selfie_image,
+                selfie=selfie_for_composite,
                 gameplay=self._gameplay_image,
                 zombie_count=zombie_count,
                 config=self.config,
+                skip_selfie_retro=skip_selfie_retro,
             )
 
             # Save to file
@@ -394,12 +566,16 @@ class PhotoBoothController:
         """Reset controller for next arcade session."""
         self._selfie_opted_in = False
         self._selfie_image = None
+        self._selfie_processed = None
         self._gameplay_image = None
         self._composite_path = None
         self._consent_prompt_start = 0.0
         self._arcade_start_time = 0.0
         self._gameplay_captured = False
         self._selfie_captured = False
+        self._selfie_processing = False
+        self._selfie_ready = False
+        self._processing_thread = None
 
         if self.config.enabled:
             self._state = PhotoBoothState.INACTIVE
@@ -427,24 +603,20 @@ class PhotoBoothController:
         return elapsed >= self.config.screenshot_delay
 
     def should_capture_selfie(self) -> bool:
-        """Check if it's time to capture selfie."""
+        """Check if it's time to capture selfie.
+
+        Returns True immediately if opted in and not captured yet.
+        Selfie should be captured as early as possible so background
+        removal can process while the countdown/gameplay happens.
+        """
         if self._selfie_captured:
             return False
         if not self._selfie_opted_in:
-            # Only log once per second to avoid spam
-            elapsed = self.get_arcade_elapsed_time()
-            if int(elapsed) % 5 == 0 and int(elapsed) > 0:
-                self._logger.debug(f"📸 should_capture_selfie: selfie_opted_in=False, skipping")
             return False
-        elapsed = self.get_arcade_elapsed_time()
-        target_time = self.config.screenshot_delay + 1.0
-        # Capture selfie slightly after gameplay screenshot
-        if elapsed >= target_time:
-            self._logger.info(
-                f"📸 should_capture_selfie: YES - elapsed={elapsed:.1f}s >= target={target_time}s"
-            )
-            return True
-        return False
+        # Capture immediately - no delay needed
+        # The earlier we capture, the more time for async bg removal
+        self._logger.info("📸 should_capture_selfie: YES - immediate capture for async processing")
+        return True
 
     def has_minimum_arcade_time(self) -> bool:
         """Check if minimum arcade time has passed for photo generation."""

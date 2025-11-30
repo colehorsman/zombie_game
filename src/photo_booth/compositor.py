@@ -142,7 +142,12 @@ class PhotoBoothCompositor:
         panel_height: int,
         skip_retro: bool = False,
     ) -> Image.Image:
-        """Create the pixelated selfie panel."""
+        """Create the pixelated selfie panel.
+
+        Uses smart cropping to prioritize keeping the head in frame:
+        - Crops from bottom/sides when image is wider than panel (landscape webcam)
+        - This keeps the top of frame (where heads typically are) visible
+        """
         # Apply enhanced arcade effect (with background removal and video game look)
         if skip_retro:
             retro_selfie = selfie
@@ -152,24 +157,54 @@ class PhotoBoothCompositor:
         # Create panel background
         panel = Image.new("RGB", (panel_width, panel_height), self.PANEL_BG)
 
-        # Resize selfie to fit panel while maintaining aspect ratio
+        # Available space for the image (with padding)
+        available_width = panel_width - 20
+        available_height = panel_height - 20
+
         selfie_ratio = retro_selfie.width / retro_selfie.height
-        panel_ratio = panel_width / panel_height
+        panel_ratio = available_width / available_height
 
         if selfie_ratio > panel_ratio:
-            # Selfie is wider - fit to width
-            new_width = panel_width - 20
+            # Selfie is WIDER than panel (typical landscape webcam -> portrait panel)
+            # Scale to fill WIDTH, then crop from BOTTOM to preserve head at top
+            new_width = available_width
             new_height = int(new_width / selfie_ratio)
+
+            # If still shorter than panel, just center it
+            if new_height <= available_height:
+                retro_selfie = retro_selfie.resize((new_width, new_height), Image.NEAREST)
+                x_offset = (panel_width - new_width) // 2
+                y_offset = (panel_height - new_height) // 2
+            else:
+                # Scale to fill HEIGHT instead, then crop sides (center horizontally)
+                new_height = available_height
+                new_width = int(new_height * selfie_ratio)
+                retro_selfie = retro_selfie.resize((new_width, new_height), Image.NEAREST)
+
+                # Crop horizontally from center
+                crop_x = (new_width - available_width) // 2
+                retro_selfie = retro_selfie.crop((crop_x, 0, crop_x + available_width, new_height))
+                new_width = available_width
+
+                x_offset = (panel_width - new_width) // 2
+                y_offset = (panel_height - new_height) // 2
         else:
-            # Selfie is taller - fit to height
-            new_height = panel_height - 20
+            # Selfie is TALLER than panel ratio
+            # Scale to fill HEIGHT, then crop from BOTTOM to preserve head
+            new_height = available_height
             new_width = int(new_height * selfie_ratio)
 
-        retro_selfie = retro_selfie.resize((new_width, new_height), Image.NEAREST)
+            retro_selfie = retro_selfie.resize((new_width, new_height), Image.NEAREST)
 
-        # Center in panel
-        x_offset = (panel_width - new_width) // 2
-        y_offset = (panel_height - new_height) // 2
+            # If wider than available, crop sides (center horizontally)
+            if new_width > available_width:
+                crop_x = (new_width - available_width) // 2
+                retro_selfie = retro_selfie.crop((crop_x, 0, crop_x + available_width, new_height))
+                new_width = available_width
+
+            x_offset = (panel_width - new_width) // 2
+            y_offset = 10  # Top align with small padding
+
         panel.paste(retro_selfie, (x_offset, y_offset))
 
         # Add border

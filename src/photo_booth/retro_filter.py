@@ -9,7 +9,7 @@ recognizable features.
 import logging
 import math
 
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+from PIL import Image, ImageDraw, ImageEnhance
 
 # Try to import rembg for background removal
 try:
@@ -536,12 +536,14 @@ class RetroFilter:
         return bg.convert("RGB")
 
     @classmethod
-    def apply_video_game_character_effect(cls, image: Image.Image, pixel_size: int = 5) -> Image.Image:
+    def apply_video_game_character_effect(
+        cls, image: Image.Image, pixel_size: int = 5, do_remove_bg: bool = False
+    ) -> Image.Image:
         """
         Apply heavy video game character transformation.
 
         Creates an authentic 8-bit/16-bit video game character look with:
-        - Background removal (person extracted)
+        - Optional background removal (SLOW - disabled by default)
         - Heavy pixelation for blocky retro look
         - Limited 32-color palette optimized for skin tones
         - Game-themed purple background
@@ -549,17 +551,23 @@ class RetroFilter:
         Args:
             image: PIL Image (selfie from webcam)
             pixel_size: Pixel block size (5 = chunky retro, 4 = more detail)
+            do_remove_bg: Whether to remove background (SLOW - 10+ seconds!)
 
         Returns:
             Video game character styled image
         """
-        logger.info(f"📸 Applying video game character effect (pixel_size={pixel_size})")
+        logger.info(
+            f"📸 Applying video game character effect (pixel_size={pixel_size}, remove_bg={do_remove_bg})"
+        )
 
-        # Step 1: Remove background
-        img_nobg = cls.remove_background(image)
-
-        # Step 2: Add game-themed purple background
-        img_with_bg = cls.add_game_background(img_nobg, bg_color=(40, 20, 60))
+        if do_remove_bg:
+            # Step 1: Remove background (SLOW!)
+            img_nobg = cls.remove_background(image)
+            # Step 2: Add game-themed purple background
+            img_with_bg = cls.add_game_background(img_nobg, bg_color=(40, 20, 60))
+        else:
+            # Skip background removal - just use original image
+            img_with_bg = image
 
         # Step 3: Apply heavier pixelation for authentic retro look
         img_pixelated = cls.pixelate(img_with_bg, pixel_size=pixel_size)
@@ -571,7 +579,9 @@ class RetroFilter:
         return img_final
 
     @classmethod
-    def apply_enhanced_arcade_effect(cls, image: Image.Image) -> Image.Image:
+    def apply_enhanced_arcade_effect(
+        cls, image: Image.Image, do_remove_bg: bool = False
+    ) -> Image.Image:
         """
         Apply enhanced arcade photo booth effect.
 
@@ -580,12 +590,16 @@ class RetroFilter:
 
         Args:
             image: PIL Image (selfie from webcam)
+            do_remove_bg: Whether to remove background (SLOW - disabled by default)
 
         Returns:
             Arcade-styled selfie that looks like a video game character
         """
         # Apply the full video game character transformation
-        img = cls.apply_video_game_character_effect(image, pixel_size=5)
+        # Background removal is disabled by default for speed
+        img = cls.apply_video_game_character_effect(
+            image, pixel_size=5, do_remove_bg=do_remove_bg
+        )
 
         # Add subtle scanlines for CRT arcade feel
         img = cls.add_scanlines(img, opacity=25, spacing=4)
