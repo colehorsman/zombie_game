@@ -401,11 +401,13 @@ class GameEngine:
 
             if "bedrock-agentcore" in unprotected_services:
                 # Service is unprotected - create quest!
+                # Trigger at x=1500 to give player time to warm up before hacker challenge
+                # Service icon at x=2500 (ahead of trigger position)
                 production_quest = create_bedrock_protection_quest(
                     quest_id="production_bedrock_agentcore",
                     level=6,
-                    trigger_pos=Vector2(300, 400),
-                    service_pos=Vector2(800, SERVICE_ICON_Y),
+                    trigger_pos=Vector2(1500, 400),
+                    service_pos=Vector2(2500, SERVICE_ICON_Y),
                 )
                 self.quest_manager.add_quest(production_quest)
                 logger.info(
@@ -2536,6 +2538,12 @@ class GameEngine:
                             active_quest.status = QuestStatus.ACTIVE
                             active_quest.hacker_spawned = True
 
+                            # Spawn powerups along the race path to help player win
+                            self._spawn_hacker_challenge_powerups(
+                                self.player.position.x,
+                                active_quest.service_position.x,
+                            )
+
                             logger.info(
                                 f"⌨️  RACE STARTED! Hacker spawned at ({spawn_x}, {spawn_y})"
                             )
@@ -2800,6 +2808,12 @@ class GameEngine:
                                 # Start the race!
                                 active_quest.status = QuestStatus.ACTIVE
                                 active_quest.hacker_spawned = True
+
+                                # Spawn powerups along the race path to help player win
+                                self._spawn_hacker_challenge_powerups(
+                                    self.player.position.x,
+                                    active_quest.service_position.x,
+                                )
 
                                 logger.info(
                                     f"🎮 RACE STARTED! Hacker spawned at ({spawn_x}, {spawn_y})"
@@ -3263,6 +3277,62 @@ class GameEngine:
         except Exception as e:
             logger.error(f"Failed to spawn powerups: {e}", exc_info=True)
             self.powerups = []  # Ensure powerups list exists even on failure
+
+    def _spawn_hacker_challenge_powerups(self, start_x: float, end_x: float) -> None:
+        """
+        Spawn powerups along the path for the hacker challenge race.
+
+        Places Lambda Speed and Star Power powerups on the ground between the
+        player's current position and the service icon to help them win the race.
+
+        Args:
+            start_x: Player's starting x position
+            end_x: Service icon's x position (race finish line)
+        """
+        try:
+            import random
+
+            # Ground level for platformer
+            ground_y = 832
+
+            # Calculate distance and spawn 4-6 powerups along the path
+            distance = end_x - start_x
+            num_powerups = 5  # Good amount to help win the race
+
+            # Space powerups evenly along the race path
+            spacing = distance / (num_powerups + 1)
+
+            challenge_powerups = []
+            for i in range(num_powerups):
+                # Position powerup along the path
+                powerup_x = start_x + spacing * (i + 1)
+                # Place slightly above ground level so they're visible and collectible
+                powerup_y = ground_y - 48
+
+                # 40% Star Power (invincibility helps a lot!), 60% Lambda Speed
+                if random.random() < 0.4:
+                    powerup_type = PowerUpType.STAR_POWER
+                else:
+                    powerup_type = PowerUpType.LAMBDA_SPEED
+
+                powerup = PowerUp(Vector2(powerup_x, powerup_y), powerup_type)
+                challenge_powerups.append(powerup)
+
+            # Add to existing powerups
+            self.powerups.extend(challenge_powerups)
+
+            star_count = sum(
+                1 for p in challenge_powerups if p.powerup_type == PowerUpType.STAR_POWER
+            )
+            speed_count = len(challenge_powerups) - star_count
+
+            logger.info(
+                f"🎁 Spawned {len(challenge_powerups)} hacker challenge powerups "
+                f"({star_count} stars, {speed_count} speed boosts) from x={start_x:.0f} to x={end_x:.0f}"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to spawn hacker challenge powerups: {e}", exc_info=True)
 
     def _apply_powerup_effect(self, powerup: PowerUp) -> None:
         """
