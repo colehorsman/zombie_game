@@ -229,19 +229,9 @@ class GameEngine:
         pygame.joystick.init()
         self.joystick = None
 
-        # Initialize first available controller
-        if pygame.joystick.get_count() > 0:
-            # Try to find a recognized controller
-            for i in range(pygame.joystick.get_count()):
-                joy = pygame.joystick.Joystick(i)
-                joy.init()
-                logger.info(f"🎮 Found controller {i}: {joy.get_name()}")
-                if self.joystick is None:
-                    self.joystick = joy
-                    logger.info(f"🎮 Using controller: {joy.get_name()}")
-
-        if self.joystick is None:
-            logger.info("⌨️  No controller detected, using keyboard")
+        # Initialize controller with retry logic
+        # Sometimes controllers aren't immediately recognized on startup
+        self._init_controller_with_retry()
 
         # Scrolling (only for classic mode)
         self.scroll_speed = 50.0  # pixels per second
@@ -312,6 +302,45 @@ class GameEngine:
             "613056517323",  # MyHealth - Production
             "437154727976",  # Sonrai MyHealth - Org
         }
+
+    def _init_controller_with_retry(self, max_retries: int = 3, delay: float = 0.1) -> None:
+        """
+        Initialize controller with retry logic.
+
+        Controllers sometimes aren't immediately recognized on startup,
+        especially USB/Bluetooth controllers. This method retries a few times
+        with small delays and event pumps to ensure proper detection.
+
+        Args:
+            max_retries: Number of retry attempts
+            delay: Delay in seconds between retries
+        """
+        for attempt in range(max_retries):
+            # Pump events to ensure pygame processes device connections
+            pygame.event.pump()
+
+            # Re-query joystick subsystem
+            pygame.joystick.quit()
+            pygame.joystick.init()
+
+            controller_count = pygame.joystick.get_count()
+            if controller_count > 0:
+                # Try to find a recognized controller
+                for i in range(controller_count):
+                    joy = pygame.joystick.Joystick(i)
+                    joy.init()
+                    logger.info(f"🎮 Found controller {i}: {joy.get_name()}")
+                    if self.joystick is None:
+                        self.joystick = joy
+                        logger.info(f"🎮 Using controller: {joy.get_name()}")
+                break
+            else:
+                if attempt < max_retries - 1:
+                    logger.debug(f"🎮 No controller found (attempt {attempt + 1}/{max_retries}), retrying...")
+                    time.sleep(delay)
+
+        if self.joystick is None:
+            logger.info("⌨️  No controller detected, using keyboard")
 
     def start(self) -> None:
         """Start the game."""
