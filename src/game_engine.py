@@ -304,7 +304,7 @@ class GameEngine:
             "437154727976",  # Sonrai MyHealth - Org
         }
 
-    def _init_controller_with_retry(self, max_retries: int = 3, delay: float = 0.1) -> None:
+    def _init_controller_with_retry(self, max_retries: int = 5, delay: float = 0.3) -> None:
         """
         Initialize controller with retry logic.
 
@@ -316,34 +316,52 @@ class GameEngine:
             max_retries: Number of retry attempts
             delay: Delay in seconds between retries
         """
+        logger.info(f"🎮 Initializing controller detection (max {max_retries} attempts)...")
+        print(f"🎮 Initializing controller detection (max {max_retries} attempts)...")
+
         for attempt in range(max_retries):
-            # Pump events to ensure pygame processes device connections
-            pygame.event.pump()
+            # Pump events multiple times to ensure pygame processes device connections
+            for _ in range(3):
+                pygame.event.pump()
+                time.sleep(0.05)
 
             # Re-query joystick subsystem
             pygame.joystick.quit()
             pygame.joystick.init()
 
             controller_count = pygame.joystick.get_count()
+            logger.info(
+                f"🎮 Controller scan attempt {attempt + 1}/{max_retries}: found {controller_count} device(s)"
+            )
+            print(
+                f"🎮 Controller scan attempt {attempt + 1}/{max_retries}: found {controller_count} device(s)"
+            )
+
             if controller_count > 0:
                 # Try to find a recognized controller
                 for i in range(controller_count):
                     joy = pygame.joystick.Joystick(i)
                     joy.init()
                     logger.info(f"🎮 Found controller {i}: {joy.get_name()}")
+                    print(f"🎮 Found controller {i}: {joy.get_name()}")
                     if self.joystick is None:
                         self.joystick = joy
                         logger.info(f"🎮 Using controller: {joy.get_name()}")
+                        print(f"🎮 ✅ Using controller: {joy.get_name()}")
                 break
             else:
                 if attempt < max_retries - 1:
-                    logger.debug(
-                        f"🎮 No controller found (attempt {attempt + 1}/{max_retries}), retrying..."
+                    logger.info(
+                        f"🎮 No controller found (attempt {attempt + 1}/{max_retries}), retrying in {delay}s..."
                     )
                     time.sleep(delay)
 
         if self.joystick is None:
-            logger.info("⌨️  No controller detected, using keyboard")
+            logger.info(
+                "⌨️  No controller detected, using keyboard (connect controller and it will be auto-detected)"
+            )
+            print("⌨️  No controller detected, using keyboard")
+            print("💡 Tip: Connect your controller and it will be auto-detected via hot-plug")
 
     def start(self) -> None:
         """Start the game."""
@@ -2383,21 +2401,34 @@ class GameEngine:
             # Handle controller hot-plugging
             elif event.type == pygame.JOYDEVICEADDED:
                 # Controller connected - reinitialize
+                logger.info(f"🎮 JOYDEVICEADDED event received (device_index={event.device_index})")
+                print(f"🎮 Controller device added (device_index={event.device_index})")
                 if self.joystick is None:
-                    self.joystick = pygame.joystick.Joystick(event.device_index)
-                    self.joystick.init()
-                    logger.info(f"🎮 Controller connected: {self.joystick.get_name()}")
+                    try:
+                        joystick = pygame.joystick.Joystick(event.device_index)
+                        joystick.init()
+                        self.joystick = joystick
+                        logger.info(f"🎮 ✅ Controller connected: {joystick.get_name()}")
+                        print(f"🎮 ✅ Controller connected: {joystick.get_name()}")
+                    except Exception as e:
+                        logger.error(f"🎮 ❌ Failed to initialize controller: {e}")
+                        print(f"🎮 ❌ Failed to initialize controller: {e}")
 
             elif event.type == pygame.JOYDEVICEREMOVED:
                 # Controller disconnected
+                logger.info(f"🎮 JOYDEVICEREMOVED event received (instance_id={event.instance_id})")
+                print(f"🎮 Controller device removed")
                 if self.joystick and self.joystick.get_instance_id() == event.instance_id:
-                    logger.info(f"🎮 Controller disconnected")
+                    logger.info(f"🎮 Controller disconnected: {self.joystick.get_name()}")
+                    print(f"🎮 Controller disconnected: {self.joystick.get_name()}")
                     self.joystick = None
                     # Check if another controller is available
                     if pygame.joystick.get_count() > 0:
-                        self.joystick = pygame.joystick.Joystick(0)
-                        self.joystick.init()
-                        logger.info(f"🎮 Switched to controller: {self.joystick.get_name()}")
+                        joystick = pygame.joystick.Joystick(0)
+                        joystick.init()
+                        self.joystick = joystick
+                        logger.info(f"🎮 Switched to controller: {joystick.get_name()}")
+                        print(f"🎮 Switched to controller: {joystick.get_name()}")
 
             elif event.type == pygame.KEYDOWN:
                 self.keys_pressed.add(event.key)
@@ -2694,12 +2725,9 @@ class GameEngine:
                     )
                     if cheat_result.action == CheatCodeAction.SPAWN_BOSS:
                         # Spawn boss if in appropriate level
+                        # Note: Don't show cheat message - _spawn_boss() handles the boss dialogue flow
                         if self.game_state.status == GameStatus.PLAYING:
                             self._spawn_boss()
-                            if cheat_result.message:
-                                self.game_state.congratulations_message = cheat_result.message
-                                self.game_state.previous_status = self.game_state.status
-                                self.game_state.status = GameStatus.PAUSED
                         continue
 
                     # Handle pause menu navigation with controller
@@ -2902,10 +2930,10 @@ class GameEngine:
                         controller_left = True
                     elif hat[0] > 0:
                         controller_right = True
-                    if hat[1] < 0:
-                        controller_up = True  # Hat Y-axis: negative = UP
-                    elif hat[1] > 0:
-                        controller_down = True  # Hat Y-axis: positive = DOWN
+                    if hat[1] > 0:
+                        controller_up = True  # Hat Y-axis: positive = UP (pressed up)
+                    elif hat[1] < 0:
+                        controller_down = True  # Hat Y-axis: negative = DOWN (pressed down)
 
                 # Left analog stick (axis 0 and 1) - backup
                 if self.joystick.get_numaxes() > 1:
@@ -2916,9 +2944,9 @@ class GameEngine:
                     elif axis_x > 0.3:
                         controller_right = True
                     if axis_y < -0.3:
-                        controller_up = True  # Stick Y-axis: negative = UP
+                        controller_up = True  # Stick Y-axis: negative = UP (push stick up)
                     elif axis_y > 0.3:
-                        controller_down = True  # Stick Y-axis: positive = DOWN
+                        controller_down = True  # Stick Y-axis: positive = DOWN (push stick down)
 
                 # Right analog stick (axis 3 or 4) - zoom control in lobby
                 # Axis 3 is typically right stick Y on most controllers
@@ -3487,11 +3515,27 @@ class GameEngine:
                 boss.ground_y = ground_y
                 self.boss = boss
             else:
-                # Fallback to factory for other types
+                # Try factory for other types
                 level_width = self.screen_width
                 self.boss = create_cyber_boss(self.boss_type, level_width, ground_y)
 
+                # Fallback to WannaCry if boss type not implemented
+                if self.boss is None:
+                    logger.warning(
+                        f"⚠️ Boss type {self.boss_type.value} not implemented, falling back to WannaCry"
+                    )
+                    boss = WannaCryBoss(Vector2(boss_x, boss_y))
+                    boss.ground_y = ground_y
+                    self.boss = boss
+
             logger.info(f"🎮 {self.boss_type.value} boss spawned at ({boss_x}, {boss_y})!")
+
+        # Check if boss was actually created (Scattered Spider path)
+        if self.boss is None:
+            logger.error("❌ Failed to create boss! Returning to playing state.")
+            self.game_state.status = GameStatus.PLAYING
+            self.boss_spawned = False
+            return
 
         # Boss is active, battle begins
         self.game_state.status = GameStatus.BOSS_BATTLE
