@@ -76,16 +76,12 @@ class ReinventStatsTracker:
         self._stats: Optional[ReinventStats] = None
 
         # Check if tracking is enabled via env var
-        self._env_enabled = (
-            os.getenv("REINVENT_STATS_ENABLED", "true").lower() == "true"
-        )
+        self._env_enabled = os.getenv("REINVENT_STATS_ENABLED", "true").lower() == "true"
 
         # Load existing stats if available
         self._load_stats()
 
-        logger.info(
-            f"📊 re:Invent stats tracker initialized (enabled={self.is_enabled})"
-        )
+        logger.info(f"📊 re:Invent stats tracker initialized (enabled={self.is_enabled})")
 
     @property
     def is_enabled(self) -> bool:
@@ -112,12 +108,8 @@ class ReinventStatsTracker:
                 with open(self._stats_file, "r") as f:
                     data = json.load(f)
                     self._stats = ReinventStats(
-                        total_zombies_quarantined=data.get(
-                            "total_zombies_quarantined", 0
-                        ),
-                        highest_single_session_score=data.get(
-                            "highest_single_session_score", 0
-                        ),
+                        total_zombies_quarantined=data.get("total_zombies_quarantined", 0),
+                        highest_single_session_score=data.get("highest_single_session_score", 0),
                         highest_combo_ever=data.get("highest_combo_ever", 0),
                         total_sessions=data.get("total_sessions", 0),
                         sessions=data.get("sessions", []),
@@ -156,7 +148,7 @@ class ReinventStatsTracker:
         highest_combo: int,
         duration_seconds: float,
         player_name: str = "Anonymous",
-    ) -> None:
+    ) -> bool:
         """
         Record an arcade mode session.
 
@@ -165,13 +157,19 @@ class ReinventStatsTracker:
             highest_combo: Highest combo achieved in this session
             duration_seconds: Duration of the session in seconds
             player_name: Optional player name/identifier
+
+        Returns:
+            True if this session achieved a new high score, False otherwise
         """
         if not self.is_enabled:
             logger.debug("📊 Stats tracking disabled, skipping record")
-            return
+            return False
 
         if self._stats is None:
             self._stats = ReinventStats()
+
+        # Track if this is a new high score
+        is_new_high_score = False
 
         # Create session record
         session = ArcadeSession(
@@ -188,6 +186,7 @@ class ReinventStatsTracker:
 
         if zombies_eliminated > self._stats.highest_single_session_score:
             self._stats.highest_single_session_score = zombies_eliminated
+            is_new_high_score = True
             logger.info(f"📊 🏆 NEW HIGH SCORE: {zombies_eliminated} zombies!")
 
         if highest_combo > self._stats.highest_combo_ever:
@@ -204,6 +203,8 @@ class ReinventStatsTracker:
             f"📊 Session recorded: {zombies_eliminated} zombies, {highest_combo}x combo | "
             f"Totals: {self._stats.total_zombies_quarantined} zombies, {self._stats.total_sessions} sessions"
         )
+
+        return is_new_high_score
 
     def get_stats_summary(self) -> dict:
         """
@@ -281,9 +282,13 @@ def record_arcade_session(
     highest_combo: int,
     duration_seconds: float,
     player_name: str = "Anonymous",
-) -> None:
-    """Convenience function to record an arcade session."""
-    get_tracker().record_arcade_session(
+) -> bool:
+    """Convenience function to record an arcade session.
+
+    Returns:
+        True if this session achieved a new high score, False otherwise
+    """
+    return get_tracker().record_arcade_session(
         zombies_eliminated=zombies_eliminated,
         highest_combo=highest_combo,
         duration_seconds=duration_seconds,

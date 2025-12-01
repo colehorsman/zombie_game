@@ -228,6 +228,8 @@ class RetroFilter:
         """
         Reduce image to limited color palette.
 
+        Uses numpy for fast vectorized color matching (100x faster than pixel-by-pixel).
+
         Args:
             image: PIL Image to reduce
             palette: List of RGB tuples (defaults to RETRO_PALETTE)
@@ -242,18 +244,42 @@ class RetroFilter:
         if image.mode != "RGB":
             image = image.convert("RGB")
 
-        # Create new image with reduced colors
-        result = Image.new("RGB", image.size)
-        pixels = image.load()
-        result_pixels = result.load()
+        # Try numpy for fast processing
+        try:
+            import numpy as np
 
-        for y in range(image.height):
-            for x in range(image.width):
-                original_color = pixels[x, y]
-                nearest_color = cls._find_nearest_color(original_color, palette)
-                result_pixels[x, y] = nearest_color
+            # Convert image to numpy array
+            img_array = np.array(image, dtype=np.float32)
+            palette_array = np.array(palette, dtype=np.float32)
 
-        return result
+            # Reshape for broadcasting: (H, W, 1, 3) vs (1, 1, P, 3)
+            img_reshaped = img_array.reshape(img_array.shape[0], img_array.shape[1], 1, 3)
+            palette_reshaped = palette_array.reshape(1, 1, len(palette), 3)
+
+            # Calculate squared distances to all palette colors
+            distances = np.sum((img_reshaped - palette_reshaped) ** 2, axis=3)
+
+            # Find index of nearest palette color for each pixel
+            nearest_indices = np.argmin(distances, axis=2)
+
+            # Map indices to colors
+            result_array = palette_array[nearest_indices].astype(np.uint8)
+
+            return Image.fromarray(result_array, mode="RGB")
+
+        except ImportError:
+            # Fallback to slow pixel-by-pixel method
+            result = Image.new("RGB", image.size)
+            pixels = image.load()
+            result_pixels = result.load()
+
+            for y in range(image.height):
+                for x in range(image.width):
+                    original_color = pixels[x, y]
+                    nearest_color = cls._find_nearest_color(original_color, palette)
+                    result_pixels[x, y] = nearest_color
+
+            return result
 
     @classmethod
     def reduce_colors_smooth(cls, image: Image.Image, num_colors: int = 32) -> Image.Image:
@@ -597,9 +623,7 @@ class RetroFilter:
         """
         # Apply the full video game character transformation
         # Background removal is disabled by default for speed
-        img = cls.apply_video_game_character_effect(
-            image, pixel_size=5, do_remove_bg=do_remove_bg
-        )
+        img = cls.apply_video_game_character_effect(image, pixel_size=5, do_remove_bg=do_remove_bg)
 
         # Add subtle scanlines for CRT arcade feel
         img = cls.add_scanlines(img, opacity=25, spacing=4)

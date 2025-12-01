@@ -69,7 +69,9 @@ class PhotoBoothController:
         """
         self.config = config or PhotoBoothConfig.from_env()
         self._state = (
-            PhotoBoothState.DISABLED if not self.config.enabled else PhotoBoothState.INACTIVE
+            PhotoBoothState.DISABLED
+            if not self.config.enabled
+            else PhotoBoothState.INACTIVE
         )
         self._selfie_opted_in = False
         self._webcam = None
@@ -77,7 +79,9 @@ class PhotoBoothController:
 
         # Captured images
         self._selfie_image: Optional[Image.Image] = None  # Raw webcam capture
-        self._selfie_processed: Optional[Image.Image] = None  # After bg removal + effects
+        self._selfie_processed: Optional[Image.Image] = (
+            None  # After bg removal + effects
+        )
         self._gameplay_image: Optional[Image.Image] = None
         self._composite_path: Optional[str] = None
 
@@ -143,7 +147,9 @@ class PhotoBoothController:
         Returns:
             True if initialization successful (webcam is optional)
         """
-        self._logger.info(f"📸 initialize() called, config.enabled={self.config.enabled}")
+        self._logger.info(
+            f"📸 initialize() called, config.enabled={self.config.enabled}"
+        )
 
         if not self.config.enabled:
             self._state = PhotoBoothState.DISABLED
@@ -152,12 +158,44 @@ class PhotoBoothController:
 
         self._state = PhotoBoothState.INACTIVE
 
-        # Try to initialize webcam
+        # Try to use pre-initialized camera from main.py (avoids macOS pygame conflicts)
         if CV2_AVAILABLE:
             try:
-                self._logger.info(f"📸 Opening webcam at index {self.config.camera_index}")
+                # First, check if there's a pre-initialized camera from main.py
+                try:
+                    import main
+
+                    pre_cam = getattr(main, "_pre_initialized_camera", None)
+                    if (
+                        pre_cam is not None
+                        and hasattr(pre_cam, "isOpened")
+                        and pre_cam.isOpened()
+                    ):
+                        self._webcam = pre_cam
+                        self._camera_available = True
+                        self._logger.info(
+                            "📸 Using PRE-INITIALIZED webcam from main.py!"
+                        )
+                        # Test read
+                        ret, _ = pre_cam.read()
+                        if ret:
+                            self._logger.info(
+                                "📸 Pre-initialized webcam test read successful"
+                            )
+                            return True
+                        else:
+                            self._logger.warning(
+                                "📸 Pre-initialized webcam read failed, trying fresh open"
+                            )
+                except (ImportError, AttributeError) as e:
+                    self._logger.info(f"📸 No pre-initialized camera available: {e}")
+
+                # Fallback: try to open camera directly
+                self._logger.info(
+                    f"📸 Opening webcam at index {self.config.camera_index}"
+                )
                 self._webcam = cv2.VideoCapture(self.config.camera_index)
-                if self._webcam.isOpened():
+                if self._webcam is not None and self._webcam.isOpened():
                     self._camera_available = True
                     self._logger.info(
                         f"📸 Webcam initialized successfully (index {self.config.camera_index})"
@@ -168,13 +206,17 @@ class PhotoBoothController:
                         self._logger.info("📸 Webcam test read successful")
                     else:
                         self._logger.warning("📸 Webcam opened but test read failed")
-                else:
+                elif self._webcam is not None:
                     self._webcam.release()
                     self._webcam = None
                     self._camera_available = False
-                    self._logger.warning("📸 Webcam not available - selfie capture disabled")
+                    self._logger.warning(
+                        "📸 Webcam not available - selfie capture disabled"
+                    )
             except Exception as e:
-                self._logger.error(f"📸 Failed to initialize webcam: {e}", exc_info=True)
+                self._logger.error(
+                    f"📸 Failed to initialize webcam: {e}", exc_info=True
+                )
                 self._webcam = None
                 self._camera_available = False
         else:
@@ -233,7 +275,9 @@ class PhotoBoothController:
 
         self._selfie_opted_in = opted_in and self._camera_available
         self._state = (
-            PhotoBoothState.CONSENT_GIVEN if opted_in else PhotoBoothState.CONSENT_DECLINED
+            PhotoBoothState.CONSENT_GIVEN
+            if opted_in
+            else PhotoBoothState.CONSENT_DECLINED
         )
 
         self._logger.info(
@@ -241,9 +285,13 @@ class PhotoBoothController:
         )
 
         if opted_in and not self._camera_available:
-            self._logger.warning("📸 User opted in but camera not available - selfie disabled")
+            self._logger.warning(
+                "📸 User opted in but camera not available - selfie disabled"
+            )
         elif opted_in:
-            self._logger.info("📸 User opted IN to selfie - starting ASYNC capture + processing")
+            self._logger.info(
+                "📸 User opted IN to selfie - starting ASYNC capture + processing"
+            )
             # Start capture in background thread to avoid blocking the game loop
             # This way the slow webcam read AND processing happen in parallel with gameplay
             self._start_async_selfie_capture()
@@ -307,7 +355,9 @@ class PhotoBoothController:
 
         # Verify webcam is still open
         if not self._webcam.isOpened():
-            self._logger.error("📸 Webcam was closed unexpectedly! Attempting to reopen...")
+            self._logger.error(
+                "📸 Webcam was closed unexpectedly! Attempting to reopen..."
+            )
             try:
                 self._webcam = cv2.VideoCapture(self.config.camera_index)
                 if not self._webcam.isOpened():
@@ -336,7 +386,9 @@ class PhotoBoothController:
             self._selfie_image = Image.fromarray(frame_rgb)
             self._selfie_captured = True
 
-            self._logger.info(f"📸 Selfie captured successfully: {self._selfie_image.size}")
+            self._logger.info(
+                f"📸 Selfie captured successfully: {self._selfie_image.size}"
+            )
 
             # Start async processing (background removal + effects) in separate thread
             if start_async_processing:
@@ -368,7 +420,9 @@ class PhotoBoothController:
         self._selfie_captured = (
             True  # Mark as captured IMMEDIATELY to prevent duplicate capture attempts
         )
-        self._logger.info("📸 Starting ASYNC selfie capture + processing in background thread...")
+        self._logger.info(
+            "📸 Starting ASYNC selfie capture + processing in background thread..."
+        )
 
         def capture_and_process():
             try:
@@ -383,14 +437,18 @@ class PhotoBoothController:
                 ret, frame = self._webcam.read()
 
                 if not ret or frame is None:
-                    self._logger.error(f"📸 [ASYNC] Failed to read from webcam: ret={ret}")
+                    self._logger.error(
+                        f"📸 [ASYNC] Failed to read from webcam: ret={ret}"
+                    )
                     return
 
                 # Convert BGR (OpenCV) to RGB (PIL)
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 self._selfie_image = Image.fromarray(frame_rgb)
                 self._selfie_captured = True
-                self._logger.info(f"📸 [ASYNC] Webcam frame captured: {self._selfie_image.size}")
+                self._logger.info(
+                    f"📸 [ASYNC] Webcam frame captured: {self._selfie_image.size}"
+                )
 
                 # Step 2: Apply video game character effect (includes bg removal)
                 self._logger.info("📸 [ASYNC] Starting background removal + effects...")
@@ -413,7 +471,9 @@ class PhotoBoothController:
             finally:
                 self._selfie_processing = False
 
-        self._processing_thread = threading.Thread(target=capture_and_process, daemon=True)
+        self._processing_thread = threading.Thread(
+            target=capture_and_process, daemon=True
+        )
         self._processing_thread.start()
 
     def _start_async_selfie_processing(self) -> None:
@@ -440,9 +500,13 @@ class PhotoBoothController:
                     self._selfie_image, pixel_size=5
                 )
                 self._selfie_ready = True
-                self._logger.info("📸 Async selfie processing COMPLETE - ready for composite")
+                self._logger.info(
+                    "📸 Async selfie processing COMPLETE - ready for composite"
+                )
             except Exception as e:
-                self._logger.error(f"📸 Async selfie processing failed: {e}", exc_info=True)
+                self._logger.error(
+                    f"📸 Async selfie processing failed: {e}", exc_info=True
+                )
                 # Fallback: use original image
                 self._selfie_processed = self._selfie_image
                 self._selfie_ready = True
@@ -516,11 +580,15 @@ class PhotoBoothController:
             if self._selfie_ready and self._selfie_processed is not None:
                 # Use pre-processed selfie (bg already removed, effects applied)
                 selfie_for_composite = self._selfie_processed
-                self._logger.info("📸 Using PRE-PROCESSED selfie (async bg removal done)")
+                self._logger.info(
+                    "📸 Using PRE-PROCESSED selfie (async bg removal done)"
+                )
             elif self._selfie_image is not None:
                 # Fallback: wait briefly for async processing, then use raw
                 if self._selfie_processing:
-                    self._logger.info("📸 Waiting briefly for async processing to complete...")
+                    self._logger.info(
+                        "📸 Waiting briefly for async processing to complete..."
+                    )
                     # Wait up to 5 seconds for processing to complete
                     for _ in range(50):
                         if self._selfie_ready:
@@ -529,11 +597,15 @@ class PhotoBoothController:
 
                 if self._selfie_ready and self._selfie_processed is not None:
                     selfie_for_composite = self._selfie_processed
-                    self._logger.info("📸 Using PRE-PROCESSED selfie (waited for completion)")
+                    self._logger.info(
+                        "📸 Using PRE-PROCESSED selfie (waited for completion)"
+                    )
                 else:
                     # Use raw image - compositor will apply effects synchronously
                     selfie_for_composite = self._selfie_image
-                    self._logger.warning("📸 Using RAW selfie (async processing not ready)")
+                    self._logger.warning(
+                        "📸 Using RAW selfie (async processing not ready)"
+                    )
 
         try:
             # Generate composite
@@ -619,7 +691,9 @@ class PhotoBoothController:
             return False
         # Capture immediately - no delay needed
         # The earlier we capture, the more time for async bg removal
-        self._logger.info("📸 should_capture_selfie: YES - immediate capture for async processing")
+        self._logger.info(
+            "📸 should_capture_selfie: YES - immediate capture for async processing"
+        )
         return True
 
     def has_minimum_arcade_time(self) -> bool:

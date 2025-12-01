@@ -25,7 +25,18 @@ def detect_best_camera() -> int:
 
     Prefers external cameras (higher index, typically better FPS) over built-in.
     Returns the camera index with the highest FPS, or 0 if detection fails.
+
+    NOTE: On macOS, camera detection can interfere with later camera access.
+    We now just return 0 (built-in camera) to avoid this issue.
     """
+    # Skip detection on macOS to avoid camera access conflicts
+    # The built-in camera (index 0) is almost always the right choice
+    import platform
+
+    if platform.system() == "Darwin":
+        print("📷 CAMERA DETECTION: macOS detected, using camera 0 (built-in)")
+        return 0
+
     try:
         import cv2
     except ImportError:

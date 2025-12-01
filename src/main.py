@@ -3,10 +3,51 @@
 import logging
 import os
 import sys
-from typing import List
+from typing import List, Optional
 
 import pygame
 from dotenv import load_dotenv
+
+# Pre-initialize camera BEFORE pygame to avoid macOS conflicts
+_pre_initialized_camera = None
+
+
+def _pre_init_camera() -> Optional[object]:
+    """
+    Pre-initialize camera before pygame to avoid macOS AVFoundation conflicts.
+
+    On macOS, pygame's video initialization can interfere with OpenCV camera access.
+    By opening the camera first and keeping it open, we avoid this issue.
+
+    Returns:
+        OpenCV VideoCapture object if successful, None otherwise
+    """
+    global _pre_initialized_camera
+    try:
+        import cv2
+
+        print("📷 PRE-INIT: Opening camera before pygame...")
+        cap = cv2.VideoCapture(0)
+        if cap.isOpened():
+            ret, _ = cap.read()
+            if ret:
+                print("📷 PRE-INIT: Camera opened successfully!")
+                _pre_initialized_camera = cap
+                return cap
+            else:
+                print("📷 PRE-INIT: Camera opened but read failed")
+                cap.release()
+        else:
+            print("📷 PRE-INIT: Failed to open camera")
+    except ImportError:
+        print("📷 PRE-INIT: OpenCV not available")
+    except Exception as e:
+        print(f"📷 PRE-INIT: Error - {e}")
+    return None
+
+
+# Pre-init camera immediately on module load (before pygame.init)
+_pre_init_camera()
 
 from game_engine import GameEngine
 from level_manager import LevelManager
