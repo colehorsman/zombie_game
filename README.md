@@ -46,7 +46,11 @@ pip install -r requirements.txt
 # 4. Configure credentials
 cp .env.example .env  # Edit with your Sonrai API credentials
 
-# 5. Run the game!
+# 5. Configure AWS accounts (for level progression)
+cp assets/aws_accounts.csv.example assets/aws_accounts.csv
+# Edit with your real AWS account numbers
+
+# 6. Run the game!
 python3 src/main.py
 ```
 

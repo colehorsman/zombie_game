@@ -1,0 +1,17 @@
+# AWS Accounts Configuration
+# Copy this file to aws_accounts.csv and replace with your real AWS account numbers
+#
+# Format: Account ID, Name, Environment Type, Order
+# - Account ID: Your 12-digit AWS account number
+# - Name: Friendly name for the account (displayed in game)
+# - Environment Type: sandbox, staging, automation, webapp, production-data, production, org
+# - Order: Level unlock order (1 = first/always unlocked, higher = unlocked later)
+#
+Account ID,Name,Environment Type,Order
+111111111111,My Org - Sandbox,sandbox,1
+222222222222,My Org - Stage,staging,2
+333333333333,My Org - Automation,automation,3
+444444444444,My Org - WebApp,webapp,4
+555555555555,My Org - Production Data,production-data,5
+666666666666,My Org - Production,production,6
+777777777777,My Org - Root,org,7

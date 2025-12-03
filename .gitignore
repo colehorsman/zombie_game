@@ -2,6 +2,9 @@
 .env
 .env.local
 
+# AWS account configuration (contains real account numbers)
+assets/aws_accounts.csv
+
 # Kiro steering files with secrets (should use env vars instead)
 .kiro/steering/*-secrets.md
 
