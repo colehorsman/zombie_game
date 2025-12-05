@@ -9,7 +9,7 @@
 
 ---
 
-## 🎯 TL;DR for Judges
+## 🎯 TL;DR
 
 | What | Evidence |
 |------|----------|

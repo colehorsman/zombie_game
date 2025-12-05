@@ -2,7 +2,7 @@
   "mcpServers": {
     "sonrai": {
       "url": "https://mcp.s.sonraisecurity.com/stage12902075",
-      "disabled": true,
+      "disabled": false,
       "autoApprove": []
     },
     "github": {
