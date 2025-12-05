@@ -70,9 +70,14 @@ venv/
 
 # Photo booth generated images (user-specific)
 .kiro/evidence/booth_photos/
+BOOTH_*.png
 
-# Evidence recordings (can be regenerated)
-.kiro/evidence/recordings/*.gif
+# Evidence screenshots and recordings (can be regenerated)
+.kiro/evidence/screenshots/
+.kiro/evidence/recordings/
 
 # re:Invent stats tracking
 reinvent_2025_stats.json
+
+# Backup files
+*.bak

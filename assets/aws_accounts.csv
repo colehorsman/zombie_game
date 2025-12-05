@@ -1,8 +1,0 @@
-Account ID,Name,Environment Type,Order
-577945324761,MyHealth - Sandbox,sandbox,1
-514455208804,MyHealth - Stage,staging,2
-393582650665,MyHealth - Automation,automation,3
-240768036625,MyHealth-WebApp,webapp,4
-160224865296,MyHealth - Production Data,production-data,5
-613056517323,MyHealth - Production,production,6
-437154727976,Sonrai MyHealth - Org,org,7
