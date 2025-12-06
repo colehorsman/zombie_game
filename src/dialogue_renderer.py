@@ -276,3 +276,66 @@ class DialogueRenderer:
         hint_x = rect.x + rect.width - hint_surface.get_width() - BUBBLE_PADDING
         hint_y = rect.y + rect.height - 18
         surface.blit(hint_surface, (hint_x, hint_y))
+
+    def render_bubble(
+        self,
+        surface: pygame.Surface,
+        text: str,
+        position: Tuple[int, int],
+        speaker: str = "SONRAI",
+        highlight_words: Optional[list] = None,
+    ) -> None:
+        """
+        Render a standalone dialogue bubble at the specified position.
+
+        Args:
+            surface: Pygame surface to render on
+            text: The text to display
+            position: (x, y) center position for the bubble
+            speaker: Name of the speaker
+            highlight_words: Words to highlight in gold
+        """
+        if highlight_words is None:
+            highlight_words = []
+
+        # Calculate bubble geometry
+        bubble_rect, tail_points = self._calculate_bubble_geometry(text, position, None)
+
+        # Draw bubble background
+        self._draw_bubble(surface, bubble_rect, tail_points)
+
+        # Draw speaker name
+        self._draw_speaker(surface, speaker, bubble_rect)
+
+        # Draw text with highlights
+        self._draw_text(surface, text, highlight_words, bubble_rect)
+
+        # Draw continue hint
+        self._draw_continue_hint(surface, bubble_rect, True)
+
+    def render_page_indicator(
+        self,
+        surface: pygame.Surface,
+        current_page: int,
+        total_pages: int,
+        position: Tuple[int, int],
+    ) -> None:
+        """
+        Render page indicator dots below the dialogue bubble.
+
+        Args:
+            surface: Pygame surface to render on
+            current_page: Current page number (1-indexed)
+            total_pages: Total number of pages
+            position: (x, y) center position for the indicators
+        """
+        dot_radius = 4
+        dot_spacing = 12
+        total_width = (total_pages - 1) * dot_spacing
+        start_x = position[0] - total_width // 2
+        y = position[1]
+
+        for i in range(total_pages):
+            x = start_x + i * dot_spacing
+            color = PAGE_INDICATOR_ACTIVE if i == current_page - 1 else PAGE_INDICATOR_COLOR
+            pygame.draw.circle(surface, color, (x, y), dot_radius)

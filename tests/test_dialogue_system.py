@@ -107,9 +107,7 @@ class TestDialogueSequenceProperties:
         seq.reset()
 
         assert seq.current_page == 0
-        assert seq.is_complete() is (
-            len(seq.messages) == 1
-        )  # Only complete if single page
+        assert seq.is_complete() is (len(seq.messages) == 1)  # Only complete if single page
 
 
 class TestDialogueMessageProperties:
@@ -124,11 +122,7 @@ class TestDialogueMessageProperties:
         assert name in result
         assert value in result
 
-    @given(
-        st.text(
-            min_size=1, max_size=100, alphabet=st.characters(blacklist_characters="{}")
-        )
-    )
+    @given(st.text(min_size=1, max_size=100, alphabet=st.characters(blacklist_characters="{}")))
     @settings(max_examples=100)
     def test_format_text_without_placeholders_unchanged(self, text: str):
         """Property: format_text returns original text when no placeholders or braces."""
@@ -204,15 +198,11 @@ class TestEducationalProgressProperties:
         assert progress.has_seen(trigger_type) is True
 
     @given(
-        st.sets(
-            st.sampled_from([t.value for t in TriggerType]), min_size=1, max_size=7
-        ),
+        st.sets(st.sampled_from([t.value for t in TriggerType]), min_size=1, max_size=7),
         st.integers(min_value=1, max_value=100),
     )
     @settings(max_examples=100)
-    def test_reset_clears_all_progress(
-        self, completed_triggers: set, zombies_eliminated: int
-    ):
+    def test_reset_clears_all_progress(self, completed_triggers: set, zombies_eliminated: int):
         """Property: reset clears all progress to initial state."""
         from models import EducationalProgress
 
@@ -278,11 +268,7 @@ class TestEducationalProgressProperties:
             assert progress.has_seen(trigger1) is True
             assert progress.has_seen(trigger2) is True
 
-    @given(
-        st.lists(
-            st.sampled_from(list(TriggerType)), min_size=1, max_size=7, unique=True
-        )
-    )
+    @given(st.lists(st.sampled_from(list(TriggerType)), min_size=1, max_size=7, unique=True))
     @settings(max_examples=100)
     def test_multiple_triggers_tracked_independently(self, triggers: list):
         """Property: Multiple triggers can be tracked independently."""
@@ -309,9 +295,7 @@ class TestEducationManagerProperties:
     """
 
     @given(
-        st.text(
-            min_size=1, max_size=50, alphabet=st.characters(blacklist_characters="{}")
-        ),
+        st.text(min_size=1, max_size=50, alphabet=st.characters(blacklist_characters="{}")),
         st.sampled_from(["User", "Role", "ServiceAccount"]),
         st.integers(min_value=1, max_value=365),
     )
@@ -434,3 +418,155 @@ class TestEducationManagerProperties:
         manager.dismiss_dialogue()
         result2 = manager.check_zombie_type_education(user_type)
         assert result2 is None
+
+
+class TestZombieInfoPanelProperties:
+    """Property-based tests for zombie info panel completeness.
+
+    **Feature: story-mode-education, Property 3: Zombie Info Panel Completeness**
+    **Validates: Requirements 3.1, 3.2, 3.3**
+    """
+
+    @given(
+        st.text(min_size=1, max_size=50, alphabet=st.characters(blacklist_characters="{}")),
+        st.sampled_from(["User", "Role"]),
+        st.integers(min_value=0, max_value=365),
+    )
+    @settings(max_examples=100)
+    def test_info_panel_shows_name_type_and_days(
+        self, zombie_name: str, zombie_type: str, days_since_login: int
+    ):
+        """
+        Property: For any eliminated zombie, the info panel (across all dialogue pages)
+        displays identity name, type (User or Role), and days since last login.
+        """
+        from education_manager import EducationManager
+
+        manager = EducationManager()
+
+        # Trigger first kill education with zombie context
+        context = {
+            "zombie_name": zombie_name,
+            "zombie_type": zombie_type,
+            "days_since_login": str(days_since_login),
+        }
+        dialogue = manager.check_trigger(TriggerType.FIRST_ZOMBIE_KILL, context)
+
+        assert dialogue is not None, "First kill should trigger dialogue"
+
+        # Collect all formatted text from all pages
+        all_text = []
+        for msg in dialogue.messages:
+            formatted = msg.format_text(**manager.get_format_kwargs())
+            all_text.append(formatted)
+
+        combined_text = " ".join(all_text)
+
+        # Verify zombie name is displayed somewhere in the dialogue
+        assert zombie_name in combined_text, f"Zombie name '{zombie_name}' not in info panel"
+
+        # Verify zombie type is displayed (case-insensitive check)
+        assert (
+            zombie_type.lower() in combined_text.lower()
+        ), f"Zombie type '{zombie_type}' not in info panel"
+
+        # Verify days since login is displayed
+        assert (
+            str(days_since_login) in combined_text
+        ), f"Days since login '{days_since_login}' not in info panel"
+
+    @given(
+        st.text(min_size=1, max_size=30, alphabet=st.characters(blacklist_characters="{}")),
+        st.sampled_from(["User", "Role"]),
+    )
+    @settings(max_examples=50)
+    def test_info_panel_handles_unknown_days(self, zombie_name: str, zombie_type: str):
+        """
+        Property: Info panel gracefully handles unknown days since login.
+        """
+        from education_manager import EducationManager
+
+        manager = EducationManager()
+
+        # Trigger with "unknown" days
+        context = {
+            "zombie_name": zombie_name,
+            "zombie_type": zombie_type,
+            "days_since_login": "unknown",
+        }
+        dialogue = manager.check_trigger(TriggerType.FIRST_ZOMBIE_KILL, context)
+
+        assert dialogue is not None
+
+        # Collect all formatted text from all pages
+        all_text = []
+        for msg in dialogue.messages:
+            formatted = msg.format_text(**manager.get_format_kwargs())
+            all_text.append(formatted)
+
+        combined_text = " ".join(all_text)
+
+        # Should still contain name and type
+        assert zombie_name in combined_text
+        assert zombie_type.lower() in combined_text.lower()
+
+        # Should handle "unknown" gracefully - text should be formatted
+        # (no unformatted placeholders like {zombie_name})
+        assert "{zombie_name}" not in combined_text
+        assert "{zombie_type}" not in combined_text
+
+
+class TestTypeSpecificEducationProperties:
+    """Property-based tests for type-specific education content.
+
+    **Feature: story-mode-education, Property 7: Type-Specific Education**
+    **Validates: Requirements 5.2, 5.3**
+    """
+
+    @given(st.sampled_from(["Role", "role", "ROLE"]))
+    @settings(max_examples=10)
+    def test_role_education_explains_service_accounts(self, role_type: str):
+        """
+        Property: First Role encounter triggers education explaining
+        that Roles are used by services, applications, and cross-account access.
+        """
+        from education_manager import EducationManager
+
+        manager = EducationManager()
+
+        result = manager.check_zombie_type_education(role_type)
+        assert result is not None
+        assert result.trigger_type == TriggerType.FIRST_ROLE_ENCOUNTER
+
+        # Collect all text from the dialogue
+        all_text = " ".join(msg.text.lower() for msg in result.messages)
+
+        # Should explain what Roles are used for
+        assert "role" in all_text, "Should mention 'role' in explanation"
+        assert any(
+            word in all_text for word in ["service", "application", "cross-account"]
+        ), "Should explain Role usage (services, applications, or cross-account)"
+
+    @given(st.sampled_from(["User", "user", "USER"]))
+    @settings(max_examples=10)
+    def test_user_education_explains_human_identities(self, user_type: str):
+        """
+        Property: First User encounter triggers education explaining
+        that Users are human accounts (employees, contractors).
+        """
+        from education_manager import EducationManager
+
+        manager = EducationManager()
+
+        result = manager.check_zombie_type_education(user_type)
+        assert result is not None
+        assert result.trigger_type == TriggerType.FIRST_USER_ENCOUNTER
+
+        # Collect all text from the dialogue
+        all_text = " ".join(msg.text.lower() for msg in result.messages)
+
+        # Should explain what Users are
+        assert "user" in all_text, "Should mention 'user' in explanation"
+        assert any(
+            word in all_text for word in ["human", "employee", "contractor", "people"]
+        ), "Should explain User as human identity"

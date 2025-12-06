@@ -49,6 +49,11 @@ EDUCATION_CONTENT = {
             highlight_words=["{zombie_type}"],
         ),
         DialogueMessage(
+            text="It had {permissions_count} policies attached: {permissions_list}",
+            speaker="SONRAI",
+            highlight_words=["policies"],
+        ),
+        DialogueMessage(
             text="Sonrai's Cloud Permissions Firewall has disabled this identity.",
             speaker="SONRAI",
             highlight_words=["Cloud Permissions Firewall"],
@@ -61,7 +66,7 @@ EDUCATION_CONTENT = {
     ],
     TriggerType.FIRST_ROLE_ENCOUNTER: [
         DialogueMessage(
-            text="You encountered a Role-type zombie!",
+            text="You encountered a Role-type zombie: {zombie_name}!",
             speaker="SONRAI",
             highlight_words=["Role-type"],
         ),
@@ -71,6 +76,11 @@ EDUCATION_CONTENT = {
             highlight_words=["services", "applications", "cross-account"],
         ),
         DialogueMessage(
+            text="This role had {permissions_count} policies: {permissions_list}",
+            speaker="SONRAI",
+            highlight_words=["policies"],
+        ),
+        DialogueMessage(
             text="Unused roles are especially dangerous - they often have broad permissions!",
             speaker="SONRAI",
             highlight_words=["dangerous", "broad permissions"],
@@ -78,7 +88,7 @@ EDUCATION_CONTENT = {
     ],
     TriggerType.FIRST_USER_ENCOUNTER: [
         DialogueMessage(
-            text="You encountered a User-type zombie!",
+            text="You encountered a User-type zombie: {zombie_name}!",
             speaker="SONRAI",
             highlight_words=["User-type"],
         ),
@@ -86,6 +96,11 @@ EDUCATION_CONTENT = {
             text="IAM Users are human accounts - employees, contractors, or service accounts.",
             speaker="SONRAI",
             highlight_words=["human accounts"],
+        ),
+        DialogueMessage(
+            text="This user had {permissions_count} policies: {permissions_list}",
+            speaker="SONRAI",
+            highlight_words=["policies"],
         ),
         DialogueMessage(
             text="When people leave or change roles, their accounts often become zombies.",
@@ -138,6 +153,107 @@ EDUCATION_CONTENT = {
             ],
         ),
     ],
+    # Advanced security triggers
+    TriggerType.FIRST_HIGH_RISK_POLICY: [
+        DialogueMessage(
+            text="⚠️ HIGH-RISK POLICY DETECTED: {high_risk_policies}",
+            speaker="SONRAI",
+            highlight_words=["HIGH-RISK"],
+        ),
+        DialogueMessage(
+            text="This zombie had {policy_name} - one of the most dangerous AWS policies!",
+            speaker="SONRAI",
+            highlight_words=["{policy_name}"],
+        ),
+        DialogueMessage(
+            text="Policies like AdministratorAccess grant FULL control over your AWS account.",
+            speaker="SONRAI",
+            highlight_words=["FULL control"],
+        ),
+        DialogueMessage(
+            text="Attackers target unused identities with broad permissions for maximum damage.",
+            speaker="SONRAI",
+            highlight_words=["maximum damage"],
+        ),
+    ],
+    TriggerType.FIRST_THREAT_VECTOR: [
+        DialogueMessage(
+            text="🎯 THREAT VECTOR IDENTIFIED: {threat_vector_name}",
+            speaker="SONRAI",
+            highlight_words=["THREAT VECTOR"],
+        ),
+        DialogueMessage(
+            text="{threat_vector_description}",
+            speaker="SONRAI",
+            highlight_words=[],
+        ),
+        DialogueMessage(
+            text="This zombie's permissions enabled this attack vector. Now it's neutralized!",
+            speaker="SONRAI",
+            highlight_words=["neutralized"],
+        ),
+    ],
+    TriggerType.FIRST_THIRD_PARTY_BLOCK: [
+        DialogueMessage(
+            text="🚫 THIRD-PARTY ACCESS BLOCKED: {third_party_name}",
+            speaker="SONRAI",
+            highlight_words=["BLOCKED"],
+        ),
+        DialogueMessage(
+            text="Third-party integrations are a major supply chain risk vector.",
+            speaker="SONRAI",
+            highlight_words=["supply chain risk"],
+        ),
+        DialogueMessage(
+            text="Attackers often compromise vendors to gain access to their customers.",
+            speaker="SONRAI",
+            highlight_words=["compromise vendors"],
+        ),
+        DialogueMessage(
+            text="Sonrai's Cloud Permissions Firewall monitors and controls third-party access.",
+            speaker="SONRAI",
+            highlight_words=["Cloud Permissions Firewall"],
+        ),
+    ],
+    TriggerType.SERVICE_PROTECTION_COMPLETE: [
+        DialogueMessage(
+            text="✅ SERVICE PROTECTED: {service_name}",
+            speaker="SONRAI",
+            highlight_words=["PROTECTED"],
+        ),
+        DialogueMessage(
+            text="You beat the hacker! The service is now locked down.",
+            speaker="SONRAI",
+            highlight_words=["beat the hacker"],
+        ),
+        DialogueMessage(
+            text="Proactive protection is always better than reactive incident response.",
+            speaker="SONRAI",
+            highlight_words=["Proactive protection"],
+        ),
+    ],
+    TriggerType.JIT_PROTECTION_APPLIED: [
+        DialogueMessage(
+            text="🔐 JIT PROTECTION APPLIED: {role_name}",
+            speaker="SONRAI",
+            highlight_words=["JIT PROTECTION"],
+        ),
+        DialogueMessage(
+            text="Just-In-Time access means permissions are only granted when needed.",
+            speaker="SONRAI",
+            highlight_words=["Just-In-Time"],
+        ),
+        DialogueMessage(
+            text="Instead of always-on admin access, users request temporary elevation.",
+            speaker="SONRAI",
+            highlight_words=["temporary elevation"],
+        ),
+        DialogueMessage(
+            text="This dramatically reduces the window for credential theft and misuse.",
+            speaker="SONRAI",
+            highlight_words=["reduces the window"],
+        ),
+    ],
 }
 
 
@@ -183,9 +299,7 @@ class EducationManager:
 
         # Don't trigger if another dialogue is active
         if self.active_dialogue is not None:
-            logger.debug(
-                f"Skipping trigger {trigger_type.value} - dialogue already active"
-            )
+            logger.debug(f"Skipping trigger {trigger_type.value} - dialogue already active")
             return None
 
         # Get content for this trigger

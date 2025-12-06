@@ -141,9 +141,7 @@ class MiniSpider:
             start_y = center_y + (i - 1.5) * 3  # Scaled spacing
             end_x = start_x + int(leg_length * math.cos(rad))
             end_y = start_y + int(leg_length * math.sin(rad))
-            pygame.draw.line(
-                sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width
-            )
+            pygame.draw.line(sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width)
 
         # Right legs (top to bottom)
         for i, angle in enumerate([45, 20, -20, -45]):
@@ -152,9 +150,7 @@ class MiniSpider:
             start_y = center_y + (i - 1.5) * 3  # Scaled spacing
             end_x = start_x + int(leg_length * math.cos(rad))
             end_y = start_y + int(leg_length * math.sin(rad))
-            pygame.draw.line(
-                sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width
-            )
+            pygame.draw.line(sprite, leg_color, (start_x, start_y), (end_x, end_y), leg_width)
 
         # Eyes (red) - scaled up
         eye_color = (255, 20, 20)
@@ -195,9 +191,7 @@ class MiniSpider:
 
             # Create temp surface for this ring
             temp = pygame.Surface((glow_width, glow_height), pygame.SRCALPHA)
-            pygame.draw.circle(
-                temp, color_with_alpha, (center_x, center_y), int(radius)
-            )
+            pygame.draw.circle(temp, color_with_alpha, (center_x, center_y), int(radius))
             glow.blit(temp, (0, 0))
 
         return glow
@@ -341,9 +335,7 @@ class MiniSpider:
 
     def get_bounds(self) -> pygame.Rect:
         """Get the bounding rectangle for collision detection."""
-        return pygame.Rect(
-            int(self.position.x), int(self.position.y), self.width, self.height
-        )
+        return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
 
 
 class ScatteredSpiderBoss:
@@ -367,9 +359,7 @@ class ScatteredSpiderBoss:
         for i in range(5):
             spider = MiniSpider(
                 position=(
-                    spawn_positions[i]
-                    if i < len(spawn_positions)
-                    else Vector2(100 * i, 100)
+                    spawn_positions[i] if i < len(spawn_positions) else Vector2(100 * i, 100)
                 ),
                 movement_type=movement_types[i],
                 color_variant=i,
@@ -469,9 +459,7 @@ class HeartbleedBoss:
         self.flash_timer = 0.0
 
         # Health-based phase changes
-        self.current_phase = (
-            1  # Phase 1: 100-150 HP, Phase 2: 50-99 HP, Phase 3: 1-49 HP
-        )
+        self.current_phase = 1  # Phase 1: 100-150 HP, Phase 2: 50-99 HP, Phase 3: 1-49 HP
 
         # Create visuals
         self.sprite = self._create_red_queen_sprite()
@@ -592,9 +580,7 @@ class HeartbleedBoss:
         # === NECK (connecting head to body) ===
         neck_top = head_y + 8
         neck_bottom = dress_top
-        pygame.draw.line(
-            sprite, skin_tone, (center_x, neck_top), (center_x, neck_bottom), 6
-        )
+        pygame.draw.line(sprite, skin_tone, (center_x, neck_top), (center_x, neck_bottom), 6)
 
         # === BLACK HAIR FIRST (drawn behind face - Harley Quinn flowing style) ===
         # Hair volume on top of head (fuller, more dramatic)
@@ -652,34 +638,24 @@ class HeartbleedBoss:
 
         # Cheekbones (subtle highlight circles)
         cheek_y = head_y + 2
-        pygame.draw.circle(
-            sprite, (255, 180, 180), (center_x - 6, cheek_y), 3, 1
-        )  # Left cheek
-        pygame.draw.circle(
-            sprite, (255, 180, 180), (center_x + 6, cheek_y), 3, 1
-        )  # Right cheek
+        pygame.draw.circle(sprite, (255, 180, 180), (center_x - 6, cheek_y), 3, 1)  # Left cheek
+        pygame.draw.circle(sprite, (255, 180, 180), (center_x + 6, cheek_y), 3, 1)  # Right cheek
 
         # Feminine eyes with eyelashes
         eye_y = head_y - 2
         # Left eye
         pygame.draw.circle(sprite, card_black, (center_x - 4, eye_y), 2)
-        pygame.draw.circle(
-            sprite, (255, 255, 255), (center_x - 5, eye_y - 1), 1
-        )  # Eye shine
+        pygame.draw.circle(sprite, (255, 255, 255), (center_x - 5, eye_y - 1), 1)  # Eye shine
         # Right eye
         pygame.draw.circle(sprite, card_black, (center_x + 4, eye_y), 2)
-        pygame.draw.circle(
-            sprite, (255, 255, 255), (center_x + 5, eye_y - 1), 1
-        )  # Eye shine
+        pygame.draw.circle(sprite, (255, 255, 255), (center_x + 5, eye_y - 1), 1)  # Eye shine
 
         # Elegant eyebrows (curved, thinner)
         pygame.draw.arc(sprite, card_black, (center_x - 8, eye_y - 5, 6, 3), 0, 3.14, 2)
         pygame.draw.arc(sprite, card_black, (center_x + 2, eye_y - 5, 6, 3), 0, 3.14, 2)
 
         # Small feminine nose
-        pygame.draw.line(
-            sprite, card_black, (center_x, eye_y + 2), (center_x, eye_y + 4), 1
-        )
+        pygame.draw.line(sprite, card_black, (center_x, eye_y + 2), (center_x, eye_y + 4), 1)
 
         # Red lips (fuller, more feminine)
         # Upper lip (slight M-shape)
@@ -816,9 +792,7 @@ class HeartbleedBoss:
         }
         self.bleeding_particles.append(particle)
 
-    def update(
-        self, delta_time: float, player_position: Vector2, game_map=None
-    ) -> None:
+    def update(self, delta_time: float, player_position: Vector2, game_map=None) -> None:
         """Update boss logic."""
         if self.is_defeated:
             return
@@ -913,9 +887,7 @@ class HeartbleedBoss:
 
     def get_bounds(self) -> pygame.Rect:
         """Get bounding box for collision detection."""
-        return pygame.Rect(
-            int(self.position.x), int(self.position.y), self.width, self.height
-        )
+        return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
 
 
 class WannaCryBoss:
@@ -1235,9 +1207,7 @@ class WannaCryBoss:
         """Spawn a falling tear droplet."""
         # Tears fall from eyes
         tear = {
-            "x": self.position.x
-            + self.width // 2
-            + (10 if time.time() % 2 < 1 else -10),
+            "x": self.position.x + self.width // 2 + (10 if time.time() % 2 < 1 else -10),
             "y": self.position.y + 25,  # Eye level
             "vx": (time.time() % 40 - 20) * 2,  # Slight horizontal spread
             "vy": 100.0,  # Falling speed
@@ -1272,9 +1242,7 @@ class WannaCryBoss:
         puddle = {"x": x, "y": y, "lifetime": 5.0, "alpha": 200, "radius": 20}
         self.puddles.append(puddle)
 
-    def update(
-        self, delta_time: float, player_position: Vector2, game_map=None
-    ) -> None:
+    def update(self, delta_time: float, player_position: Vector2, game_map=None) -> None:
         """Update boss logic."""
         if self.is_defeated:
             return
@@ -1300,9 +1268,7 @@ class WannaCryBoss:
 
         # Constant crying - spawn tears periodically
         self.tear_spawn_timer += delta_time
-        tears_per_second = (
-            2 + (self.current_phase - 1) * 2
-        )  # More tears in higher phases
+        tears_per_second = 2 + (self.current_phase - 1) * 2  # More tears in higher phases
         if self.tear_spawn_timer >= (1.0 / tears_per_second):
             self._spawn_tear_particle()
             self.tear_spawn_timer = 0.0
@@ -1395,9 +1361,7 @@ class WannaCryBoss:
 
     def get_bounds(self) -> pygame.Rect:
         """Get bounding box for collision detection."""
-        return pygame.Rect(
-            int(self.position.x), int(self.position.y), self.width, self.height
-        )
+        return pygame.Rect(int(self.position.x), int(self.position.y), self.width, self.height)
 
     def get_sob_wave_bounds(self) -> Optional[pygame.Rect]:
         """Get sob wave collision bounds if active."""
@@ -1495,6 +1459,7 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
                 "Cloud Permissions Firewall to limit lateral movement",
             ],
             "mechanic": "Defeat all 5 spiders to win!\nEach spider represents a different attack vector.",
+            "sonrai_tie_in": "THREAT VECTORS: Credential Theft, Lateral Movement, Account Takeover\nUnused identities are prime targets for social engineering attacks!",
         }
 
     elif boss_type == BossType.HEARTBLEED:
@@ -1518,6 +1483,7 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
                 "Secret rotation and key management best practices",
             ],
             "mechanic": "The Red Queen has 3 phases based on health!\nWatch for bleeding particles and card-flip teleports.\nOFF WITH YOUR HEAD!",
+            "sonrai_tie_in": "THREAT VECTORS: Data Exfiltration, Credential Theft\nOverprivileged roles with SecretsManagerReadWrite leak sensitive data!",
         }
 
     elif boss_type == BossType.WANNACRY:
@@ -1541,9 +1507,102 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
                 "Cloud Permissions Firewall to limit blast radius",
             ],
             "mechanic": "Wade cries tears that spread like WannaCry ransomware!\nAvoid sob waves and don't stand in puddles.\nThe more you hurt him, the more he cries!",
+            "sonrai_tie_in": "THREAT VECTORS: Ransomware, Lateral Movement, Data Destruction\nUnused credentials enable worm-like spread across your cloud!",
         }
 
-    # TODO: Add dialogues for other bosses
+    elif boss_type == BossType.VOLT_TYPHOON:
+        return {
+            "title": "⚡🌀 VOLT TYPHOON EMERGES! 🌀⚡",
+            "description": "Volt Typhoon is a Chinese state-sponsored APT group targeting critical infrastructure\nusing 'living off the land' techniques to avoid detection.",
+            "how_attacked": [
+                "Exploited internet-facing devices (Fortinet, Ivanti)",
+                "Used legitimate admin tools to blend in",
+                "Established persistent access for future operations",
+                "Targeted energy, water, and communications sectors",
+                "Pre-positioned for potential destructive attacks",
+            ],
+            "victims": "US critical infrastructure, Guam military bases, telecommunications providers",
+            "prevention": [
+                "Monitor for anomalous use of admin tools",
+                "Implement network segmentation",
+                "Regular third-party access audits",
+                "Cloud Permissions Firewall blocks unauthorized access",
+                "Service Control Policies (SCPs) limit blast radius",
+            ],
+            "mechanic": "Volt Typhoon uses stealth attacks!\nWatch for lightning strikes and wind gusts.\nIt hides among legitimate traffic!",
+            "sonrai_tie_in": "THREAT VECTORS: Persistence, Lateral Movement, Resource Abuse\nThird-party integrations are APT entry points - block unknown vendors!",
+        }
+
+    elif boss_type == BossType.BLACKCAT:
+        return {
+            "title": "🐱‍👤 BLACKCAT PROWLS! 🐱‍👤",
+            "description": "BlackCat (ALPHV) was a sophisticated Ransomware-as-a-Service operation\nthat pioneered triple extortion and public data leak sites.",
+            "how_attacked": [
+                "Recruited affiliates through criminal forums",
+                "Exploited compromised credentials and VPNs",
+                "Used Rust-based ransomware for cross-platform attacks",
+                "Triple extortion: encrypt, steal, DDoS",
+                "Published stolen data on dark web leak sites",
+            ],
+            "victims": "MGM Resorts, Reddit, Western Digital, healthcare organizations",
+            "prevention": [
+                "Eliminate unused service accounts",
+                "Implement least privilege access",
+                "Regular credential rotation",
+                "Offline backups with tested recovery",
+                "Cloud Permissions Firewall prevents lateral movement",
+            ],
+            "mechanic": "BlackCat has 9 lives!\nEach life represents a different attack phase.\nWatch for pounce attacks and data theft claws!",
+            "sonrai_tie_in": "THREAT VECTORS: Ransomware, Credential Theft, Data Exfiltration\nService accounts with S3FullAccess enable massive data theft!",
+        }
+
+    elif boss_type == BossType.MIDNIGHT_BLIZZARD:
+        return {
+            "title": "❄️🌙 MIDNIGHT BLIZZARD DESCENDS! 🌙❄️",
+            "description": "Midnight Blizzard (APT29/Cozy Bear) is a Russian state-sponsored group\nresponsible for the SolarWinds supply chain attack.",
+            "how_attacked": [
+                "Compromised SolarWinds Orion build process",
+                "Distributed malware to 18,000+ organizations",
+                "Targeted government agencies and tech companies",
+                "Used OAuth tokens for persistent access",
+                "Exfiltrated emails from Microsoft executives",
+            ],
+            "victims": "US Treasury, DHS, Microsoft, SolarWinds customers worldwide",
+            "prevention": [
+                "Audit all third-party integrations",
+                "Monitor OAuth token usage",
+                "Implement zero-trust architecture",
+                "Regular supply chain security reviews",
+                "Cloud Permissions Firewall controls third-party access",
+            ],
+            "mechanic": "Midnight Blizzard attacks from the shadows!\nWatch for ice storms and blinding snow.\nIt targets your most privileged accounts!",
+            "sonrai_tie_in": "THREAT VECTORS: Account Takeover, Persistence, Privilege Escalation\nAdmin roles are nation-state targets - apply JIT protection!",
+        }
+
+    elif boss_type == BossType.SANDWORM:
+        return {
+            "title": "🪱🏜️ SANDWORM RISES! 🏜️🪱",
+            "description": "Sandworm (Unit 74455) is a Russian military cyber unit responsible for\nthe most destructive cyberattacks in history, including NotPetya.",
+            "how_attacked": [
+                "NotPetya: $10B in damages, disguised as ransomware",
+                "Attacked Ukrainian power grid (2015, 2016)",
+                "Olympic Destroyer targeted 2018 Winter Olympics",
+                "Industroyer malware designed for industrial systems",
+                "Wiper malware destroys data without recovery option",
+            ],
+            "victims": "Maersk, Merck, FedEx, Ukrainian infrastructure, global organizations",
+            "prevention": [
+                "Comprehensive identity governance",
+                "Network segmentation and air gaps",
+                "Incident response planning and testing",
+                "Regular security assessments",
+                "Cloud Permissions Firewall as last line of defense",
+            ],
+            "mechanic": "FINAL BOSS: Sandworm controls the entire organization!\nIt spawns mini-worms and triggers org-wide outages.\nDefeat it to save your cloud!",
+            "sonrai_tie_in": "THREAT VECTORS: Data Destruction, Lateral Movement, Resource Abuse\nOrg-wide identity sprawl enables catastrophic attacks - clean up ALL zombies!",
+        }
+
+    # Default fallback
     return {
         "title": "BOSS BATTLE",
         "description": "A powerful enemy approaches!",
@@ -1551,4 +1610,5 @@ def get_boss_dialogue(boss_type: BossType) -> dict:
         "victims": "",
         "prevention": [],
         "mechanic": "Defeat the boss to continue!",
+        "sonrai_tie_in": "Unused identities are attack vectors. Eliminate them all!",
     }

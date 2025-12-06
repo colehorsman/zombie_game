@@ -14,6 +14,7 @@ from arcade_results_controller import (
     ArcadeResultsController,
     ArcadeStatsSnapshot,
 )
+from aws_iam_client import AWSIAMClient
 from boss import Boss  # DEPRECATED - kept for backwards compatibility
 from boss_dialogue_controller import BossDialogueController
 from cheat_code_controller import CheatCodeAction, CheatCodeController
@@ -28,14 +29,25 @@ from cyber_boss import (
     create_cyber_boss,
     get_boss_dialogue,
 )
+
+# Educational dialogue system for Story Mode
+from dialogue_renderer import DialogueRenderer
 from difficulty_config import EnvironmentDifficulty, get_difficulty_for_environment
+from education_manager import EducationManager
 from evidence_capture import EvidenceCapture
 from game_map import GameMap
 from hacker import Hacker
 from jit_access_quest import AdminRole, Auditor, create_jit_quest_entities
 from level_entry_menu_controller import LevelEntryAction, LevelEntryMenuController
 from level_manager import LevelManager
-from models import GameState, GameStatus, JitQuestState, PermissionSet, Vector2
+from models import (
+    GameState,
+    GameStatus,
+    JitQuestState,
+    PermissionSet,
+    TriggerType,
+    Vector2,
+)
 from pause_menu_controller import PauseMenuAction, PauseMenuController
 from player import Player
 from powerup import PowerUp, PowerUpManager, PowerUpType, spawn_random_powerups
@@ -291,6 +303,13 @@ class GameEngine:
         # Game over menu
         self.game_over_menu_active = False
         self.game_over_selected_index = 0
+
+        # Educational dialogue system for Story Mode
+        self.education_manager = EducationManager(save_manager=self.save_manager)
+        self.dialogue_renderer = DialogueRenderer(screen_width, screen_height)
+
+        # AWS IAM client for fetching zombie permission data (Story Mode)
+        self.iam_client = AWSIAMClient(use_placeholder=True)
 
         # Controller unlock combo state (L + R + Start)
         self.controller_unlock_combo_triggered = False
@@ -1306,6 +1325,11 @@ class GameEngine:
         """
         logger.info("🏛️  === RETURNING TO LOBBY - START ===")
 
+        # Reset Story Mode when returning to lobby
+        self.game_state.is_story_mode = False
+        self.game_state.active_dialogue = None
+        self.game_state.dialogue_format_kwargs = {}
+
         # Check if JIT quest was active but not completed
         if self.game_state.jit_quest and self.game_state.jit_quest.active:
             if not self.game_state.jit_quest.quest_completed:
@@ -1515,6 +1539,9 @@ class GameEngine:
             logger.info(f"🎮 Current account: {self.game_state.current_level_account_id}")
             logger.info(f"🎮 Has game_map: {self.game_map is not None}")
             logger.info(f"🎮 Zombie count: {len(self.zombies)}")
+
+            # Disable Story Mode for arcade (no educational dialogues)
+            self.game_state.is_story_mode = False
 
             # Show photo booth consent prompt if enabled
             # Check PhotoBoothState is available (may be None if import failed)
@@ -1788,6 +1815,14 @@ class GameEngine:
         Args:
             delta_time: Time elapsed since last frame in seconds
         """
+        # Pause gameplay when educational dialogue is active (Story Mode)
+        # Player can still see the game but entities don't move
+        if self.game_state.is_dialogue_active:
+            # Still update camera to keep player centered
+            if self.use_map and self.game_map:
+                self.game_map.update_camera(self.player.position.x, self.player.position.y)
+            return  # Skip all gameplay updates while dialogue is shown
+
         # Update power-up message timer
         if self.game_state.powerup_message_timer > 0:
             self.game_state.powerup_message_timer -= delta_time
@@ -2181,6 +2216,66 @@ class GameEngine:
         zombie.is_hidden = True
         zombie.mark_for_quarantine()
 
+        # STORY MODE: Trigger educational dialogue on first kill
+        if self.game_state.is_story_mode:
+            # Update educational progress
+            self.education_manager.progress.zombies_eliminated += 1
+
+            # Get zombie attributes (use safe getattr for optional fields)
+            account_id = getattr(zombie, "account", None)  # Zombie uses 'account' not 'account_id'
+            identity_type = getattr(zombie, "identity_type", "User")  # Default to User if not set
+            days_since_login = getattr(zombie, "days_since_login", "unknown")
+
+            # Fetch permission data for this zombie (mock data for demo)
+            permission_summary = self.iam_client.get_permissions(
+                zombie.identity_name, identity_type, account_id
+            )
+
+            # Build context with permission data
+            context = {
+                "zombie_name": zombie.identity_name,
+                "zombie_type": identity_type,
+                "days_since_login": days_since_login,
+                "account_id": account_id or "unknown",
+                "permissions_count": permission_summary.total_policies,
+                "permissions_list": ", ".join(permission_summary.attached_policies[:3]),
+                "has_high_risk": permission_summary.has_high_risk,
+                "high_risk_policies": ", ".join(permission_summary.high_risk_policies),
+                "permission_summary": permission_summary.get_display_summary(max_policies=3),
+            }
+
+            # PRIORITY SYSTEM: Only show one dialogue per zombie kill
+            # Check triggers in priority order and stop after first match
+
+            # Priority 1: High-risk policy (most important)
+            if permission_summary.has_high_risk:
+                high_risk_context = {
+                    **context,
+                    "policy_name": (
+                        permission_summary.high_risk_policies[0]
+                        if permission_summary.high_risk_policies
+                        else "Unknown"
+                    ),
+                }
+                if self._trigger_education(TriggerType.FIRST_HIGH_RISK_POLICY, high_risk_context):
+                    pass  # Dialogue shown, continue to quarantine
+
+            # Priority 2: Milestones (5 kills, 10 kills)
+            elif self.education_manager.progress.zombies_eliminated == 5:
+                self._trigger_education(TriggerType.MILESTONE_5_KILLS, context)
+            elif self.education_manager.progress.zombies_eliminated == 10:
+                self._trigger_education(TriggerType.MILESTONE_10_KILLS, context)
+
+            # Priority 3: First Role/User encounter
+            elif identity_type.lower() == "role":
+                self._trigger_education(TriggerType.FIRST_ROLE_ENCOUNTER, context)
+            elif identity_type.lower() == "user":
+                self._trigger_education(TriggerType.FIRST_USER_ENCOUNTER, context)
+
+            # Priority 4: First kill (fallback)
+            else:
+                self._trigger_education(TriggerType.FIRST_ZOMBIE_KILL, context)
+
         # Quarantine immediately via API (no pause, no delay)
         self._quarantine_zombie(zombie)
 
@@ -2194,6 +2289,13 @@ class GameEngine:
         # IMMEDIATE FEEDBACK: Hide third party right away (no lag)
         third_party.is_hidden = True
         third_party.is_blocking = True
+
+        # STORY MODE: Trigger educational dialogue on first third-party block
+        if self.game_state.is_story_mode:
+            context = {
+                "third_party_name": getattr(third_party, "name", "Unknown"),
+            }
+            self._trigger_education(TriggerType.FIRST_THIRD_PARTY_BLOCK, context)
 
         # Block immediately via API (no pause, no delay)
         self._block_third_party(third_party)
@@ -2340,7 +2442,11 @@ class GameEngine:
             self.game_state.congratulations_message = None
             self._pending_door_entry = None
 
-            # Enter level normally (standard gameplay)
+            # Enable Story Mode for educational dialogues
+            self.game_state.is_story_mode = True
+            logger.info("📚 Story Mode enabled - educational dialogues active")
+
+            # Enter level normally (standard gameplay with education)
             if door:
                 self._enter_level(door)
 
@@ -2447,6 +2553,45 @@ class GameEngine:
             else:
                 # Fallback to PLAYING if previous_status wasn't set
                 self.game_state.status = GameStatus.PLAYING
+
+    def _advance_or_dismiss_dialogue(self) -> None:
+        """Advance educational dialogue to next page or dismiss if complete."""
+        if not self.game_state.is_dialogue_active:
+            return
+
+        dialogue = self.game_state.active_dialogue
+        if dialogue.is_complete():
+            # Dismiss dialogue
+            self.education_manager.dismiss_dialogue()
+            self.game_state.active_dialogue = None
+            self.game_state.dialogue_format_kwargs = {}
+            logger.info("📚 Educational dialogue dismissed")
+        else:
+            # Advance to next page
+            dialogue.next_page()
+            logger.info(f"📚 Advanced to dialogue page {dialogue.current_page + 1}")
+
+    def _trigger_education(self, trigger_type: TriggerType, context: dict = None) -> bool:
+        """
+        Trigger an educational dialogue if conditions are met.
+
+        Args:
+            trigger_type: The type of educational trigger
+            context: Optional context data (zombie_name, zombie_type, etc.)
+
+        Returns:
+            True if dialogue was triggered, False otherwise
+        """
+        if not self.game_state.is_story_mode:
+            return False
+
+        dialogue = self.education_manager.check_trigger(trigger_type, context)
+        if dialogue:
+            self.game_state.active_dialogue = dialogue
+            self.game_state.dialogue_format_kwargs = context or {}
+            logger.info(f"📚 Triggered educational dialogue: {trigger_type.value}")
+            return True
+        return False
 
     def _quarantine_zombie(self, zombie: Zombie) -> None:
         """
@@ -2616,6 +2761,12 @@ class GameEngine:
                     if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_a):
                         logger.info("📸 User dismissed photo booth summary (keyboard)")
                         self._dismiss_photo_booth_summary()
+                        continue
+
+                # Handle educational dialogue input (Story Mode)
+                if self.game_state.is_dialogue_active:
+                    if event.key in (pygame.K_RETURN, pygame.K_SPACE, pygame.K_a):
+                        self._advance_or_dismiss_dialogue()
                         continue
 
                 # Handle level entry menu navigation
@@ -2886,6 +3037,12 @@ class GameEngine:
                             f"📸 User dismissed photo booth summary (button {event.button})"
                         )
                         self._dismiss_photo_booth_summary()
+                        continue
+
+                # Handle educational dialogue input (Story Mode) - controller
+                if self.game_state.is_dialogue_active:
+                    if event.button == 0:  # A button = advance/dismiss dialogue
+                        self._advance_or_dismiss_dialogue()
                         continue
 
                 # Handle level entry menu navigation (controller)
@@ -3890,6 +4047,15 @@ class GameEngine:
             if self.boss and self.boss.is_defeated:
                 # Boss defeated - return to lobby
                 logger.info("🎉 Boss defeated! Returning to lobby...")
+
+                # STORY MODE: Trigger level completion education before returning
+                if self.game_state.is_story_mode:
+                    kills = self.education_manager.progress.zombies_eliminated
+                    self._trigger_education(
+                        TriggerType.LEVEL_COMPLETE,
+                        {"zombies_eliminated": str(kills)},
+                    )
+
                 self._return_to_lobby(mark_completed=True)
                 logger.info("Victory! Boss defeated!")
             return

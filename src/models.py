@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import Dict, List, Optional
 
 
 class GameStatus(Enum):
@@ -30,6 +30,7 @@ class QuestStatus(Enum):
 class TriggerType(Enum):
     """Educational dialogue trigger types for Story Mode."""
 
+    # Core triggers
     STORY_MODE_WELCOME = "story_mode_welcome"
     FIRST_ZOMBIE_KILL = "first_zombie_kill"
     FIRST_ROLE_ENCOUNTER = "first_role_encounter"
@@ -37,6 +38,32 @@ class TriggerType(Enum):
     MILESTONE_5_KILLS = "milestone_5_kills"
     MILESTONE_10_KILLS = "milestone_10_kills"
     LEVEL_COMPLETE = "level_complete"
+
+    # Advanced security triggers
+    FIRST_HIGH_RISK_POLICY = "first_high_risk_policy"
+    FIRST_THREAT_VECTOR = "first_threat_vector"
+    FIRST_THIRD_PARTY_BLOCK = "first_third_party_block"
+    SERVICE_PROTECTION_COMPLETE = "service_protection_complete"
+    JIT_PROTECTION_APPLIED = "jit_protection_applied"
+
+
+class GenreType(Enum):
+    """Game genre types for multi-genre levels.
+
+    Each AWS account level can be played in different game genres
+    while maintaining the core identity management theme.
+
+    **Feature: multi-genre-levels**
+    """
+
+    SHOOTER = "shooter"  # Classic zombie shooter (default)
+    PLATFORMER = "platformer"  # Mario-style jumping and collecting
+    RACING = "racing"  # Outrun hackers to protect services
+    PUZZLE = "puzzle"  # Configure IAM policies correctly
+    TOWER_DEFENSE = "tower_defense"  # Defend against attack waves
+    STEALTH = "stealth"  # Sneak past security to audit identities
+    SURVIVAL = "survival"  # Survive waves while managing resources
+    STRATEGY = "strategy"  # Manage entire organization's security
 
 
 @dataclass
@@ -164,6 +191,20 @@ class GameState:
     photo_booth_consent_active: bool = False  # True when showing consent prompt
     photo_booth_path: Optional[str] = None  # Path to generated photo booth image
     photo_booth_summary_active: bool = False  # True when showing photo booth summary screen
+
+    # Educational Dialogue fields (Story Mode)
+    active_dialogue: Optional["DialogueSequence"] = None  # Current educational dialogue
+    dialogue_format_kwargs: dict = field(default_factory=dict)  # Format args for dialogue text
+    is_story_mode: bool = False  # Whether playing in Story Mode (educational) vs Arcade
+
+    # Multi-genre system
+    current_genre: GenreType = GenreType.SHOOTER  # Default to classic shooter
+    genre_preferences: Dict[str, GenreType] = field(default_factory=dict)  # Per-level genre choices
+
+    @property
+    def is_dialogue_active(self) -> bool:
+        """Check if an educational dialogue is currently active."""
+        return self.active_dialogue is not None
 
 
 @dataclass
