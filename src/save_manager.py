@@ -4,9 +4,9 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, List, Set
+from typing import Dict, List, Optional, Set
 
-from models import Vector2, GameStatus
+from models import EducationalProgress, GameStatus, Vector2
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ class SaveManager:
         unlocked_levels: List[str],
         quarantined_identities: Set[str],
         blocked_third_parties: Set[str],
+        educational_progress: Optional[EducationalProgress] = None,
     ) -> bool:
         """
         Save current game state to disk.
@@ -78,6 +79,9 @@ class SaveManager:
                 },
                 "quarantined_identities": list(quarantined_identities),
                 "blocked_third_parties": list(blocked_third_parties),
+                "educational_progress": (
+                    educational_progress.to_dict() if educational_progress else None
+                ),
             }
 
             # Write to temporary file first, then rename (atomic operation)
@@ -161,7 +165,7 @@ class SaveManager:
         """
         return self.save_file.exists()
 
-    def get_save_info(self) -> Optional[Dict[str, any]]:
+    def get_save_info(self) -> Optional[Dict]:
         """
         Get basic information about the save file without fully loading it.
 
@@ -180,10 +184,24 @@ class SaveManager:
                 "version": save_data.get("version"),
                 "score": save_data.get("player", {}).get("score", 0),
                 "eliminations": save_data.get("player", {}).get("eliminations", 0),
-                "completed_levels": len(
-                    save_data.get("progress", {}).get("completed_levels", [])
-                ),
+                "completed_levels": len(save_data.get("progress", {}).get("completed_levels", [])),
             }
         except Exception as e:
             logger.error(f"Failed to get save info: {e}")
             return None
+
+    def load_educational_progress(self) -> EducationalProgress:
+        """
+        Load educational progress from save file.
+
+        Returns:
+            EducationalProgress instance (default if no save or error)
+        """
+        try:
+            save_data = self.load_game()
+            if save_data and "educational_progress" in save_data:
+                return EducationalProgress.from_dict(save_data["educational_progress"])
+        except Exception as e:
+            logger.error(f"Failed to load educational progress: {e}")
+
+        return EducationalProgress()

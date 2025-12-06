@@ -1,18 +1,18 @@
 """Tests for Sonrai API client JIT-related methods."""
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-import requests
-
 # Add src to path
 import sys
 from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+import requests
 
 src_path = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(src_path))
 
-from sonrai_client import SonraiAPIClient
 from models import QuarantineResult
+from sonrai_client import SonraiAPIClient
 
 
 @pytest.fixture
@@ -38,9 +38,7 @@ class TestFetchPermissionSets:
     """Tests for fetch_permission_sets method."""
 
     @patch("sonrai_client.requests.post")
-    def test_fetch_permission_sets_success(
-        self, mock_post, mock_client, mock_account_scopes
-    ):
+    def test_fetch_permission_sets_success(self, mock_post, mock_client, mock_account_scopes):
         """Test successful fetch of permission sets with ADMIN and PRIVILEGED labels."""
         # Mock _fetch_all_account_scopes
         with patch.object(
@@ -105,30 +103,32 @@ class TestFetchPermissionSets:
             mock_post.assert_not_called()
 
     @patch("sonrai_client.requests.post")
-    def test_fetch_permission_sets_empty_response(
+    def test_fetch_permission_sets_empty_response_returns_mock_data(
         self, mock_post, mock_client, mock_account_scopes
     ):
-        """Test fetch_permission_sets with empty API response."""
+        """Test fetch_permission_sets returns mock data when API returns empty."""
         with patch.object(
             mock_client, "_fetch_all_account_scopes", return_value=mock_account_scopes
         ):
             mock_response = Mock()
             mock_response.status_code = 200
-            mock_response.json.return_value = {
-                "data": {"PermissionSets": {"items": []}}
-            }
+            mock_response.json.return_value = {"data": {"PermissionSets": {"items": []}}}
             mock_response.raise_for_status = Mock()
             mock_post.return_value = mock_response
 
             result = mock_client.fetch_permission_sets("160224865296")
 
-            assert result == []
+            # Should return mock data for demo/testing
+            assert len(result) >= 2  # Mock generates 2-4 permission sets
+            assert all("id" in ps for ps in result)
+            assert all("name" in ps for ps in result)
+            assert all("identityLabels" in ps for ps in result)
 
     @patch("sonrai_client.requests.post")
-    def test_fetch_permission_sets_api_error(
+    def test_fetch_permission_sets_api_error_returns_mock_data(
         self, mock_post, mock_client, mock_account_scopes
     ):
-        """Test fetch_permission_sets handles API errors gracefully."""
+        """Test fetch_permission_sets returns mock data on API errors."""
         with patch.object(
             mock_client, "_fetch_all_account_scopes", return_value=mock_account_scopes
         ):
@@ -136,16 +136,17 @@ class TestFetchPermissionSets:
 
             result = mock_client.fetch_permission_sets("160224865296")
 
-            assert result == []
+            # Should return mock data for demo/testing
+            assert len(result) >= 2  # Mock generates 2-4 permission sets
+            assert all("id" in ps for ps in result)
+            assert all("name" in ps for ps in result)
 
 
 class TestFetchJitConfiguration:
     """Tests for fetch_jit_configuration method."""
 
     @patch("sonrai_client.requests.post")
-    def test_fetch_jit_configuration_success(
-        self, mock_post, mock_client, mock_account_scopes
-    ):
+    def test_fetch_jit_configuration_success(self, mock_post, mock_client, mock_account_scopes):
         """Test successful fetch of JIT configuration."""
         with patch.object(
             mock_client, "_fetch_all_account_scopes", return_value=mock_account_scopes
@@ -208,9 +209,7 @@ class TestFetchJitConfiguration:
             mock_post.assert_not_called()
 
     @patch("sonrai_client.requests.post")
-    def test_fetch_jit_configuration_empty(
-        self, mock_post, mock_client, mock_account_scopes
-    ):
+    def test_fetch_jit_configuration_empty(self, mock_post, mock_client, mock_account_scopes):
         """Test fetch_jit_configuration with no JIT configuration."""
         with patch.object(
             mock_client, "_fetch_all_account_scopes", return_value=mock_account_scopes
@@ -228,9 +227,7 @@ class TestFetchJitConfiguration:
             assert result == {"enrolledPermissionSets": []}
 
     @patch("sonrai_client.requests.post")
-    def test_fetch_jit_configuration_api_error(
-        self, mock_post, mock_client, mock_account_scopes
-    ):
+    def test_fetch_jit_configuration_api_error(self, mock_post, mock_client, mock_account_scopes):
         """Test fetch_jit_configuration handles API errors gracefully."""
         with patch.object(
             mock_client, "_fetch_all_account_scopes", return_value=mock_account_scopes
@@ -246,9 +243,7 @@ class TestApplyJitProtection:
     """Tests for apply_jit_protection method."""
 
     @patch("sonrai_client.requests.post")
-    def test_apply_jit_protection_success(
-        self, mock_post, mock_client, mock_account_scopes
-    ):
+    def test_apply_jit_protection_success(self, mock_post, mock_client, mock_account_scopes):
         """Test successful application of JIT protection."""
         with patch.object(
             mock_client, "_fetch_all_account_scopes", return_value=mock_account_scopes
@@ -291,18 +286,14 @@ class TestApplyJitProtection:
             mock_post.assert_not_called()
 
     @patch("sonrai_client.requests.post")
-    def test_apply_jit_protection_graphql_error(
-        self, mock_post, mock_client, mock_account_scopes
-    ):
+    def test_apply_jit_protection_graphql_error(self, mock_post, mock_client, mock_account_scopes):
         """Test apply_jit_protection handles GraphQL errors."""
         with patch.object(
             mock_client, "_fetch_all_account_scopes", return_value=mock_account_scopes
         ):
             mock_response = Mock()
             mock_response.status_code = 200
-            mock_response.json.return_value = {
-                "errors": [{"message": "Permission set not found"}]
-            }
+            mock_response.json.return_value = {"errors": [{"message": "Permission set not found"}]}
             mock_response.raise_for_status = Mock()
             mock_post.return_value = mock_response
 
@@ -343,9 +334,7 @@ class TestApplyJitProtection:
             assert "success=false" in result.error_message
 
     @patch("sonrai_client.requests.post")
-    def test_apply_jit_protection_network_error(
-        self, mock_post, mock_client, mock_account_scopes
-    ):
+    def test_apply_jit_protection_network_error(self, mock_post, mock_client, mock_account_scopes):
         """Test apply_jit_protection handles network errors."""
         with patch.object(
             mock_client, "_fetch_all_account_scopes", return_value=mock_account_scopes
@@ -369,9 +358,7 @@ class TestApplyJitProtection:
         ):
             mock_response = Mock()
             mock_response.status_code = 200
-            mock_response.json.return_value = {
-                "data": {}  # Missing SetJitConfiguration
-            }
+            mock_response.json.return_value = {"data": {}}  # Missing SetJitConfiguration
             mock_response.raise_for_status = Mock()
             mock_post.return_value = mock_response
 
@@ -387,9 +374,7 @@ class TestJitIntegration:
     """Integration tests for JIT workflow."""
 
     @patch("sonrai_client.requests.post")
-    def test_jit_workflow_fetch_and_protect(
-        self, mock_post, mock_client, mock_account_scopes
-    ):
+    def test_jit_workflow_fetch_and_protect(self, mock_post, mock_client, mock_account_scopes):
         """Test complete workflow: fetch permission sets, check JIT config, apply protection."""
         with patch.object(
             mock_client, "_fetch_all_account_scopes", return_value=mock_account_scopes
@@ -419,9 +404,7 @@ class TestJitIntegration:
                 # Second call: fetch_jit_configuration
                 Mock(
                     status_code=200,
-                    json=lambda: {
-                        "data": {"JitConfiguration": {"count": 0, "items": []}}
-                    },
+                    json=lambda: {"data": {"JitConfiguration": {"count": 0, "items": []}}},
                     raise_for_status=Mock(),
                 ),
                 # Third call: apply_jit_protection

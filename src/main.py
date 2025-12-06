@@ -639,6 +639,13 @@ def main():
         if game_engine.showing_boss_dialogue and game_engine.boss_dialogue_content:
             renderer.render_boss_dialogue(game_engine.boss_dialogue_content)
 
+        # Render educational dialogue if active (Story Mode)
+        if game_state.is_dialogue_active:
+            renderer.render_educational_dialogue(
+                game_engine.dialogue_renderer,
+                game_state,
+            )
+
         # Render photo booth summary screen if active (takes over entire screen)
         if getattr(game_state, "photo_booth_summary_active", False) and game_state.photo_booth_path:
             renderer.render_photo_booth_summary(game_state.photo_booth_path)

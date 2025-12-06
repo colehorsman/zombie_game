@@ -1329,6 +1329,52 @@ class Renderer:
         # Use the purple message system
         self._render_purple_message(message)
 
+    def render_educational_dialogue(
+        self,
+        dialogue_renderer,
+        game_state,
+    ) -> None:
+        """
+        Render educational dialogue bubble for Story Mode.
+
+        Args:
+            dialogue_renderer: DialogueRenderer instance for rendering bubbles
+            game_state: Current game state with active_dialogue
+        """
+        if not game_state.is_dialogue_active:
+            return
+
+        dialogue = game_state.active_dialogue
+        current_message = dialogue.get_current_message()
+        if not current_message:
+            return
+
+        # Format the message text with context (zombie name, type, etc.)
+        formatted_text = current_message.format_text(**game_state.dialogue_format_kwargs)
+
+        # Calculate bubble position (center-bottom of screen)
+        bubble_x = self.width // 2
+        bubble_y = self.height - 150
+
+        # Render the dialogue bubble using DialogueRenderer
+        dialogue_renderer.render_bubble(
+            self.screen,
+            formatted_text,
+            (bubble_x, bubble_y),
+            speaker=current_message.speaker,
+            highlight_words=current_message.highlight_words,
+        )
+
+        # Render page indicator if multi-page dialogue
+        total_pages = len(dialogue.messages)
+        if total_pages > 1:
+            dialogue_renderer.render_page_indicator(
+                self.screen,
+                dialogue.current_page + 1,
+                total_pages,
+                (bubble_x, bubble_y + 80),
+            )
+
     def _render_wrapped_text(
         self,
         surface: pygame.Surface,

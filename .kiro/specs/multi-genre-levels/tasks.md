@@ -1,0 +1,224 @@
+# Implementation Plan
+
+## Multi-Genre Level System
+
+- [ ] 1. Create Genre System Foundation
+  - [ ] 1.1 Create Genre enum and data models in `src/models.py`
+    - Define Genre enum (PLATFORMER, SPACE_SHOOTER, MAZE_CHASE, FIGHTING)
+    - Define UnlockCondition dataclass with type and value
+    - Define ControlScheme dataclass with movement and actions
+    - Define GENRE_UNLOCK_CONDITIONS mapping
+    - _Requirements: 10.1, 10.2, 10.3, 10.4_
+  - [ ] 1.2 Create GenreManager class in `src/genre_manager.py`
+    - Implement get_available_genres() returning unlocked genres
+    - Implement select_genre() to set account preference
+    - Implement get_genre_for_account() with Platformer default
+    - Implement check_unlock_conditions() for progression
+    - _Requirements: 1.1, 1.2, 1.3, 1.4_
+  - [ ] 1.3 Write property test for genre preference persistence
+    - **Property 2: Genre Preference Persistence**
+    - Test that save/load preserves genre preference per account
+    - **Validates: Requirements 1.4, 9.5**
+
+- [ ] 2. Create Abstract GenreController
+  - [ ] 2.1 Create GenreController abstract base class in `src/genre_controller.py`
+    - Define abstract initialize_level() method
+    - Define abstract update() method
+    - Define abstract handle_input() method
+    - Define abstract check_completion() method
+    - Define abstract get_player_controls() method
+    - _Requirements: 2.1, 3.1, 4.1, 5.1_
+  - [ ] 2.2 Write property test for genre selection triggers correct template
+    - **Property 1: Genre Selection Triggers Correct Template**
+    - Test that each genre loads its corresponding layout type
+    - **Validates: Requirements 1.3, 2.1, 3.1, 4.1, 5.1**
+
+- [ ] 3. Refactor Existing Platformer to GenreController
+  - [ ] 3.1 Create PlatformerController extending GenreController
+    - Extract existing side-scrolling logic from game_engine.py
+    - Implement initialize_level() for platform layout
+    - Implement update() for platformer physics
+    - Implement handle_input() for jump, run, shoot
+    - _Requirements: 2.1, 2.2, 2.3, 2.4_
+  - [ ] 3.2 Create PatrolBehavior for platformer zombies
+    - Implement platform patrol movement
+    - Implement horizontal chase when player nearby
+    - _Requirements: 7.1_
+
+- [ ] 4. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 5. Implement Space Shooter Genre
+  - [ ] 5.1 Create SpaceShooterController in `src/space_shooter_controller.py`
+    - Implement initialize_level() for vertical space layout
+    - Position player ship at bottom of screen
+    - Spawn zombies at top in formation patterns
+    - _Requirements: 3.1, 3.2, 3.3_
+  - [ ] 5.2 Implement Space Shooter game loop
+    - Handle horizontal movement only
+    - Fire projectiles upward
+    - Move zombies downward
+    - Check for bottom collision (damage player)
+    - _Requirements: 3.4, 3.6_
+  - [ ] 5.3 Write property test for Space Shooter player position
+    - **Property 4: Space Shooter Player Position**
+    - Test player at bottom, projectiles travel upward
+    - **Validates: Requirements 3.2, 3.4**
+  - [ ] 5.4 Create FormationBehavior for space shooter zombies
+    - Implement Galaga-style formation patterns
+    - Implement downward descent movement
+    - _Requirements: 7.2_
+  - [ ] 5.5 Write property test for Space Shooter zombie behavior
+    - **Property 5: Space Shooter Zombie Behavior**
+    - Test zombies spawn at top, move down, damage on bottom reach
+    - **Validates: Requirements 3.3, 3.6**
+
+- [ ] 6. Implement Maze Chase Genre
+  - [ ] 6.1 Create MazeLayout class in `src/maze_layout.py`
+    - Implement procedural maze generation
+    - Ensure valid paths from start to all zombie positions
+    - Create fallback pre-built maze
+    - _Requirements: 4.1_
+  - [ ] 6.2 Create MazeChaseController in `src/maze_chase_controller.py`
+    - Implement initialize_level() for maze layout
+    - Render player as Wally sprite
+    - Place zombies as ghost-like entities
+    - _Requirements: 4.1, 4.2_
+  - [ ] 6.3 Implement Maze Chase game loop
+    - Handle 4-directional movement (no shooting)
+    - Eliminate zombies on front collision (chomp)
+    - Damage player on rear collision
+    - _Requirements: 4.3, 4.6_
+  - [ ] 6.4 Write property test for Maze Chase collision direction
+    - **Property 7: Maze Chase Collision Direction**
+    - Test front collision eliminates, rear collision damages
+    - **Validates: Requirements 4.3, 4.6**
+  - [ ] 6.5 Create GhostBehavior for maze zombies
+    - Implement A* pathfinding through maze
+    - Implement ghost-like chase/scatter behavior
+    - _Requirements: 4.4, 7.3_
+  - [ ] 6.6 Write property test for Maze Chase movement validity
+    - **Property 6: Maze Chase Movement Validity**
+    - Test zombie movement only along valid maze paths
+    - **Validates: Requirements 4.4**
+
+- [ ] 7. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 8. Implement Fighting Genre
+  - [ ] 8.1 Create CombatState class in `src/models.py`
+    - Define player and opponent health
+    - Define attack states (punch, kick, special, block)
+    - Define combo tracking
+    - _Requirements: 5.3_
+  - [ ] 8.2 Create FightingController in `src/fighting_controller.py`
+    - Implement initialize_level() for arena layout
+    - Queue zombies as sequential opponents
+    - Implement next_opponent() for progression
+    - _Requirements: 5.1, 5.2_
+  - [ ] 8.3 Write property test for Fighting sequential opponents
+    - **Property 8: Fighting Sequential Opponents**
+    - Test zombies appear one at a time, not simultaneously
+    - **Validates: Requirements 5.2**
+  - [ ] 8.4 Implement Fighting game loop
+    - Handle punch, kick, special, block controls
+    - Implement hit detection and damage
+    - Trigger quarantine on opponent defeat
+    - Trigger game over on player health zero
+    - _Requirements: 5.3, 5.4, 5.6_
+  - [ ] 8.5 Create FighterBehavior for fighting zombies
+    - Implement attack patterns and combos
+    - Scale difficulty with zombie count
+    - _Requirements: 7.4_
+
+- [ ] 9. Implement Cross-Genre Progress Tracking
+  - [ ] 9.1 Create ProgressTracker class in `src/progress_tracker.py`
+    - Track total_zombies_eliminated across all genres
+    - Track levels_completed count
+    - Track account_completion status
+    - Track per-genre statistics
+    - _Requirements: 9.1, 9.2, 9.3_
+  - [ ] 9.2 Write property test for cross-genre progress aggregation
+    - **Property 10: Cross-Genre Progress Aggregation**
+    - Test elimination in any genre increases total count
+    - Test account completion is genre-independent
+    - **Validates: Requirements 9.1, 9.2, 9.3**
+  - [ ] 9.3 Integrate ProgressTracker with SaveManager
+    - Add progress field to save schema
+    - Update save() to include progress data
+    - Update load() to restore progress
+    - _Requirements: 9.4, 9.5_
+  - [ ] 9.4 Write property test for identity metadata preservation
+    - **Property 9: Identity Metadata Preservation**
+    - Test zombie metadata preserved across genre adaptations
+    - **Validates: Requirements 7.5**
+
+- [ ] 10. Implement Genre Unlock System
+  - [ ] 10.1 Add unlock checking to GenreManager
+    - Check conditions after each elimination/completion
+    - Unlock Space Shooter after 1 level complete
+    - Unlock Maze Chase after 50 zombies
+    - Unlock Fighting after 3 levels complete
+    - _Requirements: 10.1, 10.2, 10.3, 10.4_
+  - [ ] 10.2 Write property test for genre unlock conditions
+    - **Property 11: Genre Unlock Conditions**
+    - Test each unlock fires at exact threshold
+    - **Validates: Requirements 10.1, 10.2, 10.3, 10.4**
+  - [ ] 10.3 Add unlock notification UI
+    - Display celebratory notification on unlock
+    - Show new genre name and preview
+    - _Requirements: 10.5_
+
+- [ ] 11. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [ ] 12. Implement Genre Selection UI
+  - [ ] 12.1 Create GenreSelector component in `src/genre_selector.py`
+    - Display available genres with preview icons
+    - Show locked genres as grayed out
+    - Handle selection input
+    - _Requirements: 1.1, 1.2_
+  - [ ] 12.2 Integrate genre selector with lobby door interaction
+    - Show genre selector when door selected
+    - Load selected genre's controller
+    - Remember preference for account
+    - _Requirements: 1.3, 1.5_
+  - [ ] 12.3 Add genre-specific loading screens
+    - Create loading screen for each genre
+    - Show genre name and controls hint
+    - _Requirements: 6.5_
+
+- [ ] 13. Implement Difficulty Scaling
+  - [ ] 13.1 Add difficulty calculation based on zombie count
+    - Scale enemy speed with zombie count
+    - Scale spawn rate with zombie count
+    - Adjust AI aggressiveness
+    - _Requirements: 8.4_
+  - [ ] 13.2 Write property test for difficulty scaling
+    - **Property 12: Difficulty Scaling**
+    - Test difficulty increases with zombie count
+    - **Validates: Requirements 8.4**
+  - [ ] 13.3 Add account theming
+    - Display account name and purpose
+    - Apply visual intensity based on account type
+    - _Requirements: 8.3_
+
+- [ ] 14. Create Genre-Specific Visual Assets
+  - [ ] 14.1 Create Space Shooter assets
+    - AWS-themed spacecraft sprite
+    - Starfield background with cloud elements
+    - Formation pattern indicators
+    - _Requirements: 6.1_
+  - [ ] 14.2 Create Maze Chase assets
+    - Wally AI agent sprite
+    - Maze wall tiles with cloud motifs
+    - Ghost-style zombie sprites
+    - _Requirements: 6.2_
+  - [ ] 14.3 Create Fighting assets
+    - Arena background with CloudWatch theme
+    - Health bars with risk score styling
+    - Combat effect sprites
+    - _Requirements: 6.3_
+
+- [ ] 15. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
