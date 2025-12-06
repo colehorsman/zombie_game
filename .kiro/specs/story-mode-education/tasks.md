@@ -38,23 +38,23 @@
     - Test that completing one trigger doesn't affect others
     - **Validates: Requirements 4.1, 4.5**
 
-- [ ] 3. Create Education Manager
-  - [ ] 3.1 Create EducationManager class in `src/education_manager.py`
+- [x] 3. Create Education Manager
+  - [x] 3.1 Create EducationManager class in `src/education_manager.py`
     - Implement check_trigger() to evaluate trigger conditions
     - Implement mark_completed() to record viewed education
     - Implement reset_progress() for tutorial replay option
     - _Requirements: 4.1, 4.4_
-  - [ ] 3.2 Define TriggerType enum and EDUCATION_CONTENT templates
+  - [x] 3.2 Define TriggerType enum and EDUCATION_CONTENT templates
     - Create TriggerType enum with all trigger types
     - Define dialogue content templates with placeholders for zombie data
     - Include first_zombie_kill, first_role, first_user, milestones
     - _Requirements: 2.2, 2.4, 3.4, 3.5, 5.1, 5.2, 5.3_
-  - [ ] 3.3 Write property test for first kill education trigger
+  - [x] 3.3 Write property test for first kill education trigger
     - **Property 2: First Kill Education Trigger**
     - Test that first elimination triggers education with zombie name/type
     - **Validates: Requirements 2.1, 2.3, 2.5**
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 5. Integrate Dialogue System with Game Engine

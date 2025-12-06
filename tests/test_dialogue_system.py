@@ -107,7 +107,9 @@ class TestDialogueSequenceProperties:
         seq.reset()
 
         assert seq.current_page == 0
-        assert seq.is_complete() is (len(seq.messages) == 1)  # Only complete if single page
+        assert seq.is_complete() is (
+            len(seq.messages) == 1
+        )  # Only complete if single page
 
 
 class TestDialogueMessageProperties:
@@ -122,7 +124,11 @@ class TestDialogueMessageProperties:
         assert name in result
         assert value in result
 
-    @given(st.text(min_size=1, max_size=100, alphabet=st.characters(blacklist_characters="{}")))
+    @given(
+        st.text(
+            min_size=1, max_size=100, alphabet=st.characters(blacklist_characters="{}")
+        )
+    )
     @settings(max_examples=100)
     def test_format_text_without_placeholders_unchanged(self, text: str):
         """Property: format_text returns original text when no placeholders or braces."""
@@ -198,11 +204,15 @@ class TestEducationalProgressProperties:
         assert progress.has_seen(trigger_type) is True
 
     @given(
-        st.sets(st.sampled_from([t.value for t in TriggerType]), min_size=1, max_size=7),
+        st.sets(
+            st.sampled_from([t.value for t in TriggerType]), min_size=1, max_size=7
+        ),
         st.integers(min_value=1, max_value=100),
     )
     @settings(max_examples=100)
-    def test_reset_clears_all_progress(self, completed_triggers: set, zombies_eliminated: int):
+    def test_reset_clears_all_progress(
+        self, completed_triggers: set, zombies_eliminated: int
+    ):
         """Property: reset clears all progress to initial state."""
         from models import EducationalProgress
 
@@ -268,7 +278,11 @@ class TestEducationalProgressProperties:
             assert progress.has_seen(trigger1) is True
             assert progress.has_seen(trigger2) is True
 
-    @given(st.lists(st.sampled_from(list(TriggerType)), min_size=1, max_size=7, unique=True))
+    @given(
+        st.lists(
+            st.sampled_from(list(TriggerType)), min_size=1, max_size=7, unique=True
+        )
+    )
     @settings(max_examples=100)
     def test_multiple_triggers_tracked_independently(self, triggers: list):
         """Property: Multiple triggers can be tracked independently."""
@@ -285,3 +299,138 @@ class TestEducationalProgressProperties:
         for trigger in all_triggers:
             expected = trigger in triggers
             assert progress.has_seen(trigger) == expected, f"Trigger {trigger} mismatch"
+
+
+class TestEducationManagerProperties:
+    """Property-based tests for EducationManager.
+
+    **Feature: story-mode-education, Property 2: First Kill Education Trigger**
+    **Validates: Requirements 2.1, 2.3, 2.5**
+    """
+
+    @given(
+        st.text(
+            min_size=1, max_size=50, alphabet=st.characters(blacklist_characters="{}")
+        ),
+        st.sampled_from(["User", "Role", "ServiceAccount"]),
+        st.integers(min_value=1, max_value=365),
+    )
+    @settings(max_examples=100)
+    def test_first_kill_triggers_with_zombie_data(
+        self, zombie_name: str, zombie_type: str, days: int
+    ):
+        """Property: First elimination triggers education with zombie name and type."""
+        from education_manager import EducationManager
+
+        manager = EducationManager()
+
+        # First kill should trigger
+        context = {
+            "zombie_name": zombie_name,
+            "zombie_type": zombie_type,
+            "days_since_login": str(days),
+        }
+        dialogue = manager.check_trigger(TriggerType.FIRST_ZOMBIE_KILL, context)
+
+        assert dialogue is not None
+        assert dialogue.trigger_type == TriggerType.FIRST_ZOMBIE_KILL
+
+        # Format the first message and verify it contains zombie name
+        msg = dialogue.get_current_message()
+        formatted = msg.format_text(**manager.get_format_kwargs())
+        assert zombie_name in formatted
+
+    @given(st.sampled_from(list(TriggerType)))
+    @settings(max_examples=100)
+    def test_trigger_not_repeated_after_seen(self, trigger_type: TriggerType):
+        """Property: Triggers don't fire again after being seen."""
+        from education_manager import EducationManager
+
+        manager = EducationManager()
+
+        # First trigger should work
+        dialogue1 = manager.check_trigger(trigger_type)
+        if dialogue1:  # Some triggers may not have content
+            # Dismiss it
+            manager.dismiss_dialogue()
+
+            # Second trigger should return None
+            dialogue2 = manager.check_trigger(trigger_type)
+            assert dialogue2 is None
+
+    @given(st.sampled_from(list(TriggerType)))
+    @settings(max_examples=100)
+    def test_no_trigger_while_dialogue_active(self, trigger_type: TriggerType):
+        """Property: No new triggers while a dialogue is active."""
+        from education_manager import EducationManager
+
+        manager = EducationManager()
+
+        # Start a dialogue
+        manager.check_trigger(TriggerType.STORY_MODE_WELCOME)
+
+        # Try to trigger another - should fail
+        dialogue = manager.check_trigger(trigger_type)
+        assert dialogue is None or trigger_type == TriggerType.STORY_MODE_WELCOME
+
+    def test_milestone_5_triggers_at_exact_count(self):
+        """Property: 5-kill milestone triggers at exactly 5 eliminations."""
+        from education_manager import EducationManager
+
+        manager = EducationManager()
+
+        # Counts 1-4 should not trigger milestone
+        for i in range(4):
+            result = manager.increment_eliminations()
+            assert result is None, f"Unexpected trigger at count {i + 1}"
+
+        # Count 5 should trigger
+        result = manager.increment_eliminations()
+        assert result is not None
+        assert result.trigger_type == TriggerType.MILESTONE_5_KILLS
+
+    def test_milestone_10_triggers_at_exact_count(self):
+        """Property: 10-kill milestone triggers at exactly 10 eliminations."""
+        from education_manager import EducationManager
+
+        manager = EducationManager()
+        manager.progress.zombies_eliminated = 9
+
+        # Count 10 should trigger
+        result = manager.increment_eliminations()
+        assert result is not None
+        assert result.trigger_type == TriggerType.MILESTONE_10_KILLS
+
+    @given(st.sampled_from(["Role", "role", "ROLE", "aws.iam.role"]))
+    @settings(max_examples=10)
+    def test_first_role_encounter_triggers(self, role_type: str):
+        """Property: First Role encounter triggers role education."""
+        from education_manager import EducationManager
+
+        manager = EducationManager()
+
+        result = manager.check_zombie_type_education(role_type)
+        assert result is not None
+        assert result.trigger_type == TriggerType.FIRST_ROLE_ENCOUNTER
+
+        # Second encounter should not trigger
+        manager.dismiss_dialogue()
+        result2 = manager.check_zombie_type_education(role_type)
+        assert result2 is None
+
+    @given(st.sampled_from(["User", "user", "USER", "aws.iam.user"]))
+    @settings(max_examples=10)
+    def test_first_user_encounter_triggers(self, user_type: str):
+        """Property: First User encounter triggers user education."""
+        from education_manager import EducationManager
+
+        manager = EducationManager()
+
+        result = manager.check_zombie_type_education(user_type)
+        assert result is not None
+        assert result.trigger_type == TriggerType.FIRST_USER_ENCOUNTER
+
+        # Second encounter should not trigger
+        manager.dismiss_dialogue()
+        result2 = manager.check_zombie_type_education(user_type)
+        assert result2 is None
