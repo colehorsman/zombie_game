@@ -27,6 +27,71 @@ class QuestStatus(Enum):
     COMPLETED = "completed"  # Service protected successfully
 
 
+class TriggerType(Enum):
+    """Educational dialogue trigger types for Story Mode."""
+
+    STORY_MODE_WELCOME = "story_mode_welcome"
+    FIRST_ZOMBIE_KILL = "first_zombie_kill"
+    FIRST_ROLE_ENCOUNTER = "first_role_encounter"
+    FIRST_USER_ENCOUNTER = "first_user_encounter"
+    MILESTONE_5_KILLS = "milestone_5_kills"
+    MILESTONE_10_KILLS = "milestone_10_kills"
+    LEVEL_COMPLETE = "level_complete"
+
+
+@dataclass
+class DialogueMessage:
+    """A single message in an educational dialogue sequence."""
+
+    text: str
+    speaker: str = "SONRAI"  # Who is "speaking" (SONRAI, SYSTEM, etc.)
+    highlight_words: list = field(default_factory=list)  # Words to emphasize in display
+
+    def format_text(self, **kwargs) -> str:
+        """Format text with placeholder values (e.g., zombie name, type)."""
+        try:
+            return self.text.format(**kwargs)
+        except (KeyError, ValueError):
+            # KeyError: missing placeholder key
+            # ValueError: malformed format string (e.g., single '{')
+            return self.text
+
+
+@dataclass
+class DialogueSequence:
+    """A multi-page educational dialogue triggered by gameplay events."""
+
+    trigger_type: TriggerType
+    messages: list  # List of DialogueMessage
+    current_page: int = 0
+
+    def next_page(self) -> bool:
+        """
+        Advance to next page.
+
+        Returns:
+            True if advanced to next page, False if already at end.
+        """
+        if self.current_page < len(self.messages) - 1:
+            self.current_page += 1
+            return True
+        return False
+
+    def is_complete(self) -> bool:
+        """Check if all pages have been viewed (on last page)."""
+        return self.current_page >= len(self.messages) - 1
+
+    def get_current_message(self) -> Optional["DialogueMessage"]:
+        """Get the current message to display."""
+        if 0 <= self.current_page < len(self.messages):
+            return self.messages[self.current_page]
+        return None
+
+    def reset(self) -> None:
+        """Reset to first page."""
+        self.current_page = 0
+
+
 @dataclass
 class Vector2:
     """2D vector for position and velocity."""
@@ -189,3 +254,49 @@ class QuarantineReport:
     successful: int = 0  # Successfully quarantined
     failed: int = 0  # Failed to quarantine
     error_messages: list = field(default_factory=list)  # List of error messages
+
+
+@dataclass
+class EducationalProgress:
+    """Tracks which educational content the player has seen in Story Mode."""
+
+    completed_triggers: set = field(default_factory=set)  # Set of TriggerType values seen
+    zombies_eliminated: int = 0  # Total zombies eliminated in Story Mode
+    first_role_seen: bool = False  # Has player encountered a Role-type zombie
+    first_user_seen: bool = False  # Has player encountered a User-type zombie
+
+    def has_seen(self, trigger_type: TriggerType) -> bool:
+        """Check if player has seen this educational trigger."""
+        return trigger_type.value in self.completed_triggers
+
+    def mark_seen(self, trigger_type: TriggerType) -> None:
+        """Mark an educational trigger as seen."""
+        self.completed_triggers.add(trigger_type.value)
+
+    def to_dict(self) -> dict:
+        """Serialize for save file."""
+        return {
+            "completed_triggers": list(self.completed_triggers),
+            "zombies_eliminated": self.zombies_eliminated,
+            "first_role_seen": self.first_role_seen,
+            "first_user_seen": self.first_user_seen,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "EducationalProgress":
+        """Deserialize from save file."""
+        if not data:
+            return cls()
+        return cls(
+            completed_triggers=set(data.get("completed_triggers", [])),
+            zombies_eliminated=data.get("zombies_eliminated", 0),
+            first_role_seen=data.get("first_role_seen", False),
+            first_user_seen=data.get("first_user_seen", False),
+        )
+
+    def reset(self) -> None:
+        """Reset all educational progress for tutorial replay."""
+        self.completed_triggers.clear()
+        self.zombies_eliminated = 0
+        self.first_role_seen = False
+        self.first_user_seen = False
