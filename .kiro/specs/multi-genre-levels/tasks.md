@@ -45,64 +45,64 @@
     - Implement horizontal chase when player nearby
     - _Requirements: 7.1_
 
-- [-] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Implement Space Shooter Genre
-  - [ ] 5.1 Create SpaceShooterController in `src/space_shooter_controller.py`
+- [x] 5. Implement Space Shooter Genre
+  - [x] 5.1 Create SpaceShooterController in `src/space_shooter_controller.py`
     - Implement initialize_level() for vertical space layout
     - Position player ship at bottom of screen
     - Spawn zombies at top in formation patterns
     - _Requirements: 3.1, 3.2, 3.3_
-  - [ ] 5.2 Implement Space Shooter game loop
+  - [x] 5.2 Implement Space Shooter game loop
     - Handle horizontal movement only
     - Fire projectiles upward
     - Move zombies downward
     - Check for bottom collision (damage player)
     - _Requirements: 3.4, 3.6_
-  - [ ] 5.3 Write property test for Space Shooter player position
+  - [x] 5.3 Write property test for Space Shooter player position
     - **Property 4: Space Shooter Player Position**
     - Test player at bottom, projectiles travel upward
     - **Validates: Requirements 3.2, 3.4**
-  - [ ] 5.4 Create FormationBehavior for space shooter zombies
+  - [x] 5.4 Create FormationBehavior for space shooter zombies
     - Implement Galaga-style formation patterns
     - Implement downward descent movement
     - _Requirements: 7.2_
-  - [ ] 5.5 Write property test for Space Shooter zombie behavior
+  - [x] 5.5 Write property test for Space Shooter zombie behavior
     - **Property 5: Space Shooter Zombie Behavior**
     - Test zombies spawn at top, move down, damage on bottom reach
     - **Validates: Requirements 3.3, 3.6**
 
-- [ ] 6. Implement Maze Chase Genre
-  - [ ] 6.1 Create MazeLayout class in `src/maze_layout.py`
+- [x] 6. Implement Maze Chase Genre
+  - [x] 6.1 Create MazeLayout class in `src/maze_layout.py`
     - Implement procedural maze generation
     - Ensure valid paths from start to all zombie positions
     - Create fallback pre-built maze
     - _Requirements: 4.1_
-  - [ ] 6.2 Create MazeChaseController in `src/maze_chase_controller.py`
+  - [x] 6.2 Create MazeChaseController in `src/maze_chase_controller.py`
     - Implement initialize_level() for maze layout
     - Render player as Wally sprite
     - Place zombies as ghost-like entities
     - _Requirements: 4.1, 4.2_
-  - [ ] 6.3 Implement Maze Chase game loop
+  - [x] 6.3 Implement Maze Chase game loop
     - Handle 4-directional movement (no shooting)
     - Eliminate zombies on front collision (chomp)
     - Damage player on rear collision
     - _Requirements: 4.3, 4.6_
-  - [ ] 6.4 Write property test for Maze Chase collision direction
+  - [x] 6.4 Write property test for Maze Chase collision direction
     - **Property 7: Maze Chase Collision Direction**
     - Test front collision eliminates, rear collision damages
     - **Validates: Requirements 4.3, 4.6**
-  - [ ] 6.5 Create GhostBehavior for maze zombies
+  - [x] 6.5 Create GhostBehavior for maze zombies
     - Implement A* pathfinding through maze
     - Implement ghost-like chase/scatter behavior
     - _Requirements: 4.4, 7.3_
-  - [ ] 6.6 Write property test for Maze Chase movement validity
+  - [x] 6.6 Write property test for Maze Chase movement validity
     - **Property 6: Maze Chase Movement Validity**
     - Test zombie movement only along valid maze paths
     - **Validates: Requirements 4.4**
 
-- [ ] 7. Checkpoint - Ensure all tests pass
+- [-] 7. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 8. Implement Boss Battle System (Mortal Kombat Style)

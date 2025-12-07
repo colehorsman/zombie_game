@@ -7,12 +7,13 @@ import sys
 
 sys.path.insert(0, "src")
 
+import pygame
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from genre_manager import GenreManager
-from models import GENRE_UNLOCK_CONDITIONS, GenreType
+from models import GENRE_UNLOCK_CONDITIONS, GenreType, Vector2
 
 # Strategies for generating test data
 genre_strategy = st.sampled_from(list(GenreType))
@@ -314,3 +315,210 @@ class TestGenreSelectionTriggersCorrectTemplate:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestSpaceShooterPlayerPosition:
+    """Property 4: Space Shooter Player Position
+
+    *For any* space shooter level, the player SHALL be positioned at the
+    bottom of the screen and projectiles SHALL travel upward.
+
+    **Validates: Requirements 3.2, 3.4**
+    **Feature: multi-genre-levels, Property 4: Space Shooter Player Position**
+    """
+
+    def test_player_at_bottom_of_screen(self):
+        """Test that player is positioned at bottom of screen."""
+        from space_shooter_controller import SpaceShooterController
+
+        controller = SpaceShooterController(GenreType.SPACE_SHOOTER, 800, 600)
+
+        # Player Y should be near bottom (600 - offset)
+        assert controller.player_y > 500  # Near bottom
+        assert controller.player_y < 600  # But not off screen
+
+    def test_projectiles_travel_upward(self):
+        """Test that projectiles have negative Y velocity (upward)."""
+        from space_shooter_controller import SpaceShooterController
+
+        controller = SpaceShooterController(GenreType.SPACE_SHOOTER, 800, 600)
+        controller._fire_projectile()
+
+        assert len(controller.projectiles) == 1
+        proj = controller.projectiles[0]
+
+        # Negative Y velocity means upward movement
+        assert proj.velocity.y < 0
+
+    @given(screen_height=st.integers(min_value=400, max_value=1200))
+    @settings(max_examples=20)
+    def test_player_always_near_bottom(self, screen_height: int):
+        """Test player is always positioned near bottom regardless of screen size."""
+        from space_shooter_controller import SpaceShooterController
+
+        controller = SpaceShooterController(GenreType.SPACE_SHOOTER, 800, screen_height)
+
+        # Player should be within bottom 100 pixels
+        assert controller.player_y >= screen_height - 100
+        assert controller.player_y < screen_height
+
+
+class TestSpaceShooterZombieBehavior:
+    """Property 5: Space Shooter Zombie Behavior
+
+    *For any* space shooter level, zombies SHALL spawn at the top of the
+    screen, move downward, and damage the player when reaching the bottom.
+
+    **Validates: Requirements 3.3, 3.6**
+    **Feature: multi-genre-levels, Property 5: Space Shooter Zombie Behavior**
+    """
+
+    def test_zombies_spawn_at_top(self):
+        """Test that zombies are positioned at top of screen."""
+        from space_shooter_controller import SpaceShooterController
+
+        # Create mock zombies
+        class MockZombie:
+            def __init__(self):
+                self.position = Vector2(0, 0)
+                self.is_quarantining = False
+                self.health = 100
+
+            def get_bounds(self):
+                return pygame.Rect(self.position.x - 20, self.position.y - 20, 40, 40)
+
+        zombies = [MockZombie() for _ in range(5)]
+
+        controller = SpaceShooterController(GenreType.SPACE_SHOOTER, 800, 600)
+        controller.initialize_level("123456789", zombies, 800, 600)
+
+        # All zombies should be in top half of screen
+        for zombie in zombies:
+            assert zombie.position.y < 300  # Top half
+
+    def test_zombies_descend_over_time(self):
+        """Test that zombies move downward during update."""
+        from space_shooter_controller import SpaceShooterController
+
+        class MockZombie:
+            def __init__(self):
+                self.position = Vector2(400, 100)
+                self.is_quarantining = False
+                self.health = 100
+
+            def get_bounds(self):
+                return pygame.Rect(self.position.x - 20, self.position.y - 20, 40, 40)
+
+        class MockPlayer:
+            def __init__(self):
+                self.position = Vector2(400, 550)
+
+        zombies = [MockZombie()]
+        player = MockPlayer()
+
+        controller = SpaceShooterController(GenreType.SPACE_SHOOTER, 800, 600)
+        controller.initialize_level("123456789", zombies, 800, 600)
+
+        initial_y = zombies[0].position.y
+
+        # Update for 1 second
+        controller.update(1.0, player)
+
+        # Zombie should have moved down
+        assert zombies[0].position.y > initial_y
+
+
+class TestMazeChaseMovementValidity:
+    """Property 6: Maze Chase Movement Validity
+
+    *For any* maze chase level, zombie movement SHALL only occur along
+    valid maze paths (no moving through walls).
+
+    **Validates: Requirements 4.4**
+    **Feature: multi-genre-levels, Property 6: Maze Chase Movement Validity**
+    """
+
+    def test_zombie_cannot_move_through_walls(self):
+        """Test that zombies respect maze walls."""
+        from maze_chase_controller import Direction, MazeChaseController
+
+        controller = MazeChaseController(GenreType.MAZE_CHASE, 800, 600)
+        controller._generate_maze()
+
+        # Check that _can_move respects walls
+        # Border walls should block movement
+        assert not controller._can_move(0, 0, Direction.LEFT)  # Left border
+        assert not controller._can_move(0, 0, Direction.UP)  # Top border
+
+    def test_valid_positions_are_within_maze(self):
+        """Test that valid positions are within maze bounds."""
+        from maze_chase_controller import MazeChaseController
+
+        controller = MazeChaseController(GenreType.MAZE_CHASE, 800, 600)
+        controller._generate_maze()
+
+        # Valid positions
+        assert controller._is_valid_position(1, 1)
+        assert controller._is_valid_position(5, 5)
+
+        # Invalid positions (outside maze)
+        assert not controller._is_valid_position(-1, 0)
+        assert not controller._is_valid_position(0, -1)
+        assert not controller._is_valid_position(controller.maze_width, 0)
+        assert not controller._is_valid_position(0, controller.maze_height)
+
+
+class TestMazeChaseCollisionDirection:
+    """Property 7: Maze Chase Collision Direction
+
+    *For any* player-zombie collision in maze chase, front collision
+    SHALL eliminate the zombie, rear collision SHALL damage the player.
+
+    **Validates: Requirements 4.3, 4.6**
+    **Feature: multi-genre-levels, Property 7: Maze Chase Collision Direction**
+    """
+
+    def test_front_collision_detection(self):
+        """Test that front collision is detected correctly."""
+        from maze_chase_controller import Direction, MazeChaseController
+
+        class MockPlayer:
+            def __init__(self):
+                self.position = Vector2(100, 100)
+
+        class MockZombie:
+            def __init__(self, x, y):
+                self.position = Vector2(x, y)
+
+        controller = MazeChaseController(GenreType.MAZE_CHASE, 800, 600)
+        player = MockPlayer()
+
+        # Player facing right, zombie to the right = front collision
+        controller.player_direction = Direction.RIGHT
+        zombie_right = MockZombie(150, 100)
+        assert controller._is_front_collision(player, zombie_right)
+
+        # Player facing right, zombie to the left = rear collision
+        zombie_left = MockZombie(50, 100)
+        assert not controller._is_front_collision(player, zombie_left)
+
+    def test_no_direction_means_no_front_collision(self):
+        """Test that stationary player has no front collision."""
+        from maze_chase_controller import Direction, MazeChaseController
+
+        class MockPlayer:
+            def __init__(self):
+                self.position = Vector2(100, 100)
+
+        class MockZombie:
+            def __init__(self):
+                self.position = Vector2(150, 100)
+
+        controller = MazeChaseController(GenreType.MAZE_CHASE, 800, 600)
+        controller.player_direction = Direction.NONE
+
+        player = MockPlayer()
+        zombie = MockZombie()
+
+        # No direction = no front collision
+        assert not controller._is_front_collision(player, zombie)
