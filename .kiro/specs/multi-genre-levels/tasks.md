@@ -105,31 +105,84 @@
 - [ ] 7. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Implement Fighting Genre
-  - [ ] 8.1 Create CombatState class in `src/models.py`
-    - Define player and opponent health
-    - Define attack states (punch, kick, special, block)
-    - Define combo tracking
-    - _Requirements: 5.3_
-  - [ ] 8.2 Create FightingController in `src/fighting_controller.py`
-    - Implement initialize_level() for arena layout
-    - Queue zombies as sequential opponents
-    - Implement next_opponent() for progression
-    - _Requirements: 5.1, 5.2_
-  - [ ] 8.3 Write property test for Fighting sequential opponents
-    - **Property 8: Fighting Sequential Opponents**
-    - Test zombies appear one at a time, not simultaneously
-    - **Validates: Requirements 5.2**
-  - [ ] 8.4 Implement Fighting game loop
-    - Handle punch, kick, special, block controls
-    - Implement hit detection and damage
-    - Trigger quarantine on opponent defeat
-    - Trigger game over on player health zero
-    - _Requirements: 5.3, 5.4, 5.6_
-  - [ ] 8.5 Create FighterBehavior for fighting zombies
-    - Implement attack patterns and combos
-    - Scale difficulty with zombie count
-    - _Requirements: 7.4_
+- [ ] 8. Implement Boss Battle System (Mortal Kombat Style)
+  - [ ] 8.1 Create CombatState enum and FighterState enum in `src/models.py`
+    - Define CombatState (VS_SCREEN, ROUND_START, FIGHTING, ROUND_END, VICTORY, DEFEAT)
+    - Define FighterState (IDLE, WALKING, PUNCHING, KICKING, SPECIAL, BLOCKING, HIT, KO)
+    - Define Attack dataclass with damage, range, type
+    - _Requirements: 5.3, 13.1, 13.2, 13.3, 13.4_
+  - [ ] 8.2 Create FightingArena class in `src/fighting_arena.py`
+    - Implement arena background rendering per boss type
+    - Implement health bar rendering for player and boss
+    - Implement round timer display (99 seconds)
+    - _Requirements: 11.1, 11.2, 11.3_
+  - [ ] 8.3 Write property test for boss health bar display
+    - **Property 14: Boss Health Bar Display**
+    - Test health bars accurately reflect current health
+    - **Validates: Requirements 11.2**
+  - [ ] 8.4 Create PlayerFighter class in `src/player_fighter.py`
+    - Implement punch() with quick attack, short range
+    - Implement kick() with slower attack, longer range
+    - Implement special_move() with powerful attack, long cooldown
+    - Implement block() with damage reduction
+    - Implement take_damage() with block check
+    - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5, 13.6_
+  - [ ] 8.5 Write property test for attack damage application
+    - **Property 16: Attack Damage Application**
+    - Test successful attacks reduce target health by damage value
+    - **Validates: Requirements 5.4, 5.5**
+  - [ ] 8.6 Write property test for block damage reduction
+    - **Property 17: Block Damage Reduction**
+    - Test blocking reduces incoming damage by at least 50%
+    - **Validates: Requirements 13.3**
+  - [ ] 8.7 Create BossFighter class in `src/boss_fighter.py`
+    - Implement boss-specific attacks for each boss type
+    - Scattered Spider: Web Strike, Credential Theft, Social Engineering
+    - Heartbleed: Memory Leak, Data Bleed, Buffer Overflow
+    - WannaCry: Encrypt Strike, Ransom Demand, Worm Spread
+    - _Requirements: 12.1, 12.2, 12.3, 12.5_
+  - [ ] 8.8 Implement Boss AI in BossFighter
+    - Implement approach behavior when at range
+    - Implement attack selection when in range
+    - Implement occasional block/dodge
+    - Implement aggression scaling with low health
+    - _Requirements: 14.1, 14.2, 14.3, 14.4, 14.5, 14.6_
+  - [ ] 8.9 Write property test for boss AI aggression scaling
+    - **Property 18: Boss AI Aggression Scaling**
+    - Test aggression increases as boss health decreases
+    - **Validates: Requirements 14.4**
+  - [ ] 8.10 Create BossBattleController in `src/boss_battle_controller.py`
+    - Implement start_boss_battle() to transition to arena
+    - Implement VS screen display with portraits
+    - Implement round timer countdown
+    - Implement combat state machine
+    - Implement return to level after battle
+    - _Requirements: 5.1, 5.2, 11.1, 11.3, 11.4, 5.8_
+  - [ ] 8.11 Write property test for boss arena transition
+    - **Property 13: Boss Arena Transition**
+    - Test transition to arena and return to original level
+    - **Validates: Requirements 5.1, 5.8, 11.1**
+  - [ ] 8.12 Write property test for boss timer behavior
+    - **Property 15: Boss Timer Behavior**
+    - Test timer counts down from 99, zero determines winner by health
+    - **Validates: Requirements 11.3, 11.4**
+  - [ ] 8.13 Implement victory and defeat handling
+    - Display VICTORY screen with quarantine animation on boss defeat
+    - Display DEFEATED screen with retry option on player defeat
+    - Trigger quarantine API call on victory
+    - _Requirements: 5.6, 5.7, 11.6_
+  - [ ] 8.14 Write property test for victory quarantine trigger
+    - **Property 19: Victory Quarantine Trigger**
+    - Test boss defeat triggers quarantine animation and API call
+    - **Validates: Requirements 5.6**
+  - [ ] 8.15 Write property test for defeat retry option
+    - **Property 20: Defeat Retry Option**
+    - Test player defeat shows retry option
+    - **Validates: Requirements 5.7**
+  - [ ] 8.16 Integrate boss battle with level completion
+    - Trigger boss battle when all zombies eliminated in level
+    - Return to lobby after boss battle victory
+    - _Requirements: 5.8_
 
 - [ ] 9. Implement Cross-Genre Progress Tracking
   - [ ] 9.1 Create ProgressTracker class in `src/progress_tracker.py`

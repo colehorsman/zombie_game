@@ -66,18 +66,72 @@ This feature transforms the level system from a single gameplay style into a "Ch
 5. WHEN all zombies are eliminated THEN the System SHALL trigger level completion
 6. WHEN a zombie touches Wally from behind THEN the System SHALL damage the player
 
-### Requirement 5: Fighting Genre (Mortal Kombat Style)
+### Requirement 5: Fighting Genre (Mortal Kombat Style) - Boss Battles
 
-**User Story:** As a player, I want to face level bosses in one-on-one combat, so that I can experience fighting game mechanics against high-risk identities.
+**User Story:** As a player, I want to face level bosses in one-on-one combat, so that I can experience fighting game mechanics against cyber threat bosses.
 
 #### Acceptance Criteria
 
-1. WHEN the Fighting genre is selected THEN the System SHALL load a fighting arena environment
-2. WHEN playing Fighting THEN the System SHALL present zombies as sequential opponents
-3. WHEN in combat THEN the System SHALL enable punch, kick, and special move controls
-4. WHEN the player defeats an opponent THEN the System SHALL quarantine that identity
-5. WHEN all opponents are defeated THEN the System SHALL trigger level completion
-6. WHEN the player's health reaches zero THEN the System SHALL trigger game over
+1. WHEN a boss battle is triggered THEN the System SHALL transition to a dedicated fighting arena room
+2. WHEN entering the arena THEN the System SHALL display a "VS" screen with player and boss portraits
+3. WHEN in combat THEN the System SHALL enable punch, kick, block, and special move controls
+4. WHEN the player attacks THEN the System SHALL play attack animations and deal damage to the boss
+5. WHEN the boss attacks THEN the System SHALL play boss attack animations and deal damage to the player
+6. WHEN the player defeats the boss THEN the System SHALL display a "VICTORY" screen with quarantine animation
+7. WHEN the player's health reaches zero THEN the System SHALL display "DEFEATED" and offer retry option
+8. WHEN combat ends THEN the System SHALL return the player to the level they came from
+
+### Requirement 11: Boss Arena Environment
+
+**User Story:** As a player, I want boss fights to take place in a dramatic arena, so that the experience feels epic and distinct from regular gameplay.
+
+#### Acceptance Criteria
+
+1. WHEN loading the boss arena THEN the System SHALL render a separate fighting stage environment
+2. WHEN in the arena THEN the System SHALL display health bars for both player and boss at the top
+3. WHEN in the arena THEN the System SHALL display a timer counting down from 99 seconds
+4. WHEN the timer reaches zero THEN the System SHALL determine winner by remaining health percentage
+5. WHEN rendering the arena THEN the System SHALL use dramatic lighting and cloud/cyber themed backgrounds
+6. WHEN a round ends THEN the System SHALL display round results before continuing
+
+### Requirement 12: Boss Character Design
+
+**User Story:** As a player, I want each boss to have unique visual design and attack patterns, so that each fight feels fresh and challenging.
+
+#### Acceptance Criteria
+
+1. WHEN fighting Scattered Spider THEN the System SHALL render a spider-themed hacker character
+2. WHEN fighting Heartbleed THEN the System SHALL render a bleeding heart-themed character
+3. WHEN fighting WannaCry THEN the System SHALL render a crying/ransomware-themed character
+4. WHEN fighting any boss THEN the System SHALL display the boss name and threat description
+5. WHEN a boss attacks THEN the System SHALL use unique attack animations for that boss type
+6. WHEN a boss is defeated THEN the System SHALL play a unique defeat animation
+
+### Requirement 13: Fighting Controls
+
+**User Story:** As a player, I want intuitive fighting game controls, so that I can execute attacks and combos effectively.
+
+#### Acceptance Criteria
+
+1. WHEN the player presses the punch button THEN the System SHALL execute a quick punch attack
+2. WHEN the player presses the kick button THEN the System SHALL execute a kick attack with longer range
+3. WHEN the player presses the block button THEN the System SHALL reduce incoming damage
+4. WHEN the player inputs a special move sequence THEN the System SHALL execute a powerful special attack
+5. WHEN the player is hit while attacking THEN the System SHALL interrupt the attack animation
+6. WHEN the player is blocking THEN the System SHALL prevent movement until block is released
+
+### Requirement 14: Boss AI Behavior
+
+**User Story:** As a player, I want bosses to fight intelligently, so that battles feel challenging and rewarding.
+
+#### Acceptance Criteria
+
+1. WHEN the boss is at range THEN the System SHALL have the boss approach the player
+2. WHEN the boss is in attack range THEN the System SHALL have the boss execute attack combos
+3. WHEN the player attacks THEN the System SHALL have the boss occasionally block or dodge
+4. WHEN the boss health is low THEN the System SHALL increase boss aggression
+5. WHEN the player is blocking THEN the System SHALL have the boss attempt grab attacks
+6. WHEN idle THEN the System SHALL have the boss perform idle animations and taunts
 
 ### Requirement 6: Genre-Specific Visual Themes
 

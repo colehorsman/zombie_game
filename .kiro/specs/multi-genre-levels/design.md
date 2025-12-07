@@ -169,31 +169,272 @@ class MazeChaseController(GenreController):
         """Determine if chomp (front) or damage (rear)."""
 ```
 
-### 6. FightingController
+### 6. BossBattleController
 
-Mortal Kombat-style 1v1 combat.
+Mortal Kombat-style 1v1 boss combat in a dedicated arena.
 
 ```python
-class FightingController(GenreController):
+class BossBattleController:
+    """Controls Mortal Kombat-style boss battles in a separate arena."""
+    
     def __init__(self, game_state: GameState):
-        super().__init__(game_state)
-        self.current_opponent_index = 0
-        self.combat_state = CombatState()
+        self.game_state = game_state
+        self.boss: Optional[CyberBoss] = None
+        self.player_fighter: Optional[PlayerFighter] = None
+        self.arena: Optional[FightingArena] = None
+        self.round_number: int = 1
+        self.max_rounds: int = 3
+        self.round_timer: float = 99.0
+        self.combat_state: CombatState = CombatState.VS_SCREEN
+        self.return_level: Optional[Level] = None  # Level to return to after battle
 
-    def initialize_level(self, account: AWSAccount, zombies: List[UnusedIdentity]) -> None:
-        """Set up arena, queue zombies as opponents."""
+    def start_boss_battle(self, boss_type: BossType, return_level: Level) -> None:
+        """Transition to boss arena and start the fight."""
+        self.return_level = return_level
+        self.boss = create_boss_fighter(boss_type)
+        self.player_fighter = PlayerFighter()
+        self.arena = FightingArena(boss_type)
+        self.combat_state = CombatState.VS_SCREEN
+        self.round_number = 1
 
     def update(self, delta_time: float) -> None:
-        """Update combat, opponent AI, health bars."""
+        """Update combat state machine."""
+        if self.combat_state == CombatState.VS_SCREEN:
+            self._update_vs_screen(delta_time)
+        elif self.combat_state == CombatState.FIGHTING:
+            self._update_fighting(delta_time)
+        elif self.combat_state == CombatState.ROUND_END:
+            self._update_round_end(delta_time)
+        elif self.combat_state == CombatState.VICTORY:
+            self._update_victory(delta_time)
+        elif self.combat_state == CombatState.DEFEAT:
+            self._update_defeat(delta_time)
 
     def handle_input(self, input_state: InputState) -> None:
-        """Handle punch, kick, special move, block controls."""
+        """Handle fighting game controls."""
+        if self.combat_state != CombatState.FIGHTING:
+            return
+        
+        # Movement
+        if input_state.left:
+            self.player_fighter.move_left()
+        elif input_state.right:
+            self.player_fighter.move_right()
+        
+        # Attacks
+        if input_state.punch:
+            self.player_fighter.punch()
+        elif input_state.kick:
+            self.player_fighter.kick()
+        elif input_state.special:
+            self.player_fighter.special_move()
+        
+        # Defense
+        if input_state.block:
+            self.player_fighter.block()
 
-    def check_completion(self) -> bool:
-        """Check if all opponents defeated."""
+    def end_battle(self, player_won: bool) -> None:
+        """End battle and return to level."""
+        if player_won:
+            self.combat_state = CombatState.VICTORY
+        else:
+            self.combat_state = CombatState.DEFEAT
+```
 
-    def next_opponent(self) -> Optional[Zombie]:
-        """Load next zombie opponent after defeat."""
+### 7. PlayerFighter
+
+Player character for fighting mode with attack moves.
+
+```python
+class PlayerFighter:
+    """Player character in Mortal Kombat-style combat."""
+    
+    def __init__(self):
+        self.position: Vector2 = Vector2(200, ARENA_GROUND_Y)
+        self.health: int = 100
+        self.max_health: int = 100
+        self.state: FighterState = FighterState.IDLE
+        self.facing: int = 1  # 1 = right, -1 = left
+        self.is_blocking: bool = False
+        self.attack_cooldown: float = 0.0
+        self.combo_count: int = 0
+        
+        # Attack properties
+        self.punch_damage: int = 5
+        self.kick_damage: int = 8
+        self.special_damage: int = 15
+        
+    def punch(self) -> Optional[Attack]:
+        """Execute quick punch attack."""
+        if self.attack_cooldown > 0 or self.is_blocking:
+            return None
+        self.state = FighterState.PUNCHING
+        self.attack_cooldown = 0.3
+        return Attack(damage=self.punch_damage, range=50, type="punch")
+    
+    def kick(self) -> Optional[Attack]:
+        """Execute kick attack with longer range."""
+        if self.attack_cooldown > 0 or self.is_blocking:
+            return None
+        self.state = FighterState.KICKING
+        self.attack_cooldown = 0.5
+        return Attack(damage=self.kick_damage, range=70, type="kick")
+    
+    def special_move(self) -> Optional[Attack]:
+        """Execute powerful special attack (Quarantine Blast)."""
+        if self.attack_cooldown > 0 or self.is_blocking:
+            return None
+        self.state = FighterState.SPECIAL
+        self.attack_cooldown = 1.0
+        return Attack(damage=self.special_damage, range=100, type="special")
+    
+    def block(self) -> None:
+        """Enter blocking stance."""
+        self.is_blocking = True
+        self.state = FighterState.BLOCKING
+    
+    def take_damage(self, damage: int) -> None:
+        """Take damage, reduced if blocking."""
+        if self.is_blocking:
+            damage = damage // 3  # Block reduces damage by 2/3
+        self.health = max(0, self.health - damage)
+        if not self.is_blocking:
+            self.state = FighterState.HIT
+```
+
+### 8. BossFighter
+
+Boss character with unique attack patterns per boss type.
+
+```python
+class BossFighter:
+    """Boss character in Mortal Kombat-style combat."""
+    
+    def __init__(self, boss_type: BossType):
+        self.boss_type = boss_type
+        self.position: Vector2 = Vector2(600, ARENA_GROUND_Y)
+        self.health: int = 150
+        self.max_health: int = 150
+        self.state: FighterState = FighterState.IDLE
+        self.facing: int = -1  # Facing left toward player
+        self.ai_state: BossAIState = BossAIState.APPROACH
+        self.attack_cooldown: float = 0.0
+        self.aggression: float = 0.5  # Increases as health decreases
+        
+        # Boss-specific attacks
+        self.attacks = self._get_boss_attacks(boss_type)
+    
+    def _get_boss_attacks(self, boss_type: BossType) -> List[BossAttack]:
+        """Get unique attacks for this boss type."""
+        if boss_type == BossType.SCATTERED_SPIDER:
+            return [
+                BossAttack("Web Strike", damage=10, range=80, cooldown=0.8),
+                BossAttack("Credential Theft", damage=15, range=60, cooldown=1.5),
+                BossAttack("Social Engineering", damage=20, range=100, cooldown=2.0),
+            ]
+        elif boss_type == BossType.HEARTBLEED:
+            return [
+                BossAttack("Memory Leak", damage=8, range=70, cooldown=0.6),
+                BossAttack("Data Bleed", damage=12, range=90, cooldown=1.2),
+                BossAttack("Buffer Overflow", damage=25, range=50, cooldown=2.5),
+            ]
+        elif boss_type == BossType.WANNACRY:
+            return [
+                BossAttack("Encrypt Strike", damage=10, range=60, cooldown=0.7),
+                BossAttack("Ransom Demand", damage=15, range=80, cooldown=1.3),
+                BossAttack("Worm Spread", damage=30, range=120, cooldown=3.0),
+            ]
+        # ... more boss types
+    
+    def update_ai(self, player_position: Vector2, delta_time: float) -> Optional[BossAttack]:
+        """Update boss AI and potentially execute attack."""
+        distance = abs(self.position.x - player_position.x)
+        
+        # Increase aggression as health decreases
+        self.aggression = 0.5 + (1 - self.health / self.max_health) * 0.5
+        
+        if self.ai_state == BossAIState.APPROACH:
+            if distance > 100:
+                self._move_toward_player(player_position)
+            else:
+                self.ai_state = BossAIState.ATTACK
+        
+        elif self.ai_state == BossAIState.ATTACK:
+            if self.attack_cooldown <= 0:
+                attack = self._choose_attack(distance)
+                if attack:
+                    self.attack_cooldown = attack.cooldown
+                    return attack
+            self.ai_state = BossAIState.RETREAT if random.random() < 0.3 else BossAIState.APPROACH
+        
+        return None
+```
+
+### 9. FightingArena
+
+The arena environment for boss battles.
+
+```python
+class FightingArena:
+    """Mortal Kombat-style fighting arena."""
+    
+    def __init__(self, boss_type: BossType):
+        self.boss_type = boss_type
+        self.width: int = 800
+        self.height: int = 600
+        self.ground_y: int = 450
+        self.background = self._load_arena_background(boss_type)
+        self.effects: List[VisualEffect] = []
+    
+    def _load_arena_background(self, boss_type: BossType) -> ArenaBackground:
+        """Load boss-specific arena background."""
+        # Each boss has a themed arena
+        arena_themes = {
+            BossType.SCATTERED_SPIDER: "cyber_web_arena",
+            BossType.HEARTBLEED: "bleeding_server_arena",
+            BossType.WANNACRY: "ransomware_arena",
+        }
+        return ArenaBackground(arena_themes.get(boss_type, "default_arena"))
+    
+    def render(self, surface: pygame.Surface) -> None:
+        """Render arena background and effects."""
+        self.background.render(surface)
+        for effect in self.effects:
+            effect.render(surface)
+    
+    def render_health_bars(self, surface: pygame.Surface, 
+                           player_health: int, player_max: int,
+                           boss_health: int, boss_max: int) -> None:
+        """Render health bars at top of screen."""
+        # Player health bar (left side)
+        player_pct = player_health / player_max
+        pygame.draw.rect(surface, (100, 100, 100), (50, 30, 300, 25))
+        pygame.draw.rect(surface, (0, 255, 0), (50, 30, 300 * player_pct, 25))
+        
+        # Boss health bar (right side)
+        boss_pct = boss_health / boss_max
+        pygame.draw.rect(surface, (100, 100, 100), (450, 30, 300, 25))
+        pygame.draw.rect(surface, (255, 0, 0), (450, 30, 300 * boss_pct, 25))
+    
+    def render_timer(self, surface: pygame.Surface, time_remaining: float) -> None:
+        """Render round timer in center."""
+        # Display seconds remaining
+        seconds = int(time_remaining)
+        # Render centered at top
+```
+
+### 10. CombatState Enum
+
+```python
+class CombatState(Enum):
+    """States for boss battle flow."""
+    VS_SCREEN = "vs_screen"      # "VS" screen with portraits
+    ROUND_START = "round_start"  # "ROUND 1" announcement
+    FIGHTING = "fighting"        # Active combat
+    ROUND_END = "round_end"      # Round result display
+    VICTORY = "victory"          # Player won
+    DEFEAT = "defeat"            # Player lost
+    RETURNING = "returning"      # Transitioning back to level
 ```
 
 ### 7. ZombieBehaviorAdapter
@@ -374,6 +615,38 @@ CONTROL_SCHEMES = {
 ### Property 12: Difficulty Scaling
 *For any* account, the level difficulty SHALL scale with the account's zombie count (more zombies = harder).
 **Validates: Requirements 8.4**
+
+### Property 13: Boss Arena Transition
+*For any* boss battle trigger, the system SHALL transition to a dedicated arena room and return to the original level after the battle ends.
+**Validates: Requirements 5.1, 5.8, 11.1**
+
+### Property 14: Boss Health Bar Display
+*For any* boss battle, health bars for both player and boss SHALL be displayed at the top of the screen and accurately reflect current health.
+**Validates: Requirements 11.2**
+
+### Property 15: Boss Timer Behavior
+*For any* boss battle round, the timer SHALL count down from 99 seconds, and reaching zero SHALL determine winner by remaining health percentage.
+**Validates: Requirements 11.3, 11.4**
+
+### Property 16: Attack Damage Application
+*For any* successful attack (not blocked), the target's health SHALL decrease by the attack's damage value.
+**Validates: Requirements 5.4, 5.5**
+
+### Property 17: Block Damage Reduction
+*For any* attack received while blocking, the damage SHALL be reduced (by at least 50%).
+**Validates: Requirements 13.3**
+
+### Property 18: Boss AI Aggression Scaling
+*For any* boss, aggression level SHALL increase as boss health decreases (low health = more aggressive).
+**Validates: Requirements 14.4**
+
+### Property 19: Victory Quarantine Trigger
+*For any* boss defeat, the system SHALL trigger the quarantine animation and API call for that boss's identity.
+**Validates: Requirements 5.6**
+
+### Property 20: Defeat Retry Option
+*For any* player defeat in boss battle, the system SHALL display a retry option allowing the player to attempt the fight again.
+**Validates: Requirements 5.7**
 
 ## Error Handling
 
