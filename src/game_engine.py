@@ -1844,6 +1844,13 @@ class GameEngine:
             self.active_genre_controller.update(delta_time, self.player)
             # IMPORTANT: Still update player invincibility timer in genre modes!
             self.player.update_invincibility(delta_time)
+
+            # Check for game over (player health depleted) in genre modes
+            if self.player.current_health <= 0:
+                logger.info(f"💀 GAME OVER (Genre Mode) - Health: {self.player.current_health}")
+                self._show_game_over_screen()
+                return
+
             # Check for level completion
             if self.active_genre_controller.check_completion():
                 logger.info("🎮 Genre level complete!")
@@ -3530,14 +3537,18 @@ class GameEngine:
                 keyboard_right = (
                     pygame.K_RIGHT in self.keys_pressed or pygame.K_d in self.keys_pressed
                 )
+                keyboard_up = pygame.K_UP in self.keys_pressed or pygame.K_w in self.keys_pressed
+                keyboard_down = (
+                    pygame.K_DOWN in self.keys_pressed or pygame.K_s in self.keys_pressed
+                )
                 keyboard_shoot = pygame.K_SPACE in self.keys_pressed
                 input_state = InputState(
                     left=keyboard_left,
                     right=keyboard_right,
-                    up=False,
-                    down=False,
+                    up=keyboard_up,
+                    down=keyboard_down,
                     shoot=keyboard_shoot,
-                    jump=False,
+                    jump=keyboard_up,  # Jump = up for platformer genres
                 )
                 self.active_genre_controller.handle_input(input_state, self.player)
                 return  # Skip default platformer input handling
