@@ -89,6 +89,9 @@ class MazeChaseController(GenreController):
         self.zombie_directions: dict = {}  # zombie -> Direction
         self.zombie_grid_positions: dict = {}  # zombie -> (x, y)
 
+        # Callback for zombie elimination (set by game engine)
+        self.on_zombie_eliminated_callback = None
+
         logger.info("MazeChaseController initialized")
 
     def initialize_level(
@@ -117,16 +120,15 @@ class MazeChaseController(GenreController):
         logger.info(f"Maze chase level initialized with {len(zombies)} zombies")
 
     def _generate_maze(self) -> None:
-        """Generate a simple maze layout."""
+        """Generate a more restrictive maze layout with clear corridors."""
         self.maze = []
 
         for y in range(self.maze_height):
             row = []
             for x in range(self.maze_width):
-                # Create cell with walls on edges
                 walls = set()
 
-                # Border walls
+                # Border walls (always)
                 if x == 0:
                     walls.add(Direction.LEFT)
                 if x == self.maze_width - 1:
@@ -136,17 +138,24 @@ class MazeChaseController(GenreController):
                 if y == self.maze_height - 1:
                     walls.add(Direction.DOWN)
 
-                # Add some internal walls for maze structure
-                # Simple pattern: walls every 4 cells with gaps
-                if x > 0 and x < self.maze_width - 1:
-                    if x % 4 == 0 and y % 2 == 0 and y > 0 and y < self.maze_height - 1:
-                        walls.add(Direction.UP)
-                        walls.add(Direction.DOWN)
-
-                if y > 0 and y < self.maze_height - 1:
-                    if y % 4 == 0 and x % 2 == 0 and x > 0 and x < self.maze_width - 1:
+                # Create a grid pattern with corridors every 3 cells
+                # Vertical walls
+                if x % 3 == 0 and x > 0 and x < self.maze_width - 1:
+                    # Add wall unless it's a corridor row
+                    if y % 4 != 2:
                         walls.add(Direction.LEFT)
+                if (x + 1) % 3 == 0 and x < self.maze_width - 1:
+                    if y % 4 != 2:
                         walls.add(Direction.RIGHT)
+
+                # Horizontal walls
+                if y % 4 == 0 and y > 0 and y < self.maze_height - 1:
+                    # Add wall unless it's a corridor column
+                    if x % 3 != 1:
+                        walls.add(Direction.UP)
+                if (y + 1) % 4 == 0 and y < self.maze_height - 1:
+                    if x % 3 != 1:
+                        walls.add(Direction.DOWN)
 
                 cell = MazeCell(x=x, y=y, walls=walls)
                 row.append(cell)
@@ -249,19 +258,28 @@ class MazeChaseController(GenreController):
             self.player_grid_pos = (grid_x, grid_y)
 
     def _update_zombie_movement(self, delta_time: float) -> None:
-        """Update zombie positions with ghost-like AI."""
+        """Update zombie positions - all zombies move constantly."""
         for zombie in self.zombies:
             if getattr(zombie, "is_quarantining", False):
                 continue
 
+            # Initialize direction if not set
             if zombie not in self.zombie_directions:
-                continue
+                self.zombie_directions[zombie] = random.choice(
+                    [Direction.UP, Direction.DOWN, Direction.LEFT, Direction.RIGHT]
+                )
+
+            # Initialize grid position if not set
+            if zombie not in self.zombie_grid_positions:
+                gx = int(zombie.position.x // self.CELL_SIZE)
+                gy = int(zombie.position.y // self.CELL_SIZE)
+                self.zombie_grid_positions[zombie] = (gx, gy)
 
             direction = self.zombie_directions[zombie]
-            gx, gy = self.zombie_grid_positions.get(zombie, (0, 0))
+            gx, gy = self.zombie_grid_positions[zombie]
 
-            # Occasionally change direction
-            if random.random() < 0.02:  # 2% chance per frame
+            # Higher chance to change direction for more erratic movement
+            if random.random() < 0.05:  # 5% chance per frame
                 possible = [
                     d
                     for d in [
@@ -276,7 +294,7 @@ class MazeChaseController(GenreController):
                     direction = random.choice(possible)
                     self.zombie_directions[zombie] = direction
 
-            # Move in current direction
+            # Always try to move
             if self._can_move(gx, gy, direction):
                 dx, dy = direction.value
                 speed = self.ZOMBIE_SPEED * delta_time
@@ -289,7 +307,7 @@ class MazeChaseController(GenreController):
                 new_gy = int(zombie.position.y // self.CELL_SIZE)
                 self.zombie_grid_positions[zombie] = (new_gx, new_gy)
             else:
-                # Hit wall, change direction
+                # Hit wall - immediately find new direction
                 possible = [
                     d
                     for d in [
@@ -298,13 +316,21 @@ class MazeChaseController(GenreController):
                         Direction.LEFT,
                         Direction.RIGHT,
                     ]
-                    if self._can_move(gx, gy, d) and d != direction
+                    if self._can_move(gx, gy, d)
                 ]
                 if possible:
                     self.zombie_directions[zombie] = random.choice(possible)
+                else:
+                    # Stuck - try to unstick by moving to center of cell
+                    zombie.position.x = gx * self.CELL_SIZE + self.CELL_SIZE // 2
+                    zombie.position.y = gy * self.CELL_SIZE + self.CELL_SIZE // 2
 
     def _check_collisions(self, player) -> None:
         """Check player-zombie collisions with direction-based outcome."""
+        # Skip if player is invincible (just took damage)
+        if getattr(player, "is_invincible", False):
+            return
+
         player_rect = player.get_bounds()
 
         for zombie in self.zombies:
@@ -323,9 +349,11 @@ class MazeChaseController(GenreController):
                     if zombie.health <= 0:
                         self.on_zombie_eliminated(zombie)
                 else:
-                    # Rear collision - damage player
+                    # Rear collision - damage player (1 heart = 1 damage)
                     if hasattr(player, "take_damage"):
-                        player.take_damage(10)
+                        player.take_damage(1)  # One heart of damage
+                    # Only process one collision per frame
+                    break
 
     def _is_front_collision(self, player, zombie) -> bool:
         """Determine if collision is from the front (player facing zombie)."""
@@ -342,6 +370,18 @@ class MazeChaseController(GenreController):
         dot = dx * to_zombie_x + dy * to_zombie_y
 
         return dot > 0  # Positive means zombie is in front
+
+    def on_zombie_eliminated(self, zombie) -> None:
+        """Called when a zombie is eliminated (chomped).
+
+        Args:
+            zombie: The eliminated zombie
+        """
+        logger.info(f"👻 Ghost chomped in maze chase: {zombie.identity_name}")
+
+        # Call the callback to trigger quarantine API
+        if self.on_zombie_eliminated_callback:
+            self.on_zombie_eliminated_callback(zombie)
 
     def handle_input(self, input_state: InputState, player) -> None:
         """Process maze chase input (4-directional, no shooting).
@@ -387,13 +427,13 @@ class MazeChaseController(GenreController):
                 # Draw cell background
                 pygame.draw.rect(
                     surface,
-                    (20, 20, 40),  # Dark blue background
+                    (15, 15, 35),  # Darker blue background
                     (px, py, self.CELL_SIZE, self.CELL_SIZE),
                 )
 
-                # Draw walls
-                wall_color = (0, 100, 200)  # Blue walls
-                wall_width = 3
+                # Draw walls (thicker, more visible)
+                wall_color = (0, 120, 220)  # Brighter blue walls
+                wall_width = 4
 
                 if Direction.UP in cell.walls:
                     pygame.draw.line(
@@ -428,77 +468,112 @@ class MazeChaseController(GenreController):
                         wall_width,
                     )
 
-        # Render zombies as ghosts
-        self._render_ghosts(surface, camera_offset)
+        # Render zombies
+        self._render_zombies(surface, camera_offset)
 
         # Render player as WALLy
         if player:
             self.render_player(surface, player, camera_offset)
+            # Render danger indicators for nearby zombies
+            self._render_danger_indicators(surface, player, camera_offset)
 
-    def _render_ghosts(self, surface, camera_offset: Vector2) -> None:
-        """Render zombies as Pac-Man style ghosts."""
-        ghost_colors = [
-            (255, 0, 0),  # Red (Blinky)
-            (255, 184, 255),  # Pink (Pinky)
-            (0, 255, 255),  # Cyan (Inky)
-            (255, 184, 82),  # Orange (Clyde)
+        # Render HUD instructions
+        self._render_hud(surface)
+
+    def _render_danger_indicators(self, surface, player, camera_offset: Vector2) -> None:
+        """Show red warning when zombies are behind player (will damage you)."""
+        px = int(player.position.x - camera_offset.x)
+        py = int(player.position.y - camera_offset.y)
+
+        for zombie in self.zombies:
+            if getattr(zombie, "is_quarantining", False):
+                continue
+
+            # Check distance
+            dist_x = zombie.position.x - player.position.x
+            dist_y = zombie.position.y - player.position.y
+            distance = (dist_x**2 + dist_y**2) ** 0.5
+
+            if distance < 80:  # Close enough to show indicator
+                zx = int(zombie.position.x - camera_offset.x)
+                zy = int(zombie.position.y - camera_offset.y)
+
+                is_front = self._is_front_collision(player, zombie)
+
+                if is_front and self.player_direction != Direction.NONE:
+                    # Green - safe to attack
+                    pygame.draw.circle(surface, (0, 255, 0), (zx, zy - 20), 5)
+                else:
+                    # Red - danger! Will take damage
+                    pygame.draw.circle(surface, (255, 0, 0), (zx, zy - 20), 6)
+                    pygame.draw.circle(surface, (255, 100, 100), (zx, zy - 20), 3)
+
+    def _render_hud(self, surface) -> None:
+        """Render instructions HUD."""
+        font = pygame.font.Font(None, 20)
+
+        # Instructions at top
+        instructions = [
+            "MAZE CHASE - Chomp the Zombies!",
+            "GREEN dot = Safe to attack (move toward zombie)",
+            "RED dot = DANGER! (zombie behind you - will hurt!)",
+            "Arrow Keys to move - Face zombies to eliminate them!",
         ]
 
-        for i, zombie in enumerate(self.zombies):
-            if getattr(zombie, "is_quarantining", False) or getattr(
-                zombie, "is_hidden", False
-            ):
+        y = 10
+        for text in instructions:
+            label = font.render(text, True, (200, 200, 255))
+            surface.blit(label, (10, y))
+            y += 18
+
+    def _render_zombies(self, surface, camera_offset: Vector2) -> None:
+        """Render zombies as actual zombie characters (green, shambling)."""
+        for zombie in self.zombies:
+            if getattr(zombie, "is_quarantining", False) or getattr(zombie, "is_hidden", False):
                 continue
 
             px = int(zombie.position.x - camera_offset.x)
             py = int(zombie.position.y - camera_offset.y)
 
-            # Ghost color (cycle through classic colors)
-            color = ghost_colors[i % len(ghost_colors)]
-
-            # Ghost body (rounded top, wavy bottom)
             size = 28
 
-            # Main body (semi-circle top)
-            pygame.draw.circle(surface, color, (px, py - 4), size // 2)
+            # Zombie body (green, decayed look)
+            body_color = (80, 140, 80)  # Zombie green
+            dark_green = (50, 100, 50)
 
-            # Body rectangle
-            pygame.draw.rect(surface, color, (px - size // 2, py - 4, size, size // 2))
+            # Body (oval shape)
+            pygame.draw.ellipse(
+                surface, body_color, (px - size // 2, py - size // 2, size, size + 4)
+            )
 
-            # Wavy bottom (3 bumps)
-            bump_width = size // 3
-            for j in range(3):
-                bump_x = px - size // 2 + j * bump_width + bump_width // 2
-                pygame.draw.circle(
-                    surface, color, (bump_x, py + size // 2 - 4), bump_width // 2
-                )
+            # Tattered clothes (darker patches)
+            pygame.draw.ellipse(surface, dark_green, (px - 6, py + 2, 12, 8))
 
-            # Eyes (white with blue pupils)
-            eye_y = py - 6
-            # Left eye
-            pygame.draw.circle(surface, (255, 255, 255), (px - 5, eye_y), 5)
-            pygame.draw.circle(surface, (0, 0, 200), (px - 4, eye_y + 1), 3)
-            # Right eye
-            pygame.draw.circle(surface, (255, 255, 255), (px + 5, eye_y), 5)
-            pygame.draw.circle(surface, (0, 0, 200), (px + 6, eye_y + 1), 3)
+            # Head
+            pygame.draw.circle(surface, body_color, (px, py - 8), 10)
+
+            # Zombie eyes (red, glowing)
+            pygame.draw.circle(surface, (200, 50, 50), (px - 4, py - 10), 3)
+            pygame.draw.circle(surface, (200, 50, 50), (px + 4, py - 10), 3)
+            # Eye glow
+            pygame.draw.circle(surface, (255, 100, 100), (px - 4, py - 10), 1)
+            pygame.draw.circle(surface, (255, 100, 100), (px + 4, py - 10), 1)
+
+            # Zombie mouth (jagged)
+            pygame.draw.line(surface, (40, 60, 40), (px - 4, py - 4), (px + 4, py - 4), 2)
+
+            # Arms reaching out
+            pygame.draw.line(surface, body_color, (px - 10, py - 2), (px - 16, py - 6), 3)
+            pygame.draw.line(surface, body_color, (px + 10, py - 2), (px + 16, py - 6), 3)
 
             # Name label
-            font = pygame.font.Font(None, 16)
-            name = (
-                zombie.identity_name[:10]
-                if hasattr(zombie, "identity_name")
-                else "Zombie"
-            )
-            label = font.render(name, True, (255, 255, 255))
-            surface.blit(label, (px - label.get_width() // 2, py + size // 2 + 5))
+            font = pygame.font.Font(None, 14)
+            name = zombie.identity_name[:8] if hasattr(zombie, "identity_name") else "Zombie"
+            label = font.render(name, True, (200, 255, 200))
+            surface.blit(label, (px - label.get_width() // 2, py + size // 2 + 2))
 
     def render_player(self, surface, player, camera_offset: Vector2) -> None:
-        """Render the player as WALLy robot (Sonrai's AI mascot).
-
-        WALLy is a cute white/gray robot with:
-        - Rounded rectangular body
-        - Purple screen face with dot eyes
-        - Two cylindrical ears on top
+        """Render the player as WALLy robot - simple cute robot design.
 
         Args:
             surface: Pygame surface to render on
@@ -508,75 +583,56 @@ class MazeChaseController(GenreController):
         px = int(player.position.x - camera_offset.x)
         py = int(player.position.y - camera_offset.y)
 
-        # WALLy size
-        size = 32
-        half = size // 2
+        size = 30
 
         # Colors
-        body_color = (220, 220, 230)  # Light gray/white
-        body_shadow = (180, 180, 190)
-        screen_color = (80, 50, 140)  # Purple screen
-        screen_highlight = (120, 80, 180)
-        eye_color = (255, 255, 255)  # White dots for eyes
+        body_color = (220, 220, 235)  # Light gray/white
+        screen_color = (100, 60, 160)  # Purple screen
+        eye_color = (255, 255, 255)
 
-        # === BODY (rounded rectangle) ===
-        body_rect = pygame.Rect(px - half + 2, py - half + 6, size - 4, size - 8)
-        pygame.draw.rect(surface, body_color, body_rect, border_radius=8)
+        # === BODY (simple rounded square) ===
+        pygame.draw.rect(
+            surface,
+            body_color,
+            (px - size // 2, py - size // 2, size, size),
+            border_radius=6,
+        )
 
-        # Body shadow/depth on right side
-        shadow_rect = pygame.Rect(px + half - 8, py - half + 8, 4, size - 12)
-        pygame.draw.rect(surface, body_shadow, shadow_rect, border_radius=2)
+        # === SCREEN/FACE (purple rectangle) ===
+        pygame.draw.rect(
+            surface,
+            screen_color,
+            (px - size // 2 + 4, py - size // 2 + 4, size - 8, size - 10),
+            border_radius=4,
+        )
 
-        # === SCREEN/FACE (purple rounded rectangle) ===
-        screen_rect = pygame.Rect(px - half + 6, py - half + 10, size - 12, size - 18)
-        pygame.draw.rect(surface, screen_color, screen_rect, border_radius=6)
+        # === TWO SIMPLE EYES ===
+        pygame.draw.circle(surface, eye_color, (px - 6, py - 4), 4)
+        pygame.draw.circle(surface, eye_color, (px + 6, py - 4), 4)
 
-        # Screen highlight
-        highlight_rect = pygame.Rect(px - half + 8, py - half + 12, size - 20, 4)
-        pygame.draw.rect(surface, screen_highlight, highlight_rect, border_radius=2)
+        # === ANTENNA (small, not ears) ===
+        pygame.draw.line(
+            surface, (180, 180, 190), (px, py - size // 2), (px, py - size // 2 - 6), 2
+        )
+        pygame.draw.circle(surface, (255, 200, 100), (px, py - size // 2 - 6), 3)
 
-        # === EYES (two sets of 3 dots each, like in the image) ===
-        # Left eye - 3 dots in triangle pattern
-        eye_y = py - 2
-        left_eye_x = px - 6
-        pygame.draw.circle(surface, eye_color, (left_eye_x - 3, eye_y - 2), 2)
-        pygame.draw.circle(surface, eye_color, (left_eye_x + 3, eye_y - 2), 2)
-        pygame.draw.circle(surface, eye_color, (left_eye_x, eye_y + 3), 2)
-
-        # Right eye - 3 dots in triangle pattern
-        right_eye_x = px + 6
-        pygame.draw.circle(surface, eye_color, (right_eye_x - 3, eye_y - 2), 2)
-        pygame.draw.circle(surface, eye_color, (right_eye_x + 3, eye_y - 2), 2)
-        pygame.draw.circle(surface, eye_color, (right_eye_x, eye_y + 3), 2)
-
-        # === EARS (two cylinders on top) ===
-        ear_color = (200, 200, 210)
-        ear_inner = (150, 150, 160)
-
-        # Left ear
-        pygame.draw.ellipse(surface, ear_color, (px - half + 6, py - half - 2, 10, 12))
-        pygame.draw.ellipse(surface, ear_inner, (px - half + 8, py - half, 6, 6))
-
-        # Right ear
-        pygame.draw.ellipse(surface, ear_color, (px + half - 16, py - half - 2, 10, 12))
-        pygame.draw.ellipse(surface, ear_inner, (px + half - 14, py - half, 6, 6))
-
-        # === DIRECTION INDICATOR (mouth/chomping) ===
+        # === DIRECTION INDICATOR (arrow showing attack direction) ===
         if self.player_direction != Direction.NONE:
             dx, dy = self.player_direction.value
-            # Draw a small "mouth" in the direction of movement
-            mouth_x = px + dx * 12
-            mouth_y = py + dy * 8 + 6
-            if self.player_direction in [Direction.LEFT, Direction.RIGHT]:
-                # Horizontal mouth
-                pygame.draw.arc(
-                    surface,
-                    (255, 200, 100),
-                    (mouth_x - 4, mouth_y - 4, 8, 8),
-                    0.5 if dx > 0 else 2.6,
-                    2.6 if dx > 0 else 5.7,
-                    2,
-                )
+            # Draw attack indicator (green arrow in movement direction)
+            arrow_x = px + dx * 20
+            arrow_y = py + dy * 20
+            pygame.draw.circle(surface, (100, 255, 100), (arrow_x, arrow_y), 6)
+            pygame.draw.circle(surface, (50, 200, 50), (arrow_x, arrow_y), 4)
+            # "CHOMP" text when moving
+            font = pygame.font.Font(None, 14)
+            chomp_label = font.render("CHOMP!", True, (100, 255, 100))
+            surface.blit(chomp_label, (px - chomp_label.get_width() // 2, py - size // 2 - 18))
+        else:
+            # Show "MOVE TO ATTACK" hint when stationary
+            font = pygame.font.Font(None, 12)
+            hint = font.render("Move to attack!", True, (200, 200, 100))
+            surface.blit(hint, (px - hint.get_width() // 2, py - size // 2 - 14))
 
 
 # Register the maze chase controller with the factory

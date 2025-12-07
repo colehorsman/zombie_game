@@ -180,9 +180,10 @@ class DialogueMessage:
         """Format text with placeholder values (e.g., zombie name, type)."""
         try:
             return self.text.format(**kwargs)
-        except (KeyError, ValueError):
+        except (KeyError, ValueError, IndexError):
             # KeyError: missing placeholder key
             # ValueError: malformed format string (e.g., single '{')
+            # IndexError: positional placeholder {} without matching args
             return self.text
 
 
