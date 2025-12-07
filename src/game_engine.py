@@ -306,14 +306,15 @@ class GameEngine:
         # Static genre mapping per level (Option B - no selection menu)
         from models import GenreType
 
+        # ALL levels now use Mortal Kombat-style boss battles!
         self.LEVEL_GENRE_MAP = {
-            1: GenreType.SPACE_SHOOTER,  # Sandbox - space invaders style
-            2: GenreType.SPACE_SHOOTER,  # Stage - space invaders style
-            3: GenreType.MAZE_CHASE,  # Automation - navigate pipelines
-            4: GenreType.PLATFORMER,  # WebApp - standard platformer
-            5: GenreType.RACING,  # Production Data - Mario Kart style racing!
-            6: GenreType.FIGHTING,  # Production - boss battle!
-            7: GenreType.PLATFORMER,  # Org - standard
+            1: GenreType.FIGHTING,  # Sandbox - Script Kiddie boss
+            2: GenreType.FIGHTING,  # Stage - Phishing Master boss
+            3: GenreType.FIGHTING,  # Automation - Bot Herder boss
+            4: GenreType.FIGHTING,  # WebApp - SQL Injector boss
+            5: GenreType.FIGHTING,  # Production Data - Heartbleed boss
+            6: GenreType.FIGHTING,  # Production - Scattered Spider boss
+            7: GenreType.FIGHTING,  # Org - WannaCry boss
         }
         self.active_genre_controller = None  # Active genre controller for current level
         self._pending_story_mode = False  # Track if story mode was selected
@@ -2816,28 +2817,25 @@ class GameEngine:
 
     def _init_boss_battle_controller(self) -> None:
         """Initialize Mortal Kombat-style boss battle controller."""
+        from boss_fighter import BOSS_DESIGNS, LEVEL_BOSS_MAP
         from models import GenreType
 
         self.active_genre_controller = BossBattleController(
             GenreType.FIGHTING, self.screen_width, self.screen_height
         )
 
-        # Get boss info from level
+        # Get boss info from level - each level has a unique boss!
         boss_type = "default"
-        boss_name = "CYBER BOSS"
+        boss_name = "CYBER THREAT"
         boss_srn = None
 
         if self.level_manager:
             level = self.level_manager.get_current_level()
             if level:
-                # Map level to boss type
-                boss_mapping = {
-                    6: ("scattered_spider", "SCATTERED SPIDER"),
-                    5: ("heartbleed", "HEARTBLEED"),
-                    7: ("wannacry", "WANNACRY"),
-                }
-                if level.level_number in boss_mapping:
-                    boss_type, boss_name = boss_mapping[level.level_number]
+                # Get boss type from level number
+                boss_type = LEVEL_BOSS_MAP.get(level.level_number, "default")
+                boss_design = BOSS_DESIGNS.get(boss_type, BOSS_DESIGNS["default"])
+                boss_name = boss_design.name
 
                 # Get boss SRN from first zombie in level (for quarantine)
                 if self.zombies:
