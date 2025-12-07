@@ -184,94 +184,94 @@
     - Return to lobby after boss battle victory
     - _Requirements: 5.8_
 
-- [ ] 9. Implement Cross-Genre Progress Tracking
-  - [ ] 9.1 Create ProgressTracker class in `src/progress_tracker.py`
+- [x] 9. Implement Cross-Genre Progress Tracking
+  - [x] 9.1 Create ProgressTracker class in `src/progress_tracker.py`
     - Track total_zombies_eliminated across all genres
     - Track levels_completed count
     - Track account_completion status
     - Track per-genre statistics
     - _Requirements: 9.1, 9.2, 9.3_
-  - [ ] 9.2 Write property test for cross-genre progress aggregation
+  - [x] 9.2 Write property test for cross-genre progress aggregation
     - **Property 10: Cross-Genre Progress Aggregation**
     - Test elimination in any genre increases total count
     - Test account completion is genre-independent
     - **Validates: Requirements 9.1, 9.2, 9.3**
-  - [ ] 9.3 Integrate ProgressTracker with SaveManager
+  - [x] 9.3 Integrate ProgressTracker with SaveManager
     - Add progress field to save schema
     - Update save() to include progress data
     - Update load() to restore progress
     - _Requirements: 9.4, 9.5_
-  - [ ] 9.4 Write property test for identity metadata preservation
+  - [x] 9.4 Write property test for identity metadata preservation
     - **Property 9: Identity Metadata Preservation**
     - Test zombie metadata preserved across genre adaptations
     - **Validates: Requirements 7.5**
 
-- [ ] 10. Implement Genre Unlock System
-  - [ ] 10.1 Add unlock checking to GenreManager
+- [x] 10. Implement Genre Unlock System
+  - [x] 10.1 Add unlock checking to GenreManager
     - Check conditions after each elimination/completion
     - Unlock Space Shooter after 1 level complete
     - Unlock Maze Chase after 50 zombies
     - Unlock Fighting after 3 levels complete
     - _Requirements: 10.1, 10.2, 10.3, 10.4_
-  - [ ] 10.2 Write property test for genre unlock conditions
+  - [x] 10.2 Write property test for genre unlock conditions
     - **Property 11: Genre Unlock Conditions**
     - Test each unlock fires at exact threshold
     - **Validates: Requirements 10.1, 10.2, 10.3, 10.4**
-  - [ ] 10.3 Add unlock notification UI
+  - [x] 10.3 Add unlock notification UI
     - Display celebratory notification on unlock
     - Show new genre name and preview
     - _Requirements: 10.5_
 
-- [ ] 11. Checkpoint - Ensure all tests pass
+- [x] 11. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 12. Implement Genre Selection UI
-  - [ ] 12.1 Create GenreSelector component in `src/genre_selector.py`
+- [x] 12. Implement Genre Selection UI
+  - [x] 12.1 Create GenreSelector component in `src/genre_selector.py`
     - Display available genres with preview icons
     - Show locked genres as grayed out
     - Handle selection input
     - _Requirements: 1.1, 1.2_
-  - [ ] 12.2 Integrate genre selector with lobby door interaction
+  - [x] 12.2 Integrate genre selector with lobby door interaction
     - Show genre selector when door selected
     - Load selected genre's controller
     - Remember preference for account
     - _Requirements: 1.3, 1.5_
-  - [ ] 12.3 Add genre-specific loading screens
+  - [x] 12.3 Add genre-specific loading screens
     - Create loading screen for each genre
     - Show genre name and controls hint
     - _Requirements: 6.5_
 
-- [ ] 13. Implement Difficulty Scaling
-  - [ ] 13.1 Add difficulty calculation based on zombie count
+- [x] 13. Implement Difficulty Scaling
+  - [x] 13.1 Add difficulty calculation based on zombie count
     - Scale enemy speed with zombie count
     - Scale spawn rate with zombie count
     - Adjust AI aggressiveness
     - _Requirements: 8.4_
-  - [ ] 13.2 Write property test for difficulty scaling
+  - [x] 13.2 Write property test for difficulty scaling
     - **Property 12: Difficulty Scaling**
     - Test difficulty increases with zombie count
     - **Validates: Requirements 8.4**
-  - [ ] 13.3 Add account theming
+  - [x] 13.3 Add account theming
     - Display account name and purpose
     - Apply visual intensity based on account type
     - _Requirements: 8.3_
 
-- [ ] 14. Create Genre-Specific Visual Assets
-  - [ ] 14.1 Create Space Shooter assets
+- [x] 14. Create Genre-Specific Visual Assets
+  - [x] 14.1 Create Space Shooter assets
     - AWS-themed spacecraft sprite
     - Starfield background with cloud elements
     - Formation pattern indicators
     - _Requirements: 6.1_
-  - [ ] 14.2 Create Maze Chase assets
+  - [x] 14.2 Create Maze Chase assets
     - Wally AI agent sprite
     - Maze wall tiles with cloud motifs
     - Ghost-style zombie sprites
     - _Requirements: 6.2_
-  - [ ] 14.3 Create Fighting assets
+  - [x] 14.3 Create Fighting assets
     - Arena background with CloudWatch theme
     - Health bars with risk score styling
     - Combat effect sprites
     - _Requirements: 6.3_
 
-- [ ] 15. Final Checkpoint - Ensure all tests pass
+- [x] 15. Final Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
