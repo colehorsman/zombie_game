@@ -56,14 +56,115 @@ class GenreType(Enum):
     **Feature: multi-genre-levels**
     """
 
-    SHOOTER = "shooter"  # Classic zombie shooter (default)
-    PLATFORMER = "platformer"  # Mario-style jumping and collecting
-    RACING = "racing"  # Outrun hackers to protect services
-    PUZZLE = "puzzle"  # Configure IAM policies correctly
-    TOWER_DEFENSE = "tower_defense"  # Defend against attack waves
-    STEALTH = "stealth"  # Sneak past security to audit identities
-    SURVIVAL = "survival"  # Survive waves while managing resources
-    STRATEGY = "strategy"  # Manage entire organization's security
+    PLATFORMER = "platformer"  # Mario-style side-scrolling (default)
+    SPACE_SHOOTER = "space_shooter"  # Asteroids/Galaga vertical shooter
+    MAZE_CHASE = "maze_chase"  # Pac-Man style with Wally
+    FIGHTING = "fighting"  # Mortal Kombat style boss battles
+
+
+class CombatState(Enum):
+    """States for Mortal Kombat-style boss battle flow."""
+
+    VS_SCREEN = "vs_screen"  # "VS" screen with portraits
+    ROUND_START = "round_start"  # "ROUND 1" announcement
+    FIGHTING = "fighting"  # Active combat
+    ROUND_END = "round_end"  # Round result display
+    VICTORY = "victory"  # Player won
+    DEFEAT = "defeat"  # Player lost
+    RETURNING = "returning"  # Transitioning back to level
+
+
+class FighterState(Enum):
+    """States for fighter characters in boss battles."""
+
+    IDLE = "idle"
+    WALKING = "walking"
+    PUNCHING = "punching"
+    KICKING = "kicking"
+    SPECIAL = "special"
+    BLOCKING = "blocking"
+    HIT = "hit"
+    KO = "ko"
+
+
+class BossAIState(Enum):
+    """AI states for boss fighters."""
+
+    APPROACH = "approach"  # Moving toward player
+    ATTACK = "attack"  # Executing attack
+    RETREAT = "retreat"  # Backing away
+    BLOCK = "block"  # Blocking player attacks
+    TAUNT = "taunt"  # Idle taunt animation
+
+
+@dataclass
+class UnlockCondition:
+    """Condition for unlocking a genre."""
+
+    type: str  # "default", "levels_completed", "zombies_eliminated"
+    value: int  # Threshold value (0 for default)
+
+
+@dataclass
+class ControlScheme:
+    """Control scheme for a genre."""
+
+    movement: List[str]  # Movement directions available
+    actions: List[str]  # Action buttons available
+    description: str  # Human-readable description
+
+
+@dataclass
+class Attack:
+    """An attack in fighting mode."""
+
+    damage: int
+    range: int
+    type: str  # "punch", "kick", "special"
+    cooldown: float = 0.3
+
+
+@dataclass
+class BossAttack:
+    """A boss-specific attack."""
+
+    name: str
+    damage: int
+    range: int
+    cooldown: float
+
+
+# Genre unlock conditions
+GENRE_UNLOCK_CONDITIONS: Dict[GenreType, UnlockCondition] = {
+    GenreType.PLATFORMER: UnlockCondition(type="default", value=0),
+    GenreType.SPACE_SHOOTER: UnlockCondition(type="levels_completed", value=1),
+    GenreType.MAZE_CHASE: UnlockCondition(type="zombies_eliminated", value=50),
+    GenreType.FIGHTING: UnlockCondition(type="levels_completed", value=3),
+}
+
+# Control schemes per genre
+CONTROL_SCHEMES: Dict[GenreType, ControlScheme] = {
+    GenreType.PLATFORMER: ControlScheme(
+        movement=["left", "right"],
+        actions=["jump", "shoot"],
+        description="Move, Jump, Shoot",
+    ),
+    GenreType.SPACE_SHOOTER: ControlScheme(
+        movement=["left", "right"],
+        actions=["shoot"],
+        description="Move, Shoot Up",
+    ),
+    GenreType.MAZE_CHASE: ControlScheme(
+        movement=["up", "down", "left", "right"],
+        actions=[],
+        description="Move to Chomp",
+    ),
+    GenreType.FIGHTING: ControlScheme(
+        movement=["left", "right"],
+        actions=["punch", "kick", "special", "block"],
+        description="Move, Punch, Kick, Special, Block",
+    ),
+}
 
 
 @dataclass
@@ -145,7 +246,9 @@ class UnusedIdentity:
     identity_type: str  # IAM user, role, service account
     last_used: Optional[datetime]
     risk_score: float
-    scope: str = None  # Full scope path (e.g., "aws/r-ui1v/ou-ui1v-abc123/577945324761")
+    scope: str = (
+        None  # Full scope path (e.g., "aws/r-ui1v/ou-ui1v-abc123/577945324761")
+    )
     account: str = None  # AWS account number
 
 
@@ -164,15 +267,23 @@ class GameState:
     congratulations_message: Optional[str] = None
     powerup_message: Optional[str] = None  # Power-up collection message
     powerup_message_timer: float = 0.0  # Time remaining to show power-up message
-    resource_message: Optional[str] = None  # Resource interaction message (S3, RDS, etc.)
+    resource_message: Optional[str] = (
+        None  # Resource interaction message (S3, RDS, etc.)
+    )
     resource_message_timer: float = 0.0  # Time remaining to show resource message
     play_time: float = 0.0
-    pending_elimination: Optional["Zombie"] = None  # Zombie waiting for elimination message
+    pending_elimination: Optional["Zombie"] = (
+        None  # Zombie waiting for elimination message
+    )
     elimination_delay: float = 0.0  # Countdown timer before showing message
     current_level: int = 1  # Current level number (1-7)
     environment_type: str = "sandbox"  # Environment type (sandbox, production, etc)
-    completed_levels: set = field(default_factory=set)  # Set of completed level account IDs
-    current_level_account_id: Optional[str] = None  # Account ID of current level being played
+    completed_levels: set = field(
+        default_factory=set
+    )  # Set of completed level account IDs
+    current_level_account_id: Optional[str] = (
+        None  # Account ID of current level being played
+    )
 
     # Service Protection Quest fields
     quest_message: Optional[str] = None  # Current quest message
@@ -182,24 +293,34 @@ class GameState:
     services_protected: int = 0  # Count of protected services
 
     # JIT Access Quest fields
-    jit_quest: Optional["JitQuestState"] = None  # JIT quest state (only in production accounts)
+    jit_quest: Optional["JitQuestState"] = (
+        None  # JIT quest state (only in production accounts)
+    )
 
     # Arcade Mode fields
-    arcade_mode: Optional["ArcadeModeState"] = None  # Arcade mode state (60-second challenge)
+    arcade_mode: Optional["ArcadeModeState"] = (
+        None  # Arcade mode state (60-second challenge)
+    )
 
     # Photo Booth fields
     photo_booth_consent_active: bool = False  # True when showing consent prompt
     photo_booth_path: Optional[str] = None  # Path to generated photo booth image
-    photo_booth_summary_active: bool = False  # True when showing photo booth summary screen
+    photo_booth_summary_active: bool = (
+        False  # True when showing photo booth summary screen
+    )
 
     # Educational Dialogue fields (Story Mode)
     active_dialogue: Optional["DialogueSequence"] = None  # Current educational dialogue
-    dialogue_format_kwargs: dict = field(default_factory=dict)  # Format args for dialogue text
+    dialogue_format_kwargs: dict = field(
+        default_factory=dict
+    )  # Format args for dialogue text
     is_story_mode: bool = False  # Whether playing in Story Mode (educational) vs Arcade
 
     # Multi-genre system
-    current_genre: GenreType = GenreType.SHOOTER  # Default to classic shooter
-    genre_preferences: Dict[str, GenreType] = field(default_factory=dict)  # Per-level genre choices
+    current_genre: GenreType = GenreType.PLATFORMER  # Default to platformer
+    genre_preferences: Dict[str, GenreType] = field(
+        default_factory=dict
+    )  # Per-level genre choices
 
     @property
     def is_dialogue_active(self) -> bool:
@@ -301,7 +422,9 @@ class QuarantineReport:
 class EducationalProgress:
     """Tracks which educational content the player has seen in Story Mode."""
 
-    completed_triggers: set = field(default_factory=set)  # Set of TriggerType values seen
+    completed_triggers: set = field(
+        default_factory=set
+    )  # Set of TriggerType values seen
     zombies_eliminated: int = 0  # Total zombies eliminated in Story Mode
     first_role_seen: bool = False  # Has player encountered a Role-type zombie
     first_user_seen: bool = False  # Has player encountered a User-type zombie

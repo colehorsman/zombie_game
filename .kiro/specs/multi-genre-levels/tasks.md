@@ -2,50 +2,50 @@
 
 ## Multi-Genre Level System
 
-- [ ] 1. Create Genre System Foundation
-  - [ ] 1.1 Create Genre enum and data models in `src/models.py`
+- [x] 1. Create Genre System Foundation
+  - [x] 1.1 Create Genre enum and data models in `src/models.py`
     - Define Genre enum (PLATFORMER, SPACE_SHOOTER, MAZE_CHASE, FIGHTING)
     - Define UnlockCondition dataclass with type and value
     - Define ControlScheme dataclass with movement and actions
     - Define GENRE_UNLOCK_CONDITIONS mapping
     - _Requirements: 10.1, 10.2, 10.3, 10.4_
-  - [ ] 1.2 Create GenreManager class in `src/genre_manager.py`
+  - [x] 1.2 Create GenreManager class in `src/genre_manager.py`
     - Implement get_available_genres() returning unlocked genres
     - Implement select_genre() to set account preference
     - Implement get_genre_for_account() with Platformer default
     - Implement check_unlock_conditions() for progression
     - _Requirements: 1.1, 1.2, 1.3, 1.4_
-  - [ ] 1.3 Write property test for genre preference persistence
+  - [x] 1.3 Write property test for genre preference persistence
     - **Property 2: Genre Preference Persistence**
     - Test that save/load preserves genre preference per account
     - **Validates: Requirements 1.4, 9.5**
 
-- [ ] 2. Create Abstract GenreController
-  - [ ] 2.1 Create GenreController abstract base class in `src/genre_controller.py`
+- [x] 2. Create Abstract GenreController
+  - [x] 2.1 Create GenreController abstract base class in `src/genre_controller.py`
     - Define abstract initialize_level() method
     - Define abstract update() method
     - Define abstract handle_input() method
     - Define abstract check_completion() method
     - Define abstract get_player_controls() method
     - _Requirements: 2.1, 3.1, 4.1, 5.1_
-  - [ ] 2.2 Write property test for genre selection triggers correct template
+  - [x] 2.2 Write property test for genre selection triggers correct template
     - **Property 1: Genre Selection Triggers Correct Template**
     - Test that each genre loads its corresponding layout type
     - **Validates: Requirements 1.3, 2.1, 3.1, 4.1, 5.1**
 
-- [ ] 3. Refactor Existing Platformer to GenreController
-  - [ ] 3.1 Create PlatformerController extending GenreController
+- [x] 3. Refactor Existing Platformer to GenreController
+  - [x] 3.1 Create PlatformerController extending GenreController
     - Extract existing side-scrolling logic from game_engine.py
     - Implement initialize_level() for platform layout
     - Implement update() for platformer physics
     - Implement handle_input() for jump, run, shoot
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
-  - [ ] 3.2 Create PatrolBehavior for platformer zombies
+  - [x] 3.2 Create PatrolBehavior for platformer zombies
     - Implement platform patrol movement
     - Implement horizontal chase when player nearby
     - _Requirements: 7.1_
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [-] 4. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 - [ ] 5. Implement Space Shooter Genre
