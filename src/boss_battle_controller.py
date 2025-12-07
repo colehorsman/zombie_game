@@ -320,12 +320,13 @@ class BossBattleController(GenreController):
         """Check if boss battle is complete."""
         return self.is_complete
 
-    def render(self, surface, camera_offset: Vector2) -> None:
+    def render(self, surface, camera_offset: Vector2, player=None) -> None:
         """Render the boss battle.
 
         Args:
             surface: Surface to render on
             camera_offset: Camera offset (ignored)
+            player: Player entity (ignored, we use player_fighter)
         """
         if not self.is_initialized or not self.arena:
             return

@@ -16,6 +16,7 @@ from arcade_results_controller import (
 )
 from aws_iam_client import AWSIAMClient
 from boss import Boss  # DEPRECATED - kept for backwards compatibility
+from boss_battle_controller import BossBattleController
 from boss_dialogue_controller import BossDialogueController
 from cheat_code_controller import CheatCodeAction, CheatCodeController
 from collision import SpatialGrid, check_collisions_with_spatial_grid
@@ -2672,11 +2673,11 @@ class GameEngine:
         logger.info(f"🎮 Level {level_num} genre: {genre.value}")
 
         if genre == GenreType.FIGHTING:
-            # Boss battle mode - special handling
-            logger.info(f"🥊 Entering BOSS BATTLE mode!")
+            # Boss battle mode - Mortal Kombat style!
+            logger.info(f"🥊 Entering BOSS BATTLE mode (Mortal Kombat style)!")
             self._enter_level(door)
-            # Spawn boss immediately for fighting mode
-            self._spawn_boss()
+            # Initialize the boss battle controller
+            self._init_boss_battle_controller()
         elif genre == GenreType.SPACE_SHOOTER:
             # Space shooter mode
             logger.info(f"🚀 Entering SPACE SHOOTER mode!")
@@ -2812,6 +2813,90 @@ class GameEngine:
 
         # Use the standard quarantine method
         self._quarantine_zombie(zombie)
+
+    def _init_boss_battle_controller(self) -> None:
+        """Initialize Mortal Kombat-style boss battle controller."""
+        from models import GenreType
+
+        self.active_genre_controller = BossBattleController(
+            GenreType.FIGHTING, self.screen_width, self.screen_height
+        )
+
+        # Get boss info from level
+        boss_type = "default"
+        boss_name = "CYBER BOSS"
+        boss_srn = None
+
+        if self.level_manager:
+            level = self.level_manager.get_current_level()
+            if level:
+                # Map level to boss type
+                boss_mapping = {
+                    6: ("scattered_spider", "SCATTERED SPIDER"),
+                    5: ("heartbleed", "HEARTBLEED"),
+                    7: ("wannacry", "WANNACRY"),
+                }
+                if level.level_number in boss_mapping:
+                    boss_type, boss_name = boss_mapping[level.level_number]
+
+                # Get boss SRN from first zombie in level (for quarantine)
+                if self.zombies:
+                    boss_srn = (
+                        self.zombies[0].srn if hasattr(self.zombies[0], "srn") else None
+                    )
+
+        # Set callbacks
+        self.active_genre_controller.on_victory = self._on_boss_victory
+        self.active_genre_controller.on_defeat = self._on_boss_defeat
+
+        # Start the boss battle
+        self.active_genre_controller.start_boss_battle(
+            boss_type=boss_type,
+            boss_name=boss_name,
+            boss_srn=boss_srn,
+            return_level_id=self.game_state.current_level_account_id,
+        )
+
+        # Set game state to boss battle
+        self.game_state.status = GameStatus.BOSS_BATTLE
+        self.boss_spawned = True
+
+        logger.info(f"🥊 Boss battle initialized: {boss_name} ({boss_type})")
+
+    def _on_boss_victory(self, boss_srn: str) -> None:
+        """Handle boss defeat - quarantine the boss identity."""
+        logger.info(f"🏆 Boss defeated! Quarantining {boss_srn}")
+
+        # Trigger quarantine API call if we have an SRN
+        if boss_srn:
+            # Find the zombie with this SRN and quarantine it
+            for zombie in self.zombies:
+                if hasattr(zombie, "srn") and zombie.srn == boss_srn:
+                    zombie.mark_for_quarantine()
+                    self._quarantine_zombie(zombie)
+                    break
+
+        # Show victory message
+        self.game_state.congratulations_message = (
+            "🏆 VICTORY!\n\n"
+            "You have defeated the cyber threat!\n"
+            "The identity has been quarantined.\n\n"
+            "Press ENTER to continue..."
+        )
+        self.game_state.status = GameStatus.PAUSED
+
+    def _on_boss_defeat(self) -> None:
+        """Handle player defeat in boss battle."""
+        logger.info("💀 Player defeated by boss!")
+
+        # Show defeat message with retry option
+        self.game_state.congratulations_message = (
+            "💀 DEFEATED!\n\n"
+            "The cyber threat has overwhelmed you!\n\n"
+            "Press ENTER to retry\n"
+            "Press L to return to lobby"
+        )
+        self.game_state.status = GameStatus.PAUSED
 
     def _handle_level_entry_cancel(self) -> None:
         """Handle level entry menu cancellation (return to lobby)."""
@@ -3816,6 +3901,11 @@ class GameEngine:
                     or pygame.K_s in self.keys_pressed
                 )
                 keyboard_shoot = pygame.K_SPACE in self.keys_pressed
+                # Fighting controls: Z=punch, X=kick, C=special, V=block
+                keyboard_punch = pygame.K_z in self.keys_pressed
+                keyboard_kick = pygame.K_x in self.keys_pressed
+                keyboard_special = pygame.K_c in self.keys_pressed
+                keyboard_block = pygame.K_v in self.keys_pressed
                 input_state = InputState(
                     left=keyboard_left,
                     right=keyboard_right,
@@ -3823,6 +3913,10 @@ class GameEngine:
                     down=keyboard_down,
                     shoot=keyboard_shoot,
                     jump=keyboard_up,  # Jump = up for platformer genres
+                    punch=keyboard_punch,
+                    kick=keyboard_kick,
+                    special=keyboard_special,
+                    block=keyboard_block,
                 )
                 self.active_genre_controller.handle_input(input_state, self.player)
                 return  # Skip default platformer input handling
