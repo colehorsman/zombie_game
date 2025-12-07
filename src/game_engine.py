@@ -4618,13 +4618,12 @@ class GameEngine:
                 "damage_multiplier", 1.0
             )
 
-            # Restore player position
-            position_data = player_data.get("position", {})
-            if position_data:
-                self.player.position = Vector2(
-                    position_data.get("x", self.landing_zone.x),
-                    position_data.get("y", self.landing_zone.y),
-                )
+            # Always spawn at landing zone in lobby - don't restore saved position
+            # This prevents spawning inside room boundaries from old saves
+            self.player.position = Vector2(self.landing_zone.x, self.landing_zone.y)
+            logger.info(
+                f"🏛️ Player spawned at landing zone ({self.landing_zone.x}, {self.landing_zone.y})"
+            )
 
             # Restore game state
             game_state_data = save_data.get("game_state", {})
