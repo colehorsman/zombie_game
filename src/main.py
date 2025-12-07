@@ -497,59 +497,79 @@ def main():
         # Get game map (if using map mode)
         game_map = game_engine.get_game_map()
 
-        # Render background (map or grid)
-        renderer.render_background(game_map)
+        # Check if we're in a special genre mode that handles its own rendering
+        from models import GenreType
 
-        # Render flashing lightning (platformer mode only)
         game_state = game_engine.get_game_state()
-        renderer.render_lightning(game_map, delta_time, game_state.play_time)
+        is_space_shooter = (
+            game_state.current_genre == GenreType.SPACE_SHOOTER
+            and game_engine.active_genre_controller
+        )
+        is_racing = (
+            game_state.current_genre == GenreType.RACING and game_engine.active_genre_controller
+        )
+        is_special_genre = is_space_shooter or is_racing
 
-        # Render doors (if using map mode)
-        if game_map and hasattr(game_map, "doors"):
-            renderer.render_doors(game_map.doors, game_map)
+        # Render background (map or grid) - skip for special genres that render their own
+        if is_special_genre:
+            # Special genres handle their own background rendering
+            pass  # Background rendered by controller
+        else:
+            renderer.render_background(game_map)
 
-        # Render collectibles (if using map mode)
-        if game_map and hasattr(game_map, "collectibles"):
-            renderer.render_collectibles(game_map.collectibles, game_map)
+            # Render flashing lightning (platformer mode only)
+            renderer.render_lightning(game_map, delta_time, game_state.play_time)
 
-        # Render powerups (AWS-themed power-ups)
-        powerups = game_engine.get_powerups()
-        if powerups and game_map:
-            renderer.render_powerups(powerups, game_map)
+            # Render doors (if using map mode)
+            if game_map and hasattr(game_map, "doors"):
+                renderer.render_doors(game_map.doors, game_map)
+
+            # Render collectibles (if using map mode)
+            if game_map and hasattr(game_map, "collectibles"):
+                renderer.render_collectibles(game_map.collectibles, game_map)
+
+            # Render powerups (AWS-themed power-ups)
+            powerups = game_engine.get_powerups()
+            if powerups and game_map:
+                renderer.render_powerups(powerups, game_map)
 
         # Update renderer scroll (classic mode only)
         if not game_map:
             renderer.update_scroll(game_engine.get_scroll_offset() - renderer.scroll_offset)
 
-        # Render game entities
+        # Render game entities (skip in special genre modes - they handle their own rendering)
         zombies = game_engine.get_zombies()
-        renderer.render_zombies(zombies, game_map)
-        renderer.render_zombie_labels(zombies, game_map)
+        if not is_special_genre:
+            renderer.render_zombies(zombies, game_map)
+            renderer.render_zombie_labels(zombies, game_map)
 
-        # Render health bars for zombies (skip hidden zombies)
-        for zombie in zombies:
-            if not zombie.is_hidden:
-                renderer.render_health_bar(zombie, game_map)
+            # Render health bars for zombies (skip hidden zombies)
+            for zombie in zombies:
+                if not zombie.is_hidden:
+                    renderer.render_health_bar(zombie, game_map)
 
-        # Render 3rd parties
-        third_parties = game_engine.get_third_parties()
-        renderer.render_third_parties(third_parties, game_map)
-        renderer.render_third_party_labels(third_parties, game_map)
+        # Render 3rd parties (skip in special genre modes)
+        if not is_special_genre:
+            third_parties = game_engine.get_third_parties()
+            renderer.render_third_parties(third_parties, game_map)
+            renderer.render_third_party_labels(third_parties, game_map)
 
-        # Render health bars for 3rd parties
-        for third_party in third_parties:
-            renderer.render_health_bar(third_party, game_map)
+            # Render health bars for 3rd parties
+            for third_party in third_parties:
+                renderer.render_health_bar(third_party, game_map)
 
-        # Get game state for shield animation
-        game_state = game_engine.get_game_state()
+            # Render purple shields for protected 3rd parties
+            for third_party in third_parties:
+                if third_party.is_protected:
+                    renderer.render_shield(third_party, game_map, game_state.play_time)
 
-        # Render purple shields for protected 3rd parties
-        for third_party in third_parties:
-            if third_party.is_protected:
-                renderer.render_shield(third_party, game_map, game_state.play_time)
+            renderer.render_projectiles(game_engine.get_projectiles(), game_map)
 
-        renderer.render_projectiles(game_engine.get_projectiles(), game_map)
-        renderer.render_player(game_engine.get_player(), game_map)
+            # Render normal player
+            renderer.render_player(game_engine.get_player(), game_map)
+        else:
+            # Special genre mode - the controller handles ALL rendering
+            game_engine.active_genre_controller.render(renderer.screen, Vector2(0, 0))
 
         # Render boss if in boss battle
         boss = game_engine.get_boss()

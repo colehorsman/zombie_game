@@ -60,6 +60,7 @@ class GenreType(Enum):
     SPACE_SHOOTER = "space_shooter"  # Asteroids/Galaga vertical shooter
     MAZE_CHASE = "maze_chase"  # Pac-Man style with Wally
     FIGHTING = "fighting"  # Mortal Kombat style boss battles
+    RACING = "racing"  # Mario Kart style 8-bit racing
 
 
 class CombatState(Enum):
