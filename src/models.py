@@ -246,9 +246,7 @@ class UnusedIdentity:
     identity_type: str  # IAM user, role, service account
     last_used: Optional[datetime]
     risk_score: float
-    scope: str = (
-        None  # Full scope path (e.g., "aws/r-ui1v/ou-ui1v-abc123/577945324761")
-    )
+    scope: str = None  # Full scope path (e.g., "aws/r-ui1v/ou-ui1v-abc123/577945324761")
     account: str = None  # AWS account number
 
 
@@ -267,23 +265,15 @@ class GameState:
     congratulations_message: Optional[str] = None
     powerup_message: Optional[str] = None  # Power-up collection message
     powerup_message_timer: float = 0.0  # Time remaining to show power-up message
-    resource_message: Optional[str] = (
-        None  # Resource interaction message (S3, RDS, etc.)
-    )
+    resource_message: Optional[str] = None  # Resource interaction message (S3, RDS, etc.)
     resource_message_timer: float = 0.0  # Time remaining to show resource message
     play_time: float = 0.0
-    pending_elimination: Optional["Zombie"] = (
-        None  # Zombie waiting for elimination message
-    )
+    pending_elimination: Optional["Zombie"] = None  # Zombie waiting for elimination message
     elimination_delay: float = 0.0  # Countdown timer before showing message
     current_level: int = 1  # Current level number (1-7)
     environment_type: str = "sandbox"  # Environment type (sandbox, production, etc)
-    completed_levels: set = field(
-        default_factory=set
-    )  # Set of completed level account IDs
-    current_level_account_id: Optional[str] = (
-        None  # Account ID of current level being played
-    )
+    completed_levels: set = field(default_factory=set)  # Set of completed level account IDs
+    current_level_account_id: Optional[str] = None  # Account ID of current level being played
 
     # Service Protection Quest fields
     quest_message: Optional[str] = None  # Current quest message
@@ -293,34 +283,29 @@ class GameState:
     services_protected: int = 0  # Count of protected services
 
     # JIT Access Quest fields
-    jit_quest: Optional["JitQuestState"] = (
-        None  # JIT quest state (only in production accounts)
-    )
+    jit_quest: Optional["JitQuestState"] = None  # JIT quest state (only in production accounts)
 
     # Arcade Mode fields
-    arcade_mode: Optional["ArcadeModeState"] = (
-        None  # Arcade mode state (60-second challenge)
-    )
+    arcade_mode: Optional["ArcadeModeState"] = None  # Arcade mode state (60-second challenge)
 
     # Photo Booth fields
     photo_booth_consent_active: bool = False  # True when showing consent prompt
     photo_booth_path: Optional[str] = None  # Path to generated photo booth image
-    photo_booth_summary_active: bool = (
-        False  # True when showing photo booth summary screen
-    )
+    photo_booth_summary_active: bool = False  # True when showing photo booth summary screen
 
     # Educational Dialogue fields (Story Mode)
     active_dialogue: Optional["DialogueSequence"] = None  # Current educational dialogue
-    dialogue_format_kwargs: dict = field(
-        default_factory=dict
-    )  # Format args for dialogue text
+    dialogue_format_kwargs: dict = field(default_factory=dict)  # Format args for dialogue text
     is_story_mode: bool = False  # Whether playing in Story Mode (educational) vs Arcade
 
     # Multi-genre system
     current_genre: GenreType = GenreType.PLATFORMER  # Default to platformer
-    genre_preferences: Dict[str, GenreType] = field(
-        default_factory=dict
-    )  # Per-level genre choices
+
+    # Player stats (for save/load)
+    score: int = 0  # Player's current score
+    eliminations: int = 0  # Total zombies eliminated
+    damage_multiplier: float = 1.0  # Current damage multiplier
+    genre_preferences: Dict[str, GenreType] = field(default_factory=dict)  # Per-level genre choices
 
     @property
     def is_dialogue_active(self) -> bool:
@@ -422,9 +407,7 @@ class QuarantineReport:
 class EducationalProgress:
     """Tracks which educational content the player has seen in Story Mode."""
 
-    completed_triggers: set = field(
-        default_factory=set
-    )  # Set of TriggerType values seen
+    completed_triggers: set = field(default_factory=set)  # Set of TriggerType values seen
     zombies_eliminated: int = 0  # Total zombies eliminated in Story Mode
     first_role_seen: bool = False  # Has player encountered a Role-type zombie
     first_user_seen: bool = False  # Has player encountered a User-type zombie

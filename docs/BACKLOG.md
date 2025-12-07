@@ -197,6 +197,15 @@ Focus: Based on Architecture Review Board recommendations, prioritize developer 
 
 ## 📦 BACKLOG - Sprint 6+: Future Work
 
+### Epic: Gameplay Enhancements (P1)
+
+**Why**: Improve core gameplay mechanics for better player engagement
+
+| ID | Story | Acceptance Criteria | Estimate | Agent |
+|----|-------|---------------------|----------|-------|
+| GAME-001 | Zombie AI - Always Move Toward Player | Zombies actively seek player instead of random patrol; pathfinding for maze genre; speed/aggression scaling based on distance | M (4-6h) | Architecture |
+| GAME-002 | Laser Beam Powerup | Red powerups enable laser beam shooting; piercing damage (hits multiple zombies); visual effects; duration timer | M (6-8h) | Architecture |
+
 ### Epic: Sonrai Branding & Integration (P1)
 
 **Why**: Enhance Sonrai brand visibility and complete integration features for Kiroween submission
