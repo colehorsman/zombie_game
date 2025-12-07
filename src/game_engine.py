@@ -36,7 +36,8 @@ from difficulty_config import EnvironmentDifficulty, get_difficulty_for_environm
 from education_manager import EducationManager
 from evidence_capture import EvidenceCapture
 from game_map import GameMap
-from genre_selection_controller import GenreSelectionAction, GenreSelectionController
+
+# Genre selection removed - using static level-to-genre mapping instead
 from hacker import Hacker
 from jit_access_quest import AdminRole, Auditor, create_jit_quest_entities
 from level_entry_menu_controller import LevelEntryAction, LevelEntryMenuController
@@ -44,6 +45,7 @@ from level_manager import LevelManager
 from models import (
     GameState,
     GameStatus,
+    GenreType,
     JitQuestState,
     PermissionSet,
     TriggerType,
@@ -300,17 +302,19 @@ class GameEngine:
         )
         self._pending_door_entry = None  # Door waiting for mode selection
 
-        # Genre selection controller for multi-genre levels
+        # Static genre mapping per level (Option B - no selection menu)
         from models import GenreType
 
-        self.genre_selection_controller = GenreSelectionController(
-            unlocked_genres=[
-                GenreType.PLATFORMER,
-                GenreType.SPACE_SHOOTER,
-                GenreType.MAZE_CHASE,
-                GenreType.FIGHTING,
-            ]  # All unlocked for demo
-        )
+        self.LEVEL_GENRE_MAP = {
+            1: GenreType.PLATFORMER,  # Sandbox - classic intro
+            2: GenreType.SPACE_SHOOTER,  # Stage - shoot down test zombies
+            3: GenreType.MAZE_CHASE,  # Automation - navigate pipelines
+            4: GenreType.PLATFORMER,  # WebApp - standard platformer
+            5: GenreType.PLATFORMER,  # Production Data - standard
+            6: GenreType.FIGHTING,  # Production - boss battle!
+            7: GenreType.PLATFORMER,  # Org - standard
+        }
+        self.active_genre_controller = None  # Active genre controller for current level
         self._pending_story_mode = False  # Track if story mode was selected
         logger.info(f"🕹️ AUTO_START_ARCADE = {self.auto_start_arcade}")
 
@@ -1433,6 +1437,10 @@ class GameEngine:
         """
         logger.info("🏛️  === RETURNING TO LOBBY - START ===")
 
+        # Reset genre controller when returning to lobby
+        self.active_genre_controller = None
+        self.game_state.current_genre = GenreType.PLATFORMER
+
         # Reset Story Mode when returning to lobby
         self.game_state.is_story_mode = False
         self.game_state.active_dialogue = None
@@ -1947,6 +1955,16 @@ class GameEngine:
         Args:
             delta_time: Time elapsed since last frame in seconds
         """
+        # If we have an active genre controller (Space Shooter, Maze Chase, etc.)
+        # delegate updates to it instead of default platformer logic
+        if self.active_genre_controller:
+            self.active_genre_controller.update(delta_time, self.player)
+            # Check for level completion
+            if self.active_genre_controller.check_completion():
+                logger.info("🎮 Genre level complete!")
+                self._return_to_lobby(mark_completed=True)
+            return
+
         # Pause gameplay when educational dialogue is active (Story Mode)
         # Player can still see the game but entities don't move
         if self.game_state.is_dialogue_active:
@@ -2598,104 +2616,97 @@ class GameEngine:
         if action == LevelEntryAction.ARCADE_MODE:
             logger.info("🕹️ Level entry: ARCADE MODE selected")
             self.level_entry_menu_controller.hide()
-            self._pending_story_mode = False
+            self.game_state.congratulations_message = None
+            self._pending_door_entry = None
 
-            # Show genre selection menu
-            level_name = door.destination_room_name if door else "Unknown"
-            self.game_state.congratulations_message = (
-                self.genre_selection_controller.show(level_name, is_story_mode=False)
-            )
+            # Enter level with static genre, then start arcade mode
+            if door:
+                self._enter_level_with_static_genre(door)
+                self._start_arcade_mode()
 
         elif action == LevelEntryAction.STORY_MODE:
             logger.info("📖 Level entry: STORY MODE selected")
             self.level_entry_menu_controller.hide()
-            self._pending_story_mode = True
-
-            # Show genre selection menu
-            level_name = door.destination_room_name if door else "Unknown"
-            self.game_state.congratulations_message = (
-                self.genre_selection_controller.show(level_name, is_story_mode=True)
-            )
-
-    def _handle_genre_selection(self) -> None:
-        """Handle genre selection menu."""
-        action = self.genre_selection_controller.select()
-
-        if action == GenreSelectionAction.SELECT:
-            genre = self.genre_selection_controller.selected_genre
-            logger.info(f"🎮 Genre selected: {genre.value}")
-
-            self.genre_selection_controller.hide()
             self.game_state.congratulations_message = None
-            self.game_state.current_genre = genre
-
-            door = self._pending_door_entry
             self._pending_door_entry = None
 
-            if self._pending_story_mode:
-                # Story mode with selected genre
-                self.game_state.is_story_mode = True
-                logger.info(f"📚 Story Mode + {genre.value} genre")
-                if door:
-                    self._enter_level_with_genre(door, genre)
-            else:
-                # Arcade mode with selected genre
-                self.game_state.is_story_mode = False
-                if door:
-                    self._enter_level_with_genre(door, genre)
-                    self._start_arcade_mode()
+            # Enable Story Mode for educational dialogues
+            self.game_state.is_story_mode = True
+            logger.info("📚 Story Mode enabled - educational dialogues active")
 
-        elif action == GenreSelectionAction.NONE:
-            # Genre is locked - show message
-            logger.info("🔒 Selected genre is locked")
+            # Enter level with static genre
+            if door:
+                self._enter_level_with_static_genre(door)
 
-    def _handle_genre_cancel(self) -> None:
-        """Handle genre selection cancellation - go back to mode selection."""
-        logger.info("⬅️ Genre selection cancelled - back to mode selection")
-        self.genre_selection_controller.hide()
-
-        # Show mode selection again
-        door = self._pending_door_entry
-        if door:
-            level_name = door.destination_room_name
-            self.game_state.congratulations_message = (
-                self.level_entry_menu_controller.show(level_name)
-            )
-
-    def _enter_level_with_genre(self, door, genre) -> None:
-        """Enter level with specific genre controller.
+    def _enter_level_with_static_genre(self, door) -> None:
+        """Enter level with genre determined by level number.
 
         Args:
             door: Door being entered
-            genre: Selected genre type
         """
         from models import GenreType
 
-        # For now, all genres use platformer level layout
-        # Genre affects gameplay mechanics, not level structure
-        logger.info(f"🚪 Entering level with genre: {genre.value}")
+        # Find level number for this door
+        level_num = 1  # Default
+        if self.level_manager:
+            for level in self.level_manager.levels:
+                if level.account_name == door.destination_room_name:
+                    level_num = level.level_number
+                    break
+
+        # Get genre for this level
+        genre = self.LEVEL_GENRE_MAP.get(level_num, GenreType.PLATFORMER)
+        self.game_state.current_genre = genre
+        logger.info(f"🎮 Level {level_num} genre: {genre.value}")
 
         if genre == GenreType.FIGHTING:
             # Boss battle mode - special handling
-            self._enter_boss_battle(door)
+            logger.info(f"🥊 Entering BOSS BATTLE mode!")
+            self._enter_level(door)
+            # Spawn boss immediately for fighting mode
+            if self.level_manager:
+                level = self.level_manager.get_current_level()
+                if level:
+                    boss_type = BOSS_LEVEL_MAP.get(
+                        level.level_number, BossType.WANNACRY
+                    )
+                    self._spawn_boss(boss_type)
+        elif genre == GenreType.SPACE_SHOOTER:
+            # Space shooter mode
+            logger.info(f"🚀 Entering SPACE SHOOTER mode!")
+            self._enter_level(door)
+            self._init_space_shooter_controller()
+        elif genre == GenreType.MAZE_CHASE:
+            # Maze chase mode
+            logger.info(f"👻 Entering MAZE CHASE mode!")
+            self._enter_level(door)
+            # TODO: Initialize maze chase controller
         else:
-            # Standard level entry (platformer layout works for all)
+            # Standard platformer
             self._enter_level(door)
 
-            # Store genre preference for this level
-            if door.destination_room_name:
-                self.game_state.genre_preferences[door.destination_room_name] = genre
+    def _init_space_shooter_controller(self) -> None:
+        """Initialize space shooter controller for current level."""
+        from models import GenreType
+        from space_shooter_controller import SpaceShooterController
 
-    def _enter_boss_battle(self, door) -> None:
-        """Enter boss battle mode for Fighting genre.
+        self.active_genre_controller = SpaceShooterController(
+            GenreType.SPACE_SHOOTER, self.screen_width, self.screen_height
+        )
 
-        Args:
-            door: Door being entered
-        """
-        logger.info(f"🥊 Entering BOSS BATTLE mode!")
-
-        # For now, use standard level entry then trigger boss
-        self._enter_level(door)
+        # Initialize with current zombies
+        if self.level_manager:
+            level = self.level_manager.get_current_level()
+            if level:
+                self.active_genre_controller.initialize_level(
+                    level.account_id,
+                    self.zombies,
+                    self.screen_width,
+                    self.screen_height,
+                )
+                logger.info(
+                    f"🚀 Space shooter initialized with {len(self.zombies)} zombies"
+                )
 
         # Immediately spawn boss for fighting mode
         if not self.boss and self.level_manager:
@@ -3067,25 +3078,6 @@ class GameEngine:
                         self._handle_level_entry_cancel()
                         continue
 
-                # Handle genre selection menu navigation
-                if self.genre_selection_controller.active:
-                    if event.key in (pygame.K_UP, pygame.K_w):
-                        self.game_state.congratulations_message = (
-                            self.genre_selection_controller.navigate(-1)
-                        )
-                        continue
-                    elif event.key in (pygame.K_DOWN, pygame.K_s):
-                        self.game_state.congratulations_message = (
-                            self.genre_selection_controller.navigate(1)
-                        )
-                        continue
-                    elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                        self._handle_genre_selection()
-                        continue
-                    elif event.key == pygame.K_ESCAPE:
-                        self._handle_genre_cancel()
-                        continue
-
                 # Handle pause menu navigation (if paused with menu active)
                 if self.game_state.status == GameStatus.PAUSED:
                     # Check if we're showing arcade results menu
@@ -3385,29 +3377,6 @@ class GameEngine:
                     # B button (1) - cancel
                     elif event.button == 1:
                         self._handle_level_entry_cancel()
-                        continue
-
-                # Handle genre selection menu navigation (controller)
-                if self.genre_selection_controller.active:
-                    # D-pad UP (11) - navigate up
-                    if event.button == 11:
-                        self.game_state.congratulations_message = (
-                            self.genre_selection_controller.navigate(-1)
-                        )
-                        continue
-                    # D-pad DOWN (12) - navigate down
-                    elif event.button == 12:
-                        self.game_state.congratulations_message = (
-                            self.genre_selection_controller.navigate(1)
-                        )
-                        continue
-                    # A button (0) - confirm selection
-                    elif event.button == 0:
-                        self._handle_genre_selection()
-                        continue
-                    # B button (1) - go back to mode selection
-                    elif event.button == 1:
-                        self._handle_genre_cancel()
                         continue
 
                 # Evidence capture - works even without joystick initialized
@@ -3729,6 +3698,30 @@ class GameEngine:
             if self.outage_manager.is_active():
                 self.player.stop_horizontal()
                 return  # Don't process any movement input during outage
+
+            # If genre controller is active, delegate input to it
+            if self.active_genre_controller:
+                from genre_controller import InputState
+
+                keyboard_left = (
+                    pygame.K_LEFT in self.keys_pressed
+                    or pygame.K_a in self.keys_pressed
+                )
+                keyboard_right = (
+                    pygame.K_RIGHT in self.keys_pressed
+                    or pygame.K_d in self.keys_pressed
+                )
+                keyboard_shoot = pygame.K_SPACE in self.keys_pressed
+                input_state = InputState(
+                    left=keyboard_left,
+                    right=keyboard_right,
+                    up=False,
+                    down=False,
+                    shoot=keyboard_shoot,
+                    jump=False,
+                )
+                self.active_genre_controller.handle_input(input_state, self.player)
+                return  # Skip default platformer input handling
 
             # Check keyboard input
             keyboard_left = (
